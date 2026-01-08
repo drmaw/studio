@@ -29,7 +29,7 @@ export default function DashboardLayout({
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-4 border-b bg-background px-4 sm:px-6 md:justify-between">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 md:justify-between">
           <SidebarTrigger className="md:hidden" />
           <div className="hidden md:block" />
           <UserNav />
