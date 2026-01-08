@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Wind, Plus, X } from "lucide-react";
+import { LogOut, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Wind, Plus, X, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +91,7 @@ const chronicConditionsOptions = [
     { id: 'diabetes', label: 'Diabetes', icon: Droplet },
     { id: 'hypertension', label: 'Hypertension', icon: HeartPulse },
     { id: 'asthma', label: 'Asthma', icon: Wind },
+    { id: 'ckd', label: 'CKD', icon: ShieldAlert },
 ] as const;
 
 
@@ -143,7 +144,7 @@ export default function ProfilePage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   }
 
-  const handleChronicConditionChange = (conditionId: 'diabetes' | 'hypertension' | 'asthma', checked: boolean) => {
+  const handleChronicConditionChange = (conditionId: 'diabetes' | 'hypertension' | 'asthma' | 'ckd', checked: boolean) => {
     setFormData(prev => {
         const currentConditions = prev.chronicConditions || [];
         if (checked) {
@@ -318,7 +319,7 @@ export default function ProfilePage() {
                                         return (
                                              <Badge key={c} variant="outline" className="capitalize flex items-center gap-1.5">
                                                  {condition && <condition.icon className="h-3 w-3" />}
-                                                 {c}
+                                                 {condition?.label || c}
                                             </Badge>
                                         )
                                     })}
