@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone } from "lucide-react";
+import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock } from "lucide-react";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -108,13 +108,21 @@ export function DoctorDashboard({ user }: { user: User }) {
           Upcoming Appointments
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {Object.entries(appointmentsByChamber).map(([chamber, appointments]) => (
+            {Object.entries(appointmentsByChamber).map(([chamber, appointments]) => {
+                const schedule = chamberSchedules.find(s => s.hospital === chamber);
+                return (
                 <Card key={chamber}>
                     <CardHeader>
-                        <CardTitle className="flex justify-between items-center">
+                        <CardTitle className="flex justify-between items-start">
                             <span>{chamber}</span>
                             <Badge variant="secondary">{appointments.length} Patients</Badge>
                         </CardTitle>
+                        {schedule && (
+                            <CardDescription className="flex items-center gap-2 pt-1">
+                                <Clock className="h-4 w-4"/>
+                                <span>{schedule.days} &bull; {schedule.time}</span>
+                            </CardDescription>
+                        )}
                     </CardHeader>
                     <CardContent>
                         <ScrollArea className="h-72">
@@ -155,7 +163,7 @@ export function DoctorDashboard({ user }: { user: User }) {
                         </ScrollArea>
                     </CardContent>
                 </Card>
-            ))}
+            )})}
         </div>
       </div>
       
