@@ -87,6 +87,10 @@ export const patients: Patient[] = [
       address: '123 Gulshan, Dhaka',
       chronicConditions: ['Asthma', 'Diabetes'],
       allergies: ['Dust', 'Penicillin']
+    },
+    redFlag: {
+      title: 'Critical Penicillin Allergy',
+      comment: 'Patient experiences severe anaphylactic shock in response to Penicillin. AVOID all penicillin-class antibiotics.'
     }
   },
   { 
