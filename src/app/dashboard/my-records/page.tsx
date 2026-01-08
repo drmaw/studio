@@ -1,7 +1,8 @@
 
+
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,23 @@ const initialRecords: RecordFile[] = [
     { id: 'rec2', name: 'X-Ray Scan', fileType: 'image', recordType: 'report', url: 'https://picsum.photos/seed/xray/800/600', date: '2024-05-20T14:00:00.000Z', size: '2.5 MB', uploadedBy: 'Dr. Anika Rahman' },
     { id: 'rec3', name: 'Prescription_Dr_Anika.jpg', fileType: 'image', recordType: 'prescription', url: 'https://picsum.photos/seed/prescription/800/600', date: '2024-05-10T11:45:00.000Z', size: '800 KB', uploadedBy: 'Self' }
 ];
+
+// Client-side only component to format date and avoid hydration mismatch
+const FormattedDate = ({ date }: { date: string }) => {
+    const [formattedDate, setFormattedDate] = useState('');
+
+    useEffect(() => {
+        setFormattedDate(format(new Date(date), "dd MMM yyyy, hh:mm a"));
+    }, [date]);
+
+    if (!formattedDate) {
+        // You can return a placeholder here if you want
+        return null;
+    }
+
+    return <span>{formattedDate}</span>;
+}
+
 
 export default function MyHealthRecordsPage() {
     const { user } = useAuth();
@@ -239,7 +257,7 @@ export default function MyHealthRecordsPage() {
                                     <div className="mt-4 space-y-2 text-xs text-muted-foreground pt-4 border-t border-dashed">
                                         <div className="flex items-center gap-2">
                                             <Clock className="h-3 w-3"/>
-                                            <span>{format(new Date(record.date), "dd MMM yyyy, hh:mm a")}</span>
+                                            <FormattedDate date={record.date} />
                                             <span className="font-semibold text-foreground/80">&bull; {record.size}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -263,5 +281,3 @@ export default function MyHealthRecordsPage() {
         </div>
     );
 }
-
-    
