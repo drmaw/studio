@@ -1,6 +1,6 @@
 
 
-import type { User, Patient, MedicalRecord, Vitals } from '@/lib/definitions';
+import type { User, Patient, MedicalRecord, Vitals, RecordFile } from '@/lib/definitions';
 
 export const users: User[] = [
   { 
@@ -42,7 +42,7 @@ export const users: User[] = [
       bloodGroup: 'A+',
       presentAddress: "789 Patient Ave, Wellness City, Dhaka",
       permanentAddress: "101 Native Town, Home District, Country",
-      allergies: ['Dust', 'Penicillin'],
+      allergies: [],
       chronicConditions: ['Asthma', 'Diabetes'],
     },
     isPremium: false
@@ -88,7 +88,7 @@ export const patients: Patient[] = [
       address: '123 Gulshan, Dhaka',
     },
     chronicConditions: ['Asthma', 'Diabetes'],
-    allergies: ['Dust', 'Penicillin']
+    allergies: []
   },
   { 
     id: 'patient-2', 
@@ -168,6 +168,12 @@ export const vitalsHistory: Vitals[] = [
   { id: 'v4', date: '2024-07-23T09:00:00.000Z', bpSystolic: 120, bpDiastolic: 78, pulse: 65, weight: 74.8, rbs: 5.8, sCreatinine: null },
   { id: 'v5', date: '2024-07-24T08:30:00.000Z', bpSystolic: 124, bpDiastolic: 81, pulse: 72, weight: 74.9, rbs: null, sCreatinine: 1.1 },
   { id: 'v6', date: '2024-07-25T08:00:00.000Z', bpSystolic: 126, bpDiastolic: 83, pulse: 71, weight: 75.0, rbs: 5.6, sCreatinine: null },
+];
+
+export const uploadedRecords: RecordFile[] = [
+    { id: 'rec1', name: 'Blood Test Report.pdf', fileType: 'pdf', recordType: 'report', url: '#', date: '2024-06-15T10:30:00.000Z', size: '1.2 MB', uploadedBy: 'Lab Assistant' },
+    { id: 'rec2', name: 'X-Ray Scan', fileType: 'image', recordType: 'report', url: 'https://picsum.photos/seed/xray/800/600', date: '2024-05-20T14:00:00.000Z', size: '2.5 MB', uploadedBy: 'Dr. Anika Rahman' },
+    { id: 'rec3', name: 'Prescription_Dr_Anika.jpg', fileType: 'image', recordType: 'prescription', url: 'https://picsum.photos/seed/prescription/800/600', date: '2024-05-10T11:45:00.000Z', size: '800 KB', uploadedBy: 'Self' }
 ];
 
 // Demo data for marketing rep

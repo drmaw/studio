@@ -35,13 +35,8 @@ import { RecordViewer } from '@/components/record-viewer';
 import type { RecordFile } from '@/lib/definitions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { uploadedRecords as initialRecords } from '@/lib/data';
 
-
-const initialRecords: RecordFile[] = [
-    { id: 'rec1', name: 'Blood Test Report.pdf', fileType: 'pdf', recordType: 'report', url: '#', date: '2024-06-15T10:30:00.000Z', size: '1.2 MB', uploadedBy: 'Lab Assistant' },
-    { id: 'rec2', name: 'X-Ray Scan', fileType: 'image', recordType: 'report', url: 'https://picsum.photos/seed/xray/800/600', date: '2024-05-20T14:00:00.000Z', size: '2.5 MB', uploadedBy: 'Dr. Anika Rahman' },
-    { id: 'rec3', name: 'Prescription_Dr_Anika.jpg', fileType: 'image', recordType: 'prescription', url: 'https://picsum.photos/seed/prescription/800/600', date: '2024-05-10T11:45:00.000Z', size: '800 KB', uploadedBy: 'Self' }
-];
 
 // Client-side only component to format date and avoid hydration mismatch
 const FormattedDate = ({ date }: { date: string }) => {
@@ -395,3 +390,4 @@ export default function MyHealthRecordsPage() {
     );
 
     
+
