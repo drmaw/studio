@@ -80,14 +80,15 @@ export const patients: Patient[] = [
   { 
     id: 'patient-1', 
     name: 'Karim Ahmed',
+    healthId: '3049582012',
     demographics: { 
       dob: '1985-05-20', 
       gender: 'Male', 
       contact: '+8801712345678', 
       address: '123 Gulshan, Dhaka',
-      chronicConditions: ['Asthma', 'Diabetes'],
-      allergies: ['Dust', 'Penicillin']
     },
+    chronicConditions: ['Asthma', 'Diabetes'],
+    allergies: ['Dust', 'Penicillin'],
     redFlag: {
       title: 'Critical Penicillin Allergy',
       comment: 'Patient experiences severe anaphylactic shock in response to Penicillin. AVOID all penicillin-class antibiotics.'
@@ -96,26 +97,28 @@ export const patients: Patient[] = [
   { 
     id: 'patient-2', 
     name: 'Fatima Begum',
+    healthId: 'user-pat-2',
     demographics: { 
       dob: '1992-11-15', 
       gender: 'Female', 
       contact: '+8801812345679', 
       address: '456 Banani, Dhaka',
-      chronicConditions: ['Hypertension'],
-      allergies: []
-    }
+    },
+    chronicConditions: ['Hypertension'],
+    allergies: []
   },
   {
     id: 'patient-3',
     name: 'Rashedul Islam',
+    healthId: 'user-pat-3',
     demographics: { 
       dob: '1978-01-30', 
       gender: 'Male', 
       contact: '+8801912345680', 
       address: '789 Dhanmondi, Dhaka',
-      chronicConditions: [],
-      allergies: ['Shellfish']
     },
+    chronicConditions: ['CKD'],
+    allergies: ['Shellfish'],
     redFlag: {
       title: 'Severe Shellfish Allergy',
       comment: 'Patient has a history of anaphylaxis in response to shellfish. Epinephrine auto-injector must be available if any seafood is administered.'

@@ -11,15 +11,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "../ui/button";
+import { Button } from "./ui/button";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock, ShieldCheck, HeartPulse, Siren } from "lucide-react";
-import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { ScrollArea } from "../ui/scroll-area";
-import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { Textarea } from "../ui/textarea";
+import { Input } from "./ui/input";
+import { Badge } from "./ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { ScrollArea } from "./ui/scroll-area";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Textarea } from "./ui/textarea";
 
 const chamberSchedules = [
     { id: 1, hospital: 'Digital Health Clinic', room: '302', days: 'Sat, Mon, Wed', time: '5 PM - 9 PM' },

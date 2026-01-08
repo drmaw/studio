@@ -1,10 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { StaffManagementTab } from "@/components/dashboard/settings/staff-management-tab";
-import { BillingFeesTab } from "@/components/dashboard/settings/billing-fees-tab";
-import { DoctorSchedulesTab } from "@/components/dashboard/settings/doctor-schedules-tab";
-import { FacilityManagementTab } from "@/components/dashboard/settings/facility-management-tab";
-import { GeneralSettingsTab } from "@/components/dashboard/settings/general-settings-tab";
+import { StaffManagementTab } from "@/components/settings/staff-management-tab";
+import { BillingFeesTab } from "@/components/settings/billing-fees-tab";
+import { DoctorSchedulesTab } from "@/components/settings/doctor-schedules-tab";
+import { FacilityManagementTab } from "@/components/settings/facility-management-tab";
+import { GeneralSettingsTab } from "@/components/settings/general-settings-tab";
 
 export default function HospitalSettingsPage() {
     return (

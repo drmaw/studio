@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { UserDemographics } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { HealthIdCard } from "@/components/dashboard/health-id-card";
+import { HealthIdCard } from "@/components/health-id-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 

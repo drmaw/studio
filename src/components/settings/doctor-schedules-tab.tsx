@@ -46,7 +46,7 @@ const initialSchedules: DoctorSchedule[] = [
     {
         id: 'sched-1',
         doctorName: 'Dr. Anika Rahman',
-        doctorId: 'user-doc-1',
+        doctorId: '8912409021',
         roomNumber: '302',
         fee: 800,
         days: ['Sat', 'Mon', 'Wed']

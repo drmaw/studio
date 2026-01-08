@@ -11,8 +11,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Stethoscope, X } from "lucide-react";
-import { UserNav } from "@/components/dashboard/user-nav";
-import { SidebarNav } from "@/components/dashboard/sidebar-nav";
+import { UserNav } from "@/components/user-nav";
+import { SidebarNav } from "@/components/sidebar-nav";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";

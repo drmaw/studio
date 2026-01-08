@@ -30,14 +30,15 @@ export type User = {
 export type Patient = {
   id: string;
   name: string;
+  healthId: string;
   demographics: {
     dob: string;
     gender: 'Male' | 'Female' | 'Other';
     contact: string;
     address: string;
-    chronicConditions?: string[];
-    allergies?: string[];
   };
+  chronicConditions?: string[];
+  allergies?: string[];
   redFlag?: {
     title: string;
     comment: string;
