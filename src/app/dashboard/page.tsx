@@ -1,6 +1,7 @@
 'use client'
 
 import { DoctorDashboard } from "@/components/dashboard/doctor-dashboard";
+import { HospitalOwnerDashboard } from "@/components/dashboard/hospital-owner-dashboard";
 import { PatientDashboard } from "@/components/dashboard/patient-dashboard";
 import { RepDashboard } from "@/components/dashboard/rep-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,7 +35,10 @@ export default function DashboardPage() {
       return <PatientDashboard user={user} />;
     case 'marketing_rep':
       return <RepDashboard user={user} />;
+    case 'hospital_owner':
+      return <HospitalOwnerDashboard user={user} />;
     default:
-      return <div>Invalid user role.</div>;
+      // Render a dashboard for 'nurse' or a default view
+      return <div>Welcome, {user.name}. Your dashboard is under construction.</div>;
   }
 }
