@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut, Mail, ShieldCheck, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle } from "lucide-react";
+import { LogOut, Mail, ShieldCheck, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, QrCode } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,15 @@ import { useToast } from "@/hooks/use-toast";
 import type { UserDemographics } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import Image from "next/image";
+
 
 function ApplyForRoleCard() {
   const [selectedRole, setSelectedRole] = useState('');
@@ -155,16 +164,34 @@ export default function ProfilePage() {
   
   const dobDate = formData.dob ? parseISO(formData.dob) : null;
   const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd MMMM, yyyy') : 'N/A';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.id}`;
+  const largeQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${user.id}`;
+
 
   return (
     <div className="flex justify-center">
       <div className="w-full max-w-2xl">
         <Card>
             <CardHeader className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-                <Avatar className="h-24 w-24">
-                    <AvatarImage src={user.avatarUrl} alt={user.name} />
-                    <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
-                </Avatar>
+                <div className="flex-shrink-0 relative">
+                  <Avatar className="h-24 w-24">
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
+                  </Avatar>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="absolute -bottom-2 -right-2 cursor-pointer rounded-full bg-background p-1 border shadow-md hover:bg-accent">
+                          <QrCode className="h-6 w-6 text-primary" />
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md items-center flex flex-col">
+                        <DialogHeader>
+                            <DialogTitle className="text-center">Health ID: {user.id}</DialogTitle>
+                        </DialogHeader>
+                        <Image src={largeQrCodeUrl} alt="Enlarged QR Code" width={400} height={400} />
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <div className="flex-1">
                     <CardTitle className="text-3xl">{user.name}</CardTitle>
                     <CardDescription className="text-base pt-2 flex flex-wrap gap-x-4 gap-y-2">
@@ -199,6 +226,7 @@ export default function ProfilePage() {
                 <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
                 {isEditing ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <ProfileEditRow label="Mobile Number" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} />
                         <ProfileEditRow label="Date of Birth (YYYY-MM-DD)" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="YYYY-MM-DD" />
                         <ProfileEditRow label="Gender" name="gender" value={formData.gender} onChange={handleInputChange} />
                         <ProfileEditRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleInputChange} />
@@ -214,6 +242,7 @@ export default function ProfilePage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <ProfileInfoRow icon={Phone} label="Mobile Number" value={formData.mobileNumber} />
                         <div className="flex items-start gap-3">
                             <Cake className="h-4 w-4 mt-1 text-muted-foreground" />
                             <div className="flex-1">
@@ -265,5 +294,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

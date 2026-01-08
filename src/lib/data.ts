@@ -13,6 +13,7 @@ export const users: User[] = [
       dob: '1982-08-12T00:00:00.000Z',
       gender: 'Female',
       contact: '+8801711223344',
+      mobileNumber: '+8801711223344',
       fatherName: "Mr. Doctor Father",
       motherName: "Mrs. Doctor Mother",
       nid: "19821234567890123",
@@ -31,6 +32,7 @@ export const users: User[] = [
       dob: '1990-05-20T00:00:00.000Z',
       gender: 'Male',
       contact: '+8801712345678',
+      mobileNumber: '+8801712345678',
       fatherName: "Mr. Patient Father",
       motherName: "Mrs. Patient Mother",
       nid: "19901234567890123",
@@ -45,7 +47,7 @@ export const users: User[] = [
     email: 'rep@digihealth.com', 
     roles: ['marketing_rep', 'patient'], 
     avatarUrl: 'https://picsum.photos/seed/rep1/100/100',
-    demographics: { dob: '1995-02-10T00:00:00.000Z', gender: 'Female' }
+    demographics: { dob: '1995-02-10T00:00:00.000Z', gender: 'Female', mobileNumber: '+8801987654321' }
   },
   { 
     id: 'user-doc-2', 
@@ -53,7 +55,7 @@ export const users: User[] = [
     email: 'doctor2@digihealth.com', 
     roles: ['doctor', 'patient'], 
     avatarUrl: 'https://picsum.photos/seed/doc2/100/100',
-    demographics: { dob: '1975-11-30T00:00:00.000Z', gender: 'Male' }
+    demographics: { dob: '1975-11-30T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801654321987' }
   },
   { 
     id: 'user-owner-1', 
@@ -61,7 +63,7 @@ export const users: User[] = [
     email: 'owner@digihealth.com', 
     roles: ['hospital_owner', 'patient'], 
     avatarUrl: 'https://picsum.photos/seed/owner1/100/100',
-    demographics: { dob: '1970-01-01T00:00:00.000Z', gender: 'Male' }
+    demographics: { dob: '1970-01-01T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801512345678' }
   }
 ];
 

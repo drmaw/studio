@@ -12,6 +12,7 @@ export type UserDemographics = {
   bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
   presentAddress?: string;
   permanentAddress?: string;
+  mobileNumber?: string;
 };
 
 export type User = {
