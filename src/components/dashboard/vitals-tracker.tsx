@@ -38,13 +38,55 @@ const chartConfig = {
   },
 };
 
-export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProps) {
-  const [vitals, setVitals] = useState<Vitals[]>(vitalsData);
+function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Vitals>) => void, submitting: boolean }) {
   const [bpSystolic, setBpSystolic] = useState('');
   const [bpDiastolic, setBpDiastolic] = useState('');
   const [pulse, setPulse] = useState('');
   const [weight, setWeight] = useState('');
   const [rbs, setRbs] = useState('');
+
+  return (
+    <Tabs defaultValue="bp">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="bp">BP</TabsTrigger>
+        <TabsTrigger value="pulse">Pulse</TabsTrigger>
+        <TabsTrigger value="weight">Weight</TabsTrigger>
+        <TabsTrigger value="rbs">RBS</TabsTrigger>
+      </TabsList>
+      <TabsContent value="bp">
+        <div className="flex gap-2 items-end">
+          <div className="grid grid-cols-2 gap-2 flex-1">
+            <Input placeholder="Systolic (e.g. 120)" value={bpSystolic} onChange={e => setBpSystolic(e.target.value)} type="number" />
+            <Input placeholder="Diastolic (e.g. 80)" value={bpDiastolic} onChange={e => setBpDiastolic(e.target.value)} type="number" />
+          </div>
+          <Button onClick={() => { onAdd({ bpSystolic: parseInt(bpSystolic), bpDiastolic: parseInt(bpDiastolic) }); setBpSystolic(''); setBpDiastolic(''); }} disabled={submitting || !bpSystolic || !bpDiastolic}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+        </div>
+      </TabsContent>
+       <TabsContent value="pulse">
+        <div className="flex gap-2 items-end">
+          <Input className="flex-1" placeholder="Pulse (bpm)" value={pulse} onChange={e => setPulse(e.target.value)} type="number" />
+          <Button onClick={() => { onAdd({ pulse: parseInt(pulse) }); setPulse(''); }} disabled={submitting || !pulse}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+        </div>
+      </TabsContent>
+      <TabsContent value="weight">
+         <div className="flex gap-2 items-end">
+          <Input className="flex-1" placeholder="Weight (kg)" value={weight} onChange={e => setWeight(e.target.value)} type="number" />
+          <Button onClick={() => { onAdd({ weight: parseFloat(weight) }); setWeight(''); }} disabled={submitting || !weight}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+        </div>
+      </TabsContent>
+      <TabsContent value="rbs">
+        <div className="flex gap-2 items-end">
+          <Input className="flex-1" placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
+          <Button onClick={() => { onAdd({ rbs: parseFloat(rbs) }); setRbs(''); }} disabled={submitting || !rbs}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+
+export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProps) {
+  const [vitals, setVitals] = useState<Vitals[]>(vitalsData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -54,27 +96,21 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
     bp: v.bpSystolic ? `${v.bpSystolic}/${v.bpDiastolic}`: null,
   }));
 
-  const handleAddVitals = async () => {
+  const handleAddVitals = async (newVitalData: Partial<Vitals>) => {
     setIsSubmitting(true);
     await new Promise(resolve => setTimeout(resolve, 500));
     
     const newVital: Vitals = {
       id: `v${Date.now()}`,
       date: new Date().toISOString(),
-      bpSystolic: bpSystolic ? parseInt(bpSystolic) : null,
-      bpDiastolic: bpDiastolic ? parseInt(bpDiastolic) : null,
-      pulse: pulse ? parseInt(pulse) : null,
-      weight: weight ? parseFloat(weight) : null,
-      rbs: rbs ? parseFloat(rbs) : null,
+      bpSystolic: newVitalData.bpSystolic ?? null,
+      bpDiastolic: newVitalData.bpDiastolic ?? null,
+      pulse: newVitalData.pulse ?? null,
+      weight: newVitalData.weight ?? null,
+      rbs: newVitalData.rbs ?? null,
     };
     
     setVitals(prev => [newVital, ...prev]);
-
-    setBpSystolic('');
-    setBpDiastolic('');
-    setPulse('');
-    setWeight('');
-    setRbs('');
     
     toast({
       title: "Vitals Logged",
@@ -134,20 +170,13 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
         {currentUserRole === 'patient' && (
              <div className="space-y-4 p-4 border rounded-lg">
                 <h4 className="font-medium text-center">Log New Vitals</h4>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    <div className="grid grid-cols-2 gap-2 col-span-2 md:col-span-2">
-                        <Input placeholder="Systolic" value={bpSystolic} onChange={e => setBpSystolic(e.target.value)} type="number" />
-                        <Input placeholder="Diastolic" value={bpDiastolic} onChange={e => setBpDiastolic(e.target.value)} type="number" />
-                    </div>
-                    <Input placeholder="Pulse (bpm)" value={pulse} onChange={e => setPulse(e.target.value)} type="number" />
-                    <Input placeholder="Weight (kg)" value={weight} onChange={e => setWeight(e.target.value)} type="number" />
-                    <Input placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
-                </div>
-                <Button onClick={handleAddVitals} disabled={isSubmitting} className="w-full">
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Reading
-                </Button>
+                {isSubmitting ? 
+                  <div className="flex justify-center items-center h-10">
+                    <Loader2 className="animate-spin" />
+                  </div>
+                  :
+                  <VitalsInput onAdd={handleAddVitals} submitting={isSubmitting} />
+                }
             </div>
         )}
 
