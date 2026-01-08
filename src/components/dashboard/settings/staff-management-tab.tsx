@@ -55,7 +55,7 @@ export function StaffManagementTab() {
     if (userToAdd && !staff.some(s => s.id === userToAdd.id)) {
       // In a real app, you would change the user's role in the database.
       // Here, we'll just add them to the local staff list with the assigned role.
-      setStaff(prevStaff => [...prevStaff, { ...userToAdd, role: values.role }]);
+      setStaff(prevStaff => [...prevStaff, { ...userToAdd, roles: [...userToAdd.roles, values.role] }]);
       toast({
         title: "Staff Added",
         description: `${userToAdd.name} has been added as a ${values.role.replace('_', ' ')}.`,
@@ -148,7 +148,7 @@ export function StaffManagementTab() {
                         <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>
-                            <TableHead>Role</TableHead>
+                            <TableHead>Roles</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -157,9 +157,13 @@ export function StaffManagementTab() {
                                 <TableCell className="font-medium">{member.name}</TableCell>
                                 <TableCell>{member.email}</TableCell>
                                 <TableCell>
-                                    <Badge variant="secondary" className="capitalize">
-                                        {member.role.replace('_', ' ')}
-                                    </Badge>
+                                    <div className="flex flex-wrap gap-1">
+                                        {member.roles.map(role => (
+                                             <Badge key={role} variant="secondary" className="capitalize">
+                                                {role.replace('_', ' ')}
+                                            </Badge>
+                                        ))}
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}

@@ -1,12 +1,13 @@
 
+
 import type { User, Patient, MedicalRecord, Vitals } from '@/lib/definitions';
 
 export const users: User[] = [
-  { id: 'user-doc-1', name: 'Dr. Anika Rahman', email: 'doctor@digihealth.com', role: 'doctor', avatarUrl: 'https://picsum.photos/seed/doc1/100/100' },
-  { id: 'user-pat-1', name: 'Karim Ahmed', email: 'patient@digihealth.com', role: 'patient', avatarUrl: 'https://picsum.photos/seed/pat1/100/100' },
-  { id: 'user-rep-1', name: 'Salma Khan', email: 'rep@digihealth.com', role: 'marketing_rep', avatarUrl: 'https://picsum.photos/seed/rep1/100/100' },
-  { id: 'user-doc-2', name: 'Dr. Farid Uddin', email: 'doctor2@digihealth.com', role: 'doctor', avatarUrl: 'https://picsum.photos/seed/doc2/100/100' },
-  { id: 'user-owner-1', name: 'Admin Owner', email: 'owner@digihealth.com', role: 'hospital_owner', avatarUrl: 'https://picsum.photos/seed/owner1/100/100' }
+  { id: 'user-doc-1', name: 'Dr. Anika Rahman', email: 'doctor@digihealth.com', roles: ['doctor', 'patient'], avatarUrl: 'https://picsum.photos/seed/doc1/100/100' },
+  { id: 'user-pat-1', name: 'Karim Ahmed', email: 'patient@digihealth.com', roles: ['patient'], avatarUrl: 'https://picsum.photos/seed/pat1/100/100' },
+  { id: 'user-rep-1', name: 'Salma Khan', email: 'rep@digihealth.com', roles: ['marketing_rep', 'patient'], avatarUrl: 'https://picsum.photos/seed/rep1/100/100' },
+  { id: 'user-doc-2', name: 'Dr. Farid Uddin', email: 'doctor2@digihealth.com', roles: ['doctor', 'patient'], avatarUrl: 'https://picsum.photos/seed/doc2/100/100' },
+  { id: 'user-owner-1', name: 'Admin Owner', email: 'owner@digihealth.com', roles: ['hospital_owner', 'patient'], avatarUrl: 'https://picsum.photos/seed/owner1/100/100' }
 ];
 
 export const patients: Patient[] = [

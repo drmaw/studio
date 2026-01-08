@@ -1,3 +1,4 @@
+
 import { demoRecords } from "@/lib/data";
 import type { User } from "@/lib/definitions";
 import { MedicalRecordCard } from "./medical-record-card";

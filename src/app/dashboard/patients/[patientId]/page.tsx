@@ -2,7 +2,7 @@
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
-import { medicalRecords, patients, vitalsHistory } from "@/lib/data";
+import { medicalRecords, patients } from "@/lib/data";
 import { notFound, useRouter } from "next/navigation";
 import { MedicalRecordCard } from "@/components/dashboard/medical-record-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VitalsTracker } from "@/components/dashboard/vitals-tracker";
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole, activeRole } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -30,9 +30,9 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   }
   
   // Security check: only doctors can see any patient, patients can only see themselves.
-  if (!loading && user?.role === 'patient') {
+  if (!loading && hasRole('patient') && activeRole === 'patient') {
     // For this mock, we assume 'patient@digihealth.com' (user-pat-1) is patient-1
-    if (user.id !== 'user-pat-1' || params.patientId !== 'patient-1') {
+    if (user?.id !== 'user-pat-1' || params.patientId !== 'patient-1') {
         notFound();
     }
   }
@@ -68,14 +68,14 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
         </CardContent>
       </Card>
       
-      <VitalsTracker vitalsData={vitalsHistory} currentUserRole={user.role} />
+      <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} />
 
       <div>
         <h2 className="text-2xl font-bold mb-4">Medical Records</h2>
         <div className="space-y-4">
           {records.length > 0 ? (
             records.map(record => (
-              <MedicalRecordCard key={record.id} record={record} currentUserRole={user.role} />
+              <MedicalRecordCard key={record.id} record={record} currentUserRole={activeRole!} />
             ))
           ) : (
             <Card className="flex items-center justify-center p-8">

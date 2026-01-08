@@ -11,8 +11,8 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function ApplyForRoleCard() {
   const [selectedRole, setSelectedRole] = useState('');
@@ -103,7 +103,7 @@ function ApplyForRoleCard() {
 }
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -136,9 +136,13 @@ export default function ProfilePage() {
                 </Avatar>
                 <CardTitle className="text-3xl">{user.name}</CardTitle>
                 <CardDescription className="text-base pt-1">
-                    <Badge variant="secondary" className="capitalize">
-                        {user.role.replace('_', ' ')}
-                    </Badge>
+                    <div className="flex flex-wrap justify-center gap-2">
+                        {user.roles.map(role => (
+                            <Badge key={role} variant="secondary" className="capitalize">
+                                {role.replace('_', ' ')}
+                            </Badge>
+                        ))}
+                    </div>
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 text-center border-t pt-6">
@@ -158,7 +162,7 @@ export default function ProfilePage() {
                 </Button>
             </CardContent>
         </Card>
-        {user.role === 'patient' && <ApplyForRoleCard />}
+        {hasRole('patient') && <ApplyForRoleCard />}
       </div>
     </div>
   );

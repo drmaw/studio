@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { users } from '@/lib/data';
-import type { User } from '@/lib/definitions';
+import type { Role, User } from '@/lib/definitions';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -17,5 +17,11 @@ export function useAuth() {
     setLoading(false);
   }, []);
 
-  return { user, loading };
+  const activeRole = useMemo(() => {
+    if (!user) return null;
+    // The "active" role is the first non-patient role, or 'patient' if that's all they are.
+    return user.roles.find(r => r !== 'patient') || 'patient';
+  }, [user]);
+
+  return { user, loading, activeRole, hasRole: (role: Role) => user?.roles.includes(role) ?? false };
 }

@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, activeRole } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function DashboardPage() {
     );
   }
 
-  switch (user.role) {
+  switch (activeRole) {
     case 'doctor':
       return <DoctorDashboard user={user} />;
     case 'patient':

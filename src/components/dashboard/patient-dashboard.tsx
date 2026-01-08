@@ -1,4 +1,5 @@
 
+
 import { medicalRecords, vitalsHistory } from "@/lib/data";
 import type { User } from "@/lib/definitions";
 import { MedicalRecordCard } from "./medical-record-card";
@@ -8,8 +9,8 @@ import { VitalsTracker } from "./vitals-tracker";
 export function PatientDashboard({ user }: { user: User }) {
   // In a real app, this would be a DB query. Here, we link patient by name.
   // We'll assume the logged-in patient is 'Karim Ahmed' (patient-1).
-  const patientId = 'patient-1';
-  const records = medicalRecords.filter(rec => rec.patientId === patientId);
+  const patientId = 'user-pat-1';
+  const records = medicalRecords.filter(rec => rec.patientId === 'patient-1');
 
   return (
     <div className="space-y-6">

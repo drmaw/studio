@@ -13,7 +13,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -24,7 +23,6 @@ const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-  role: z.enum(['doctor', 'patient', 'marketing_rep', 'nurse', 'hospital_owner', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'], { required_error: "You must select a role." }),
 });
 
 export function RegisterForm() {
@@ -46,7 +44,11 @@ export function RegisterForm() {
     // and create a user document in Firestore.
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    console.log("New user registered:", values);
+    const newUser = {
+        ...values,
+        roles: ['patient'], // All new users are patients by default
+    }
+    console.log("New user registered:", newUser);
 
     toast({
       title: "Registration Successful",
@@ -98,36 +100,9 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>I am a...</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your role" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="patient">Patient</SelectItem>
-                  <SelectItem value="doctor">Doctor</SelectItem>
-                  <SelectItem value="nurse">Nurse</SelectItem>
-                  <SelectItem value="hospital_owner">Hospital Owner</SelectItem>
-                  <SelectItem value="marketing_rep">Marketing Representative</SelectItem>
-                  <SelectItem value="lab_technician">Lab Technician</SelectItem>
-                  <SelectItem value="pathologist">Pathologist</SelectItem>
-                  <SelectItem value="pharmacist">Pharmacist</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="assistant_manager">Assistant Manager</SelectItem>
-                  <SelectItem value="front_desk">Front Desk</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <p className="text-xs text-center text-muted-foreground px-4">
+            By creating an account, you are registering as a patient. You can apply for other roles from your profile after logging in.
+        </p>
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? <Loader2 className="animate-spin" /> : "Create Account"}
         </Button>
