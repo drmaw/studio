@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState } from 'react';
@@ -22,26 +23,29 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type RecordFile = {
   id: string;
   name: string;
-  type: 'image' | 'pdf';
+  fileType: 'image' | 'pdf';
+  recordType: 'prescription' | 'report';
   url: string;
   date: string;
   size: string;
 };
 
 const initialRecords: RecordFile[] = [
-    { id: 'rec1', name: 'Blood Test Report.pdf', type: 'pdf', url: '#', date: '2024-06-15', size: '1.2 MB'},
-    { id: 'rec2', name: 'X-Ray Scan', type: 'image', url: 'https://picsum.photos/seed/xray/800/600', date: '2024-05-20', size: '2.5 MB'},
-    { id: 'rec3', name: 'Prescription_Dr_Anika.jpg', type: 'image', url: 'https://picsum.photos/seed/prescription/800/600', date: '2024-05-10', size: '800 KB' }
+    { id: 'rec1', name: 'Blood Test Report.pdf', fileType: 'pdf', recordType: 'report', url: '#', date: '2024-06-15', size: '1.2 MB'},
+    { id: 'rec2', name: 'X-Ray Scan', fileType: 'image', recordType: 'report', url: 'https://picsum.photos/seed/xray/800/600', date: '2024-05-20', size: '2.5 MB'},
+    { id: 'rec3', name: 'Prescription_Dr_Anika.jpg', fileType: 'image', recordType: 'prescription', url: 'https://picsum.photos/seed/prescription/800/600', date: '2024-05-10', size: '800 KB' }
 ];
 
 export default function MyHealthRecordsPage() {
     const { user } = useAuth();
     const [records, setRecords] = useState<RecordFile[]>(initialRecords);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [recordType, setRecordType] = useState<'prescription' | 'report' | ''>('');
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
 
@@ -73,6 +77,15 @@ export default function MyHealthRecordsPage() {
             return;
         }
 
+        if (!recordType) {
+            toast({
+                variant: 'destructive',
+                title: 'No record type selected',
+                description: 'Please select a record type (e.g., Prescription).',
+            });
+            return;
+        }
+
         setIsUploading(true);
         // Mock upload
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -80,7 +93,8 @@ export default function MyHealthRecordsPage() {
         const newRecord: RecordFile = {
             id: `rec-${Date.now()}`,
             name: selectedFile.name,
-            type: selectedFile.type.startsWith('image/') ? 'image' : 'pdf',
+            fileType: selectedFile.type.startsWith('image/') ? 'image' : 'pdf',
+            recordType: recordType,
             url: selectedFile.type.startsWith('image/') ? URL.createObjectURL(selectedFile) : '#',
             date: new Date().toISOString(), // Use ISO string for accurate sorting
             size: `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`,
@@ -104,6 +118,7 @@ export default function MyHealthRecordsPage() {
         });
         
         setSelectedFile(null);
+        setRecordType('');
         setIsUploading(false);
         toast({
             title: 'Upload successful',
@@ -137,9 +152,20 @@ export default function MyHealthRecordsPage() {
                     </CardTitle>
                     <CardDescription>You can upload photos (JPEG, PNG) or PDF files. PDFs are counted as a single report.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-                    <Input type="file" onChange={handleFileChange} disabled={isUploading} accept="image/jpeg,image/png,application/pdf" className="flex-1" />
-                    <Button onClick={handleUpload} disabled={isUploading || !selectedFile} className="w-full sm:w-auto">
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                         <Input type="file" onChange={handleFileChange} disabled={isUploading} accept="image/jpeg,image/png,application/pdf" />
+                         <Select value={recordType} onValueChange={(value) => setRecordType(value as 'prescription' | 'report')} disabled={isUploading}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select record type..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="prescription">Prescription</SelectItem>
+                                <SelectItem value="report">Medical Report</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <Button onClick={handleUpload} disabled={isUploading || !selectedFile || !recordType} className="w-full">
                         {isUploading ? (
                             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...</>
                         ) : (
@@ -171,7 +197,7 @@ export default function MyHealthRecordsPage() {
                         {recordsSorted.map(record => (
                             <Card key={record.id} className="group overflow-hidden">
                                 <CardContent className="p-0">
-                                    {record.type === 'image' ? (
+                                    {record.fileType === 'image' ? (
                                         <Image src={record.url} alt={record.name} width={400} height={300} className="w-full h-48 object-cover transition-transform group-hover:scale-105" />
                                     ) : (
                                         <div className="w-full h-48 bg-secondary flex flex-col items-center justify-center text-center p-4">
@@ -206,8 +232,9 @@ export default function MyHealthRecordsPage() {
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </div>
-                                    <div className="mt-2">
-                                        <Badge variant={record.type === 'pdf' ? 'destructive' : 'secondary'}>{record.type.toUpperCase()}</Badge>
+                                    <div className="mt-2 flex gap-2">
+                                        <Badge variant={record.fileType === 'pdf' ? 'destructive' : 'secondary'}>{record.fileType.toUpperCase()}</Badge>
+                                        <Badge variant="outline" className="capitalize">{record.recordType}</Badge>
                                     </div>
                                 </div>
                             </Card>
@@ -225,3 +252,5 @@ export default function MyHealthRecordsPage() {
         </div>
     );
 }
+
+    
