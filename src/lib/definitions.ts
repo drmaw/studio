@@ -62,4 +62,5 @@ export type Vitals = {
   pulse: number | null;
   weight: number | null;
   rbs: number | null;
+  sCreatinine: number | null;
 };

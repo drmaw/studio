@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
-import { PlusCircle, Loader2, HeartPulse, Droplet, Weight, Activity } from 'lucide-react';
+import { PlusCircle, Loader2, HeartPulse, Droplet, Weight, Activity, Beaker } from 'lucide-react';
 import type { Role, Vitals } from '@/lib/definitions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
@@ -37,6 +37,10 @@ const chartConfig = {
     label: "RBS",
     color: "hsl(var(--chart-4))",
   },
+  sCreatinine: {
+    label: "S.Creatinine",
+    color: "hsl(var(--chart-5))",
+  }
 };
 
 function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Vitals>) => void, submitting: boolean }) {
@@ -45,14 +49,16 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Vitals>) =>
   const [pulse, setPulse] = useState('');
   const [weight, setWeight] = useState('');
   const [rbs, setRbs] = useState('');
+  const [sCreatinine, setSCreatinine] = useState('');
 
   return (
     <Tabs defaultValue="rbs">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="rbs">RBS</TabsTrigger>
         <TabsTrigger value="bp">BP</TabsTrigger>
         <TabsTrigger value="pulse">Pulse</TabsTrigger>
         <TabsTrigger value="weight">Weight</TabsTrigger>
+        <TabsTrigger value="sCreatinine">S.Creatinine</TabsTrigger>
       </TabsList>
        <TabsContent value="rbs">
         <div className="flex gap-2 items-end">
@@ -79,6 +85,12 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Vitals>) =>
          <div className="flex gap-2 items-end">
           <Input className="flex-1" placeholder="Weight (kg)" value={weight} onChange={e => setWeight(e.target.value)} type="number" />
           <Button onClick={() => { onAdd({ weight: parseFloat(weight) }); setWeight(''); }} disabled={submitting || !weight}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+        </div>
+      </TabsContent>
+      <TabsContent value="sCreatinine">
+         <div className="flex gap-2 items-end">
+          <Input className="flex-1" placeholder="S.Creatinine (mg/dL)" value={sCreatinine} onChange={e => setSCreatinine(e.target.value)} type="number" />
+          <Button onClick={() => { onAdd({ sCreatinine: parseFloat(sCreatinine) }); setSCreatinine(''); }} disabled={submitting || !sCreatinine}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
         </div>
       </TabsContent>
     </Tabs>
@@ -109,6 +121,7 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
       pulse: newVitalData.pulse ?? null,
       weight: newVitalData.weight ?? null,
       rbs: newVitalData.rbs ?? null,
+      sCreatinine: newVitalData.sCreatinine ?? null,
     };
     
     setVitals(prev => [newVital, ...prev]);
@@ -121,7 +134,7 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
     setIsSubmitting(false);
   };
   
-  const renderChart = (dataKey: "bpSystolic" | "pulse" | "weight" | "rbs", label: string, color: string) => (
+  const renderChart = (dataKey: "bpSystolic" | "pulse" | "weight" | "rbs" | "sCreatinine", label: string, color: string) => (
       <ResponsiveContainer width="100%" height={250}>
         <LineChart
           data={formattedData.slice().reverse()}
@@ -129,7 +142,7 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
-          <YAxis domain={['dataMin - 5', 'dataMax + 5']} />
+          <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} />
           <Tooltip
             contentStyle={{
                 backgroundColor: 'hsl(var(--background))',
@@ -156,16 +169,18 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
       </CardHeader>
       <CardContent className="space-y-6">
         <Tabs defaultValue="rbs">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="rbs"><Droplet className="mr-2 h-4 w-4 hidden sm:inline" />RBS</TabsTrigger>
             <TabsTrigger value="bp"><HeartPulse className="mr-2 h-4 w-4 hidden sm:inline" />BP</TabsTrigger>
             <TabsTrigger value="pulse"><Activity className="mr-2 h-4 w-4 hidden sm:inline" />Pulse</TabsTrigger>
             <TabsTrigger value="weight"><Weight className="mr-2 h-4 w-4 hidden sm:inline" />Weight</TabsTrigger>
+            <TabsTrigger value="sCreatinine"><Beaker className="mr-2 h-4 w-4 hidden sm:inline" />S.Creatinine</TabsTrigger>
           </TabsList>
           <TabsContent value="rbs" className="mt-4">{renderChart('rbs', "RBS (mmol/L)", chartConfig.rbs.color)}</TabsContent>
           <TabsContent value="bp" className="mt-4">{renderChart('bpSystolic', "Systolic BP", chartConfig.bp.color)}</TabsContent>
           <TabsContent value="pulse" className="mt-4">{renderChart('pulse', "Pulse (bpm)", chartConfig.pulse.color)}</TabsContent>
           <TabsContent value="weight" className="mt-4">{renderChart('weight', "Weight (kg)", chartConfig.weight.color)}</TabsContent>
+          <TabsContent value="sCreatinine" className="mt-4">{renderChart('sCreatinine', "S.Creatinine (mg/dL)", chartConfig.sCreatinine.color)}</TabsContent>
         </Tabs>
         
         {currentUserRole === 'patient' && (
@@ -192,6 +207,7 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
                             <TableHead>Pulse</TableHead>
                             <TableHead>Weight</TableHead>
                             <TableHead>RBS</TableHead>
+                            <TableHead>S.Creatinine</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -202,6 +218,7 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
                                 <TableCell>{v.pulse ?? 'N/A'}</TableCell>
                                 <TableCell>{v.weight ?? 'N/A'}</TableCell>
                                 <TableCell>{v.rbs ?? 'N/A'}</TableCell>
+                                <TableCell>{v.sCreatinine ?? 'N/A'}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
