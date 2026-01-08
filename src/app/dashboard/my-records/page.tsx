@@ -1,12 +1,11 @@
 
-
 'use client'
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, File, Trash2, Loader2, Image as ImageIcon, Sparkles, User, Clock } from 'lucide-react';
+import { UploadCloud, File, Trash2, Loader2, Image as ImageIcon, Sparkles, User, Clock, MoreHorizontal, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -23,10 +22,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { RecordViewer } from '@/components/dashboard/record-viewer';
 import type { RecordFile } from '@/lib/definitions';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
+
 
 const initialRecords: RecordFile[] = [
     { id: 'rec1', name: 'Blood Test Report.pdf', fileType: 'pdf', recordType: 'report', url: '#', date: '2024-06-15T10:30:00.000Z', size: '1.2 MB', uploadedBy: 'Lab Assistant' },
@@ -60,6 +69,7 @@ export default function MyHealthRecordsPage() {
     const { toast } = useToast();
     const [viewerOpen, setViewerOpen] = useState(false);
     const [viewerStartIndex, setViewerStartIndex] = useState(0);
+    const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
 
     const MAX_RECORDS_STANDARD = 10;
     const MAX_RECORDS_PREMIUM = 40;
@@ -141,13 +151,47 @@ export default function MyHealthRecordsPage() {
 
     const handleDelete = (id: string) => {
         setRecords(prev => prev.filter(r => r.id !== id));
+        setSelectedRecords(prev => prev.filter(selectedId => selectedId !== id));
         toast({
             title: 'Record deleted',
             description: 'The selected health record has been removed.',
         })
     }
 
+    const handleDeleteSelected = () => {
+        setRecords(prev => prev.filter(r => !selectedRecords.includes(r.id)));
+        toast({
+            title: `${selectedRecords.length} records deleted`,
+            description: 'The selected health records have been removed.',
+        });
+        setSelectedRecords([]);
+    };
+
+    const handleDownloadSelected = () => {
+        // This is a mock download. In a real app, you'd generate a zip or similar.
+        toast({
+            title: `Downloading ${selectedRecords.length} records...`,
+            description: 'Your download will start shortly.',
+        });
+        setSelectedRecords([]);
+    };
+    
+    const toggleRecordSelection = (id: string) => {
+        setSelectedRecords(prev => 
+            prev.includes(id) ? prev.filter(recordId => recordId !== id) : [...prev, id]
+        );
+    };
+    
+    const toggleSelectAll = () => {
+        if (selectedRecords.length === records.length) {
+            setSelectedRecords([]);
+        } else {
+            setSelectedRecords(records.map(r => r.id));
+        }
+    };
+
     const openRecordViewer = (index: number) => {
+        if (selectedRecords.length > 0) return;
         setViewerStartIndex(index);
         setViewerOpen(true);
     }
@@ -216,11 +260,74 @@ export default function MyHealthRecordsPage() {
                 </Card>
 
                 <div className="space-y-4">
-                    <h2 className="text-2xl font-bold">Your Documents</h2>
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-2xl font-bold">Your Documents</h2>
+                        {selectedRecords.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-muted-foreground">
+                                    {selectedRecords.length} selected
+                                </span>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Actions</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={handleDownloadSelected}>
+                                            <Download className="mr-2 h-4 w-4" />
+                                            Download selected
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete selected
+                                                </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This action cannot be undone. This will permanently delete {selectedRecords.length} record(s).
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleDeleteSelected}>Delete</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        )}
+                    </div>
+                     <div className="flex items-center space-x-2 pb-2">
+                        <Checkbox 
+                            id="select-all"
+                            checked={selectedRecords.length === records.length && records.length > 0}
+                            onCheckedChange={toggleSelectAll}
+                            aria-label="Select all"
+                        />
+                        <label htmlFor="select-all" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            Select All
+                        </label>
+                    </div>
+
                     {records.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {recordsSorted.map((record, index) => (
-                                <Card key={record.id} className="group overflow-hidden flex flex-col">
+                                <Card key={record.id} className={cn("group overflow-hidden flex flex-col relative", selectedRecords.includes(record.id) && "ring-2 ring-primary")}>
+                                     <div className="absolute top-2 left-2 z-10">
+                                        <Checkbox 
+                                            checked={selectedRecords.includes(record.id)}
+                                            onCheckedChange={() => toggleRecordSelection(record.id)}
+                                            className="bg-background/50 hover:bg-background data-[state=checked]:bg-primary"
+                                        />
+                                    </div>
                                     <CardContent className="p-0 cursor-pointer" onClick={() => openRecordViewer(index)}>
                                         {record.fileType === 'image' ? (
                                             <Image src={record.url} alt={record.name} width={400} height={300} className="w-full h-48 object-cover transition-transform group-hover:scale-105" />
@@ -286,4 +393,5 @@ export default function MyHealthRecordsPage() {
             </div>
         </>
     );
-}
+
+    
