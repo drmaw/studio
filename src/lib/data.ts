@@ -112,7 +112,10 @@ export const patients: Patient[] = [
       chronicConditions: [],
       allergies: ['Shellfish']
     },
-    redFlag: 'Patient has a severe allergy to shellfish. Anaphylaxis risk.'
+    redFlag: {
+      title: 'Severe Shellfish Allergy',
+      comment: 'Patient has a history of anaphylaxis in response to shellfish. Epinephrine auto-injector must be available if any seafood is administered.'
+    }
   }
 ];
 

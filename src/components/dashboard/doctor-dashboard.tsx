@@ -69,9 +69,9 @@ function PatientSearchResultCard({ patient }: { patient: Patient }) {
         {patient.redFlag && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Red Flag</AlertTitle>
+            <AlertTitle>{patient.redFlag.title}</AlertTitle>
             <AlertDescription className="space-y-2">
-              <p>{patient.redFlag}</p>
+              <p>{patient.redFlag.comment}</p>
               <Textarea placeholder="Add a note for this alert..." defaultValue="" />
             </AlertDescription>
           </Alert>

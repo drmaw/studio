@@ -11,6 +11,9 @@ import { Cake, Home, Phone, User as UserIcon } from "lucide-react";
 import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VitalsTracker } from "@/components/dashboard/vitals-tracker";
+import { RedBanner } from "@/components/dashboard/red-banner";
+import { vitalsHistory } from "@/lib/data";
+
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
   const { user, loading, hasRole, activeRole } = useAuth();
@@ -68,6 +71,14 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
         </CardContent>
       </Card>
       
+      {patient.redFlag && (
+        <RedBanner 
+          patientId={patient.id}
+          initialRedFlag={patient.redFlag}
+          currentUserRole={activeRole!}
+        />
+      )}
+
       <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} />
 
       <div>

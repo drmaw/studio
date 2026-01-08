@@ -38,7 +38,10 @@ export type Patient = {
     chronicConditions?: string[];
     allergies?: string[];
   };
-  redFlag?: string;
+  redFlag?: {
+    title: string;
+    comment: string;
+  };
 };
 
 export type MedicalRecord = {
