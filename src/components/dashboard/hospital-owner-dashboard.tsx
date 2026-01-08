@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "../ui/button";
-import { Users, Activity, Settings, PlusCircle } from "lucide-react";
+import { Users, Activity, Settings } from "lucide-react";
 import Link from "next/link";
 
 export function HospitalOwnerDashboard({ user }: { user: User }) {
@@ -23,27 +23,7 @@ export function HospitalOwnerDashboard({ user }: { user: User }) {
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Staff Management
-            </CardTitle>
-            <CardDescription>
-              Onboard new doctors, nurses, and manage existing staff.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button className="w-full" asChild>
-              <Link href="/dashboard/settings">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Manage Staff
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
