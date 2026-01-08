@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { StaffManagementTab } from "@/components/dashboard/settings/staff-management-tab";
 import { BillingFeesTab } from "@/components/dashboard/settings/billing-fees-tab";
 import { DoctorSchedulesTab } from "@/components/dashboard/settings/doctor-schedules-tab";
+import { FacilityManagementTab } from "@/components/dashboard/settings/facility-management-tab";
 
 export default function HospitalSettingsPage() {
     return (
@@ -12,10 +13,11 @@ export default function HospitalSettingsPage() {
                 <p className="text-muted-foreground">Manage your organization's staff, services, and schedules.</p>
             </div>
             <Tabs defaultValue="staff">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="staff">Staff Management</TabsTrigger>
                     <TabsTrigger value="billing">Billing & Fees</TabsTrigger>
                     <TabsTrigger value="schedules">Doctor Schedules</TabsTrigger>
+                    <TabsTrigger value="facilities">Facility Management</TabsTrigger>
                 </TabsList>
                 <TabsContent value="staff">
                     <Card>
@@ -47,6 +49,17 @@ export default function HospitalSettingsPage() {
                         </CardHeader>
                         <CardContent>
                            <DoctorSchedulesTab />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="facilities">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Facility Management</CardTitle>
+                            <CardDescription>Manage your hospital's wards, cabins, beds, and their costs.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <FacilityManagementTab />
                         </CardContent>
                     </Card>
                 </TabsContent>
