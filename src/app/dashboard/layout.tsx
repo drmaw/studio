@@ -9,14 +9,16 @@ import {
   SidebarTrigger,
   SidebarInset,
   useSidebar,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Stethoscope, X } from "lucide-react";
+import { LogOut, Stethoscope, X } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 function SidebarCloseButton() {
   const { toggleSidebar } = useSidebar();
@@ -28,13 +30,27 @@ function SidebarCloseButton() {
   )
 }
 
+function LogoutButton() {
+    const router = useRouter();
+    const handleLogout = () => {
+        localStorage.removeItem("digi-health-user-id");
+        router.push('/');
+    };
+    return (
+        <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-red-500 hover:bg-red-500/10 hover:text-red-500">
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+        </Button>
+    )
+}
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
-
+  
   if (loading) {
      return (
       <div className="flex h-screen w-full">
@@ -63,6 +79,9 @@ export default function DashboardLayout({
           <SidebarContent>
             <SidebarNav />
           </SidebarContent>
+          <SidebarFooter>
+            <LogoutButton />
+          </SidebarFooter>
         </Sidebar>
         <SidebarInset>
           <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">

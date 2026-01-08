@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { HealthIdCard } from "@/components/health-id-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 function ApplyForRoleCard() {
@@ -88,6 +89,8 @@ const ProfileEditRow = ({ label, name, value, onChange, placeholder }: { label: 
 }
 
 const availableConditions = ['Asthma', 'Diabetes', 'Hypertension', 'CKD'];
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
@@ -136,6 +139,10 @@ export default function ProfilePage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  }
+
+  const handleSelectChange = (name: keyof UserDemographics) => (value: string) => {
+    setFormData(prev => ({...prev, [name]: value }));
   }
 
   const handleAddAllergy = () => {
@@ -227,7 +234,19 @@ export default function ProfilePage() {
                                     <ProfileEditRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleInputChange} />
                                     <ProfileEditRow label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleInputChange} />
                                     <ProfileEditRow label="NID" name="nid" value={formData.nid} onChange={handleInputChange} />
-                                    <ProfileEditRow label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} />
+                                     <div className="space-y-1">
+                                        <Label className="text-sm text-muted-foreground">Blood Group</Label>
+                                        <Select value={formData.bloodGroup} onValueChange={handleSelectChange('bloodGroup')}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select blood group..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {bloodGroups.map(group => (
+                                                    <SelectItem key={group} value={group}>{group}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     <div className="md:col-span-2">
                                         <ProfileEditRow label="Present Address" name="presentAddress" value={formData.presentAddress} onChange={handleInputChange} />
                                     </div>
@@ -340,14 +359,8 @@ export default function ProfilePage() {
                         )}
                     </CardContent>
 
-                    <CardFooter className={cn("bg-muted/50 p-4 border-t flex", isEditing ? "justify-end" : "justify-between")}>
-                        {!isEditing && (
-                            <Button onClick={handleLogout} variant="destructive">
-                                <LogOut className="mr-2 h-4 w-4" />
-                                Logout
-                            </Button>
-                        )}
-                        {isEditing && (
+                    {isEditing && (
+                        <CardFooter className="bg-muted/50 p-4 border-t flex justify-end">
                             <div className="flex gap-2">
                                 <Button onClick={handleCancel} variant="outline">
                                     <XCircle className="mr-2 h-4 w-4" />
@@ -358,8 +371,8 @@ export default function ProfilePage() {
                                     Save Changes
                                 </Button>
                             </div>
-                        )}
-                    </CardFooter>
+                        </CardFooter>
+                    )}
                 </Card>
                 {isOnlyPatient && <ApplyForRoleCard />}
             </div>
