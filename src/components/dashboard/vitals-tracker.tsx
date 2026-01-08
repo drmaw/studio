@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState } from 'react'
@@ -46,13 +47,19 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Vitals>) =>
   const [rbs, setRbs] = useState('');
 
   return (
-    <Tabs defaultValue="bp">
+    <Tabs defaultValue="rbs">
       <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="rbs">RBS</TabsTrigger>
         <TabsTrigger value="bp">BP</TabsTrigger>
         <TabsTrigger value="pulse">Pulse</TabsTrigger>
         <TabsTrigger value="weight">Weight</TabsTrigger>
-        <TabsTrigger value="rbs">RBS</TabsTrigger>
       </TabsList>
+       <TabsContent value="rbs">
+        <div className="flex gap-2 items-end">
+          <Input className="flex-1" placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
+          <Button onClick={() => { onAdd({ rbs: parseFloat(rbs) }); setRbs(''); }} disabled={submitting || !rbs}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+        </div>
+      </TabsContent>
       <TabsContent value="bp">
         <div className="flex gap-2 items-end">
           <div className="grid grid-cols-2 gap-2 flex-1">
@@ -72,12 +79,6 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Vitals>) =>
          <div className="flex gap-2 items-end">
           <Input className="flex-1" placeholder="Weight (kg)" value={weight} onChange={e => setWeight(e.target.value)} type="number" />
           <Button onClick={() => { onAdd({ weight: parseFloat(weight) }); setWeight(''); }} disabled={submitting || !weight}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-        </div>
-      </TabsContent>
-      <TabsContent value="rbs">
-        <div className="flex gap-2 items-end">
-          <Input className="flex-1" placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
-          <Button onClick={() => { onAdd({ rbs: parseFloat(rbs) }); setRbs(''); }} disabled={submitting || !rbs}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
         </div>
       </TabsContent>
     </Tabs>
@@ -154,17 +155,17 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Tabs defaultValue="bp">
+        <Tabs defaultValue="rbs">
           <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="rbs"><Droplet className="mr-2 h-4 w-4 hidden sm:inline" />RBS</TabsTrigger>
             <TabsTrigger value="bp"><HeartPulse className="mr-2 h-4 w-4 hidden sm:inline" />BP</TabsTrigger>
             <TabsTrigger value="pulse"><Activity className="mr-2 h-4 w-4 hidden sm:inline" />Pulse</TabsTrigger>
             <TabsTrigger value="weight"><Weight className="mr-2 h-4 w-4 hidden sm:inline" />Weight</TabsTrigger>
-            <TabsTrigger value="rbs"><Droplet className="mr-2 h-4 w-4 hidden sm:inline" />RBS</TabsTrigger>
           </TabsList>
+          <TabsContent value="rbs" className="mt-4">{renderChart('rbs', "RBS (mmol/L)", chartConfig.rbs.color)}</TabsContent>
           <TabsContent value="bp" className="mt-4">{renderChart('bpSystolic', "Systolic BP", chartConfig.bp.color)}</TabsContent>
           <TabsContent value="pulse" className="mt-4">{renderChart('pulse', "Pulse (bpm)", chartConfig.pulse.color)}</TabsContent>
           <TabsContent value="weight" className="mt-4">{renderChart('weight', "Weight (kg)", chartConfig.weight.color)}</TabsContent>
-          <TabsContent value="rbs" className="mt-4">{renderChart('rbs', "RBS (mmol/L)", chartConfig.rbs.color)}</TabsContent>
         </Tabs>
         
         {currentUserRole === 'patient' && (
