@@ -3,11 +3,66 @@
 import type { User, Patient, MedicalRecord, Vitals } from '@/lib/definitions';
 
 export const users: User[] = [
-  { id: 'user-doc-1', name: 'Dr. Anika Rahman', email: 'doctor@digihealth.com', roles: ['doctor', 'patient'], avatarUrl: 'https://picsum.photos/seed/doc1/100/100' },
-  { id: 'user-pat-1', name: 'Karim Ahmed', email: 'patient@digihealth.com', roles: ['patient'], avatarUrl: 'https://picsum.photos/seed/pat1/100/100' },
-  { id: 'user-rep-1', name: 'Salma Khan', email: 'rep@digihealth.com', roles: ['marketing_rep', 'patient'], avatarUrl: 'https://picsum.photos/seed/rep1/100/100' },
-  { id: 'user-doc-2', name: 'Dr. Farid Uddin', email: 'doctor2@digihealth.com', roles: ['doctor', 'patient'], avatarUrl: 'https://picsum.photos/seed/doc2/100/100' },
-  { id: 'user-owner-1', name: 'Admin Owner', email: 'owner@digihealth.com', roles: ['hospital_owner', 'patient'], avatarUrl: 'https://picsum.photos/seed/owner1/100/100' }
+  { 
+    id: 'user-doc-1', 
+    name: 'Dr. Anika Rahman', 
+    email: 'doctor@digihealth.com', 
+    roles: ['doctor', 'patient'], 
+    avatarUrl: 'https://picsum.photos/seed/doc1/100/100',
+    demographics: {
+      dob: '1982-08-12T00:00:00.000Z',
+      gender: 'Female',
+      contact: '+8801711223344',
+      fatherName: "Mr. Doctor Father",
+      motherName: "Mrs. Doctor Mother",
+      nid: "19821234567890123",
+      bloodGroup: 'O+',
+      presentAddress: "123 Health St, Medical Road, Dhaka, Bangladesh",
+      permanentAddress: "456 Village Rd, Health District, Country",
+    }
+  },
+  { 
+    id: 'user-pat-1', 
+    name: 'Karim Ahmed', 
+    email: 'patient@digihealth.com', 
+    roles: ['patient'], 
+    avatarUrl: 'https://picsum.photos/seed/pat1/100/100',
+    demographics: {
+      dob: '1990-05-20T00:00:00.000Z',
+      gender: 'Male',
+      contact: '+8801712345678',
+      fatherName: "Mr. Patient Father",
+      motherName: "Mrs. Patient Mother",
+      nid: "19901234567890123",
+      bloodGroup: 'A+',
+      presentAddress: "789 Patient Ave, Wellness City, Dhaka",
+      permanentAddress: "101 Native Town, Home District, Country",
+    }
+  },
+  { 
+    id: 'user-rep-1', 
+    name: 'Salma Khan', 
+    email: 'rep@digihealth.com', 
+    roles: ['marketing_rep', 'patient'], 
+    avatarUrl: 'https://picsum.photos/seed/rep1/100/100',
+    demographics: { dob: '1995-02-10T00:00:00.000Z', gender: 'Female' }
+  },
+  { 
+    id: 'user-doc-2', 
+    name: 'Dr. Farid Uddin', 
+    email: 'doctor2@digihealth.com', 
+    roles: ['doctor', 'patient'], 
+    avatarUrl: 'https://picsum.photos/seed/doc2/100/100',
+    demographics: { dob: '1975-11-30T00:00:00.000Z', gender: 'Male' }
+  },
+  { 
+    id: 'user-owner-1', 
+    name: 'Admin Owner', 
+    email: 'owner@digihealth.com', 
+    roles: ['hospital_owner', 'patient'], 
+    avatarUrl: 'https://picsum.photos/seed/owner1/100/100',
+    demographics: { dob: '1970-01-01T00:00:00.000Z', gender: 'Male' }
+  }
 ];
 
 export const patients: Patient[] = [

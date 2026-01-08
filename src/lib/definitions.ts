@@ -2,12 +2,25 @@
 
 export type Role = 'doctor' | 'patient' | 'marketing_rep' | 'nurse' | 'hospital_owner' | 'lab_technician' | 'pathologist' | 'pharmacist' | 'manager' | 'assistant_manager' | 'front_desk';
 
+export type UserDemographics = {
+  dob?: string; // ISO 8601 string
+  gender?: 'Male' | 'Female' | 'Other';
+  contact?: string;
+  fatherName?: string;
+  motherName?: string;
+  nid?: string;
+  bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
+  presentAddress?: string;
+  permanentAddress?: string;
+};
+
 export type User = {
   id: string;
   name: string;
   email: string;
   roles: Role[];
   avatarUrl: string;
+  demographics?: UserDemographics;
 };
 
 export type Patient = {
