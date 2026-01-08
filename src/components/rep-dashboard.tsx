@@ -32,5 +32,3 @@ export function RepDashboard({ user }: { user: User }) {
     </div>
   );
 }
-
-    

@@ -95,5 +95,3 @@ export function PatientDashboard({ user }: { user: User }) {
     </div>
   );
 }
-
-    

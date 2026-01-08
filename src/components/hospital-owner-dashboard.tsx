@@ -62,5 +62,3 @@ export function HospitalOwnerDashboard({ user }: { user: User }) {
     </div>
   );
 }
-
-    

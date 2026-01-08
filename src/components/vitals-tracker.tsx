@@ -229,5 +229,3 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
     </Card>
   )
 }
-
-    

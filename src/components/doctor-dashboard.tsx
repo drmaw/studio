@@ -232,5 +232,3 @@ export function DoctorDashboard({ user }: { user: User }) {
     </div>
   );
 }
-
-    

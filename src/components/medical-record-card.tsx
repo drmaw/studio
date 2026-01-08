@@ -34,5 +34,3 @@ export function MedicalRecordCard({ record, currentUserRole }: MedicalRecordCard
     </Card>
   );
 }
-
-    
