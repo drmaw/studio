@@ -6,7 +6,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -27,6 +27,11 @@ export function SidebarNav() {
       label: "Profile",
       icon: UserIcon,
     },
+    {
+      href: "/dashboard/my-records",
+      label: "My Health Records",
+      icon: FileHeart,
+    }
   ];
 
   return (
@@ -34,7 +39,7 @@ export function SidebarNav() {
       {menuItems.map((item) => (
         <SidebarMenuItem key={item.label}>
           <Link href={item.href} passHref>
-            <SidebarMenuButton asChild isActive={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')}>
+            <SidebarMenuButton asChild isActive={pathname === item.href}>
               <a>
                 <item.icon />
                 <span>{item.label}</span>
