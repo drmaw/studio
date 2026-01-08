@@ -194,174 +194,176 @@ export default function ProfilePage() {
   const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd MMMM, yyyy') : 'N/A';
 
   return (
-    <div className="flex justify-center">
-      <div className="w-full max-w-2xl space-y-6">
+    <div className="space-y-6">
         <HealthIdCard user={user} />
-        <Card>
-            <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="text-xl">Personal & Medical Details</CardTitle>
-                    <CardDescription className="text-sm pt-1">
-                        Your personal information, demographics, and health conditions.
-                    </CardDescription>
-                  </div>
-                   {!isEditing && (
-                    <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Profile
-                    </Button>
-                )}
-                </div>
-            </CardHeader>
-            <Separator />
-            <CardContent className="pt-6 space-y-6">
-                {isEditing ? (
-                    <>
-                        <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <ProfileEditRow label="Mobile Number" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} />
-                            <ProfileEditRow label="Date of Birth (YYYY-MM-DD)" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="YYYY-MM-DD" />
-                            <ProfileEditRow label="Gender" name="gender" value={formData.gender} onChange={handleInputChange} />
-                            <ProfileEditRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleInputChange} />
-                            <ProfileEditRow label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleInputChange} />
-                            <ProfileEditRow label="NID" name="nid" value={formData.nid} onChange={handleInputChange} />
-                            <ProfileEditRow label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} />
-                            <div className="md:col-span-2">
-                                <ProfileEditRow label="Present Address" name="presentAddress" value={formData.presentAddress} onChange={handleInputChange} />
-                            </div>
-                            <div className="md:col-span-2">
-                                <ProfileEditRow label="Permanent Address" name="permanentAddress" value={formData.permanentAddress} onChange={handleInputChange} />
-                            </div>
+        <div className="flex justify-center">
+            <div className="w-full max-w-2xl space-y-6">
+                <Card>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle className="text-xl">Personal & Medical Details</CardTitle>
+                            <CardDescription className="text-sm pt-1">
+                                Your personal information, demographics, and health conditions.
+                            </CardDescription>
                         </div>
-                        <Separator />
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold border-b pb-2">Medical Information</h3>
-                            <div className="space-y-2">
-                                <Label htmlFor="conditions" className="text-base">Chronic Conditions</Label>
-                                <p className="text-sm text-muted-foreground">Select one or more conditions.</p>
-                                <div className="flex flex-wrap gap-2 pt-2">
-                                    {availableConditions.map(condition => {
-                                        const isSelected = formData.chronicConditions?.includes(condition);
-                                        return (
-                                            <Badge
-                                                key={condition}
-                                                variant={isSelected ? "default" : "outline"}
-                                                onClick={() => handleToggleCondition(condition)}
-                                                className="cursor-pointer text-base py-1 px-3 transition-all"
-                                            >
-                                                {condition}
-                                            </Badge>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="allergies" className="text-base">Allergies</Label>
-                                <div className="flex gap-2">
-                                    <Input 
-                                        id="allergies" 
-                                        placeholder="e.g., Penicillin" 
-                                        value={allergyInput} 
-                                        onChange={(e) => setAllergyInput(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAllergy())}
-                                    />
-                                    <Button type="button" onClick={handleAddAllergy}><Plus className="mr-2 h-4 w-4" /> Add</Button>
-                                </div>
-                                <div className="flex flex-wrap gap-2 pt-2">
-                                    {formData.allergies?.map(allergy => (
-                                        <Badge key={allergy} variant="destructive" className="pr-1 capitalize bg-destructive/10 text-destructive-foreground border-destructive/20">
-                                            {allergy}
-                                            <button onClick={() => handleRemoveAllergy(allergy)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 text-destructive">
-                                                <X className="h-3 w-3" />
-                                            </button>
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
+                        {!isEditing && (
+                            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Profile
+                            </Button>
+                        )}
                         </div>
-                    </>
-                ) : (
-                  <>
-                    <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                        <ProfileInfoRow icon={Phone} label="Mobile Number" value={formData.mobileNumber} />
-                        <div className="flex items-start gap-3">
-                            <Cake className="h-4 w-4 mt-1 text-muted-foreground" />
-                            <div className="flex-1">
-                                <p className="text-sm text-muted-foreground">Date of Birth</p>
-                                <p className="font-medium">
-                                    {displayDob}
-                                    {age !== null && <span className="text-sm text-muted-foreground"> (Age: {age})</span>}
-                                </p>
-                            </div>
-                        </div>
-                        <ProfileInfoRow icon={Users} label="Gender" value={formData.gender} />
-                        <ProfileInfoRow icon={User} label="Father's Name" value={formData.fatherName} />
-                        <ProfileInfoRow icon={User} label="Mother's Name" value={formData.motherName} />
-                        <ProfileInfoRow icon={Fingerprint} label="NID" value={formData.nid} />
-                        <ProfileInfoRow icon={Droplet} label="Blood Group" value={formData.bloodGroup} />
-
-                        <div className="md:col-span-2">
-                        <ProfileInfoRow icon={MapPin} label="Present Address" value={formData.presentAddress} />
-                        </div>
-                        <div className="md:col-span-2">
-                        <ProfileInfoRow icon={MapPin} label="Permanent Address" value={formData.permanentAddress} />
-                        </div>
-                    </div>
+                    </CardHeader>
                     <Separator />
-                    <h3 className="text-lg font-semibold border-b pb-2">Medical Information</h3>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                         <ProfileInfoRow icon={HeartPulse} label="Chronic Conditions">
-                             {formData.chronicConditions && formData.chronicConditions.length > 0 ? (
-                                <div className="flex flex-wrap gap-2 pt-1">
-                                    {formData.chronicConditions.map(c => (
-                                        <Badge key={c} variant="outline" className="capitalize">
-                                            {c}
-                                        </Badge>
-                                    ))}
+                    <CardContent className="pt-6 space-y-6">
+                        {isEditing ? (
+                            <>
+                                <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <ProfileEditRow label="Mobile Number" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} />
+                                    <ProfileEditRow label="Date of Birth (YYYY-MM-DD)" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="YYYY-MM-DD" />
+                                    <ProfileEditRow label="Gender" name="gender" value={formData.gender} onChange={handleInputChange} />
+                                    <ProfileEditRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleInputChange} />
+                                    <ProfileEditRow label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleInputChange} />
+                                    <ProfileEditRow label="NID" name="nid" value={formData.nid} onChange={handleInputChange} />
+                                    <ProfileEditRow label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} />
+                                    <div className="md:col-span-2">
+                                        <ProfileEditRow label="Present Address" name="presentAddress" value={formData.presentAddress} onChange={handleInputChange} />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <ProfileEditRow label="Permanent Address" name="permanentAddress" value={formData.permanentAddress} onChange={handleInputChange} />
+                                    </div>
                                 </div>
-                            ) : <p className="font-medium text-muted-foreground/80">None reported</p>}
-                        </ProfileInfoRow>
-                        <ProfileInfoRow icon={Siren} label="Allergies">
-                             {formData.allergies && formData.allergies.length > 0 ? (
-                                <div className="flex flex-wrap gap-2 pt-1">
-                                    {formData.allergies.map(allergy => (
-                                        <Badge key={allergy} variant="destructive" className="pr-1 capitalize bg-destructive/10 text-destructive-foreground border-destructive/20">
-                                            {allergy}
-                                        </Badge>
-                                    ))}
+                                <Separator />
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold border-b pb-2">Medical Information</h3>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="conditions" className="text-base">Chronic Conditions</Label>
+                                        <p className="text-sm text-muted-foreground">Select one or more conditions.</p>
+                                        <div className="flex flex-wrap gap-2 pt-2">
+                                            {availableConditions.map(condition => {
+                                                const isSelected = formData.chronicConditions?.includes(condition);
+                                                return (
+                                                    <Badge
+                                                        key={condition}
+                                                        variant={isSelected ? "default" : "outline"}
+                                                        onClick={() => handleToggleCondition(condition)}
+                                                        className="cursor-pointer text-base py-1 px-3 transition-all"
+                                                    >
+                                                        {condition}
+                                                    </Badge>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="allergies" className="text-base">Allergies</Label>
+                                        <div className="flex gap-2">
+                                            <Input 
+                                                id="allergies" 
+                                                placeholder="e.g., Penicillin" 
+                                                value={allergyInput} 
+                                                onChange={(e) => setAllergyInput(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAllergy())}
+                                            />
+                                            <Button type="button" onClick={handleAddAllergy}><Plus className="mr-2 h-4 w-4" /> Add</Button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 pt-2">
+                                            {formData.allergies?.map(allergy => (
+                                                <Badge key={allergy} variant="destructive" className="pr-1 capitalize bg-destructive/10 text-destructive-foreground border-destructive/20">
+                                                    {allergy}
+                                                    <button onClick={() => handleRemoveAllergy(allergy)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 text-destructive">
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                            ) : <p className="font-medium text-muted-foreground/80">None reported</p>}
-                        </ProfileInfoRow>
-                     </div>
-                  </>
-                )}
-            </CardContent>
+                            </>
+                        ) : (
+                        <>
+                            <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                <ProfileInfoRow icon={Phone} label="Mobile Number" value={formData.mobileNumber} />
+                                <div className="flex items-start gap-3">
+                                    <Cake className="h-4 w-4 mt-1 text-muted-foreground" />
+                                    <div className="flex-1">
+                                        <p className="text-sm text-muted-foreground">Date of Birth</p>
+                                        <p className="font-medium">
+                                            {displayDob}
+                                            {age !== null && <span className="text-sm text-muted-foreground"> (Age: {age})</span>}
+                                        </p>
+                                    </div>
+                                </div>
+                                <ProfileInfoRow icon={Users} label="Gender" value={formData.gender} />
+                                <ProfileInfoRow icon={User} label="Father's Name" value={formData.fatherName} />
+                                <ProfileInfoRow icon={User} label="Mother's Name" value={formData.motherName} />
+                                <ProfileInfoRow icon={Fingerprint} label="NID" value={formData.nid} />
+                                <ProfileInfoRow icon={Droplet} label="Blood Group" value={formData.bloodGroup} />
 
-            <CardFooter className={cn("bg-muted/50 p-4 border-t flex", isEditing ? "justify-end" : "justify-between")}>
-                 {!isEditing && (
-                    <Button onClick={handleLogout} variant="destructive">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                    </Button>
-                )}
-                {isEditing && (
-                    <div className="flex gap-2">
-                        <Button onClick={handleCancel} variant="outline">
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Cancel
-                        </Button>
-                        <Button onClick={handleSave}>
-                            <Save className="mr-2 h-4 w-4" />
-                            Save Changes
-                        </Button>
-                    </div>
-                )}
-            </CardFooter>
-        </Card>
-        {isOnlyPatient && <ApplyForRoleCard />}
-      </div>
+                                <div className="md:col-span-2">
+                                <ProfileInfoRow icon={MapPin} label="Present Address" value={formData.presentAddress} />
+                                </div>
+                                <div className="md:col-span-2">
+                                <ProfileInfoRow icon={MapPin} label="Permanent Address" value={formData.permanentAddress} />
+                                </div>
+                            </div>
+                            <Separator />
+                            <h3 className="text-lg font-semibold border-b pb-2">Medical Information</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                <ProfileInfoRow icon={HeartPulse} label="Chronic Conditions">
+                                    {formData.chronicConditions && formData.chronicConditions.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2 pt-1">
+                                            {formData.chronicConditions.map(c => (
+                                                <Badge key={c} variant="outline" className="capitalize">
+                                                    {c}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    ) : <p className="font-medium text-muted-foreground/80">None reported</p>}
+                                </ProfileInfoRow>
+                                <ProfileInfoRow icon={Siren} label="Allergies">
+                                    {formData.allergies && formData.allergies.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2 pt-1">
+                                            {formData.allergies.map(allergy => (
+                                                <Badge key={allergy} variant="destructive" className="pr-1 capitalize bg-destructive/10 text-destructive-foreground border-destructive/20">
+                                                    {allergy}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    ) : <p className="font-medium text-muted-foreground/80">None reported</p>}
+                                </ProfileInfoRow>
+                            </div>
+                        </>
+                        )}
+                    </CardContent>
+
+                    <CardFooter className={cn("bg-muted/50 p-4 border-t flex", isEditing ? "justify-end" : "justify-between")}>
+                        {!isEditing && (
+                            <Button onClick={handleLogout} variant="destructive">
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Logout
+                            </Button>
+                        )}
+                        {isEditing && (
+                            <div className="flex gap-2">
+                                <Button onClick={handleCancel} variant="outline">
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Cancel
+                                </Button>
+                                <Button onClick={handleSave}>
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Save Changes
+                                </Button>
+                            </div>
+                        )}
+                    </CardFooter>
+                </Card>
+                {isOnlyPatient && <ApplyForRoleCard />}
+            </div>
+        </div>
     </div>
   );
 }
