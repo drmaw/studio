@@ -208,7 +208,7 @@ export default function MyHealthRecordsPage() {
                     <p className="text-muted-foreground">Upload, manage, and view your personal medical documents.</p>
                 </div>
 
-                <Card>
+                <Card className="bg-secondary/50">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <UploadCloud className="h-5 w-5 text-primary" />
@@ -377,7 +377,7 @@ export default function MyHealthRecordsPage() {
                             ))}
                         </div>
                     ) : (
-                        <Card className="flex items-center justify-center p-12">
+                        <Card className="flex items-center justify-center p-12 bg-secondary/50">
                             <div className="text-center text-muted-foreground">
                                 <ImageIcon className="h-12 w-12 mx-auto mb-2" />
                                 <p>You haven't uploaded any records yet.</p>
@@ -391,3 +391,6 @@ export default function MyHealthRecordsPage() {
 
     
 
+
+
+    

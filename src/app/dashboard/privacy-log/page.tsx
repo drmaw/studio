@@ -30,9 +30,9 @@ function LogEntry({ log }: { log: PrivacyLogEntry }) {
     )
 }
 
-function LogCategory({ title, icon, logs }: { title: string, icon: React.ReactNode, logs: PrivacyLogEntry[] }) {
+function LogCategory({ title, icon, logs, className }: { title: string, icon: React.ReactNode, logs: PrivacyLogEntry[], className?: string }) {
     return (
-        <Card>
+        <Card className={className}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     {icon}
@@ -75,10 +75,12 @@ export default function PrivacyLogPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <LogCategory title="Profile Searches" icon={<Search className="h-5 w-5 text-primary"/>} logs={searchLogs} />
-                <LogCategory title="Record Views" icon={<Eye className="h-5 w-5 text-primary"/>} logs={viewLogs} />
-                <LogCategory title="Record Additions" icon={<FilePlus className="h-5 w-5 text-primary"/>} logs={addLogs} />
+                <LogCategory title="Profile Searches" icon={<Search className="h-5 w-5 text-primary"/>} logs={searchLogs} className="bg-secondary/50"/>
+                <LogCategory title="Record Views" icon={<Eye className="h-5 w-5 text-primary"/>} logs={viewLogs} className="bg-accent/30" />
+                <LogCategory title="Record Additions" icon={<FilePlus className="h-5 w-5 text-primary"/>} logs={addLogs} className="bg-secondary/50" />
             </div>
         </div>
     )
 }
+
+    

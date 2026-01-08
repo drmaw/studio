@@ -1,4 +1,5 @@
 
+
 import { demoRecords } from "@/lib/data";
 import type { User } from "@/lib/definitions";
 import { MedicalRecordCard } from "./medical-record-card";
@@ -17,7 +18,7 @@ export function RepDashboard({ user }: { user: User }) {
           As a Marketing Representative, you are viewing sample data for demonstration purposes only.
         </AlertDescription>
       </Alert>
-      <Card>
+      <Card className="bg-secondary/50">
         <CardHeader>
           <CardTitle>Demo Medical Records</CardTitle>
           <CardDescription>This is an example of how medical records are displayed in the system.</CardDescription>
@@ -31,3 +32,5 @@ export function RepDashboard({ user }: { user: User }) {
     </div>
   );
 }
+
+    

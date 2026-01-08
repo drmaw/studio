@@ -16,7 +16,7 @@ import { format } from "date-fns";
 
 function LatestRecordCard({ record }: { record: RecordFile }) {
     return (
-        <Card className="flex flex-col sm:flex-row">
+        <Card className="flex flex-col sm:flex-row bg-background">
             <div className="sm:w-1/3">
                  {record.fileType === 'image' ? (
                     <Image src={record.url} alt={record.name} width={400} height={300} className="w-full h-48 sm:h-full object-cover rounded-t-lg sm:rounded-l-lg sm:rounded-r-none" />
@@ -79,7 +79,7 @@ export function PatientDashboard({ user }: { user: User }) {
         currentUserRole="patient"
       />
 
-      <Card>
+      <Card className="bg-secondary/50">
         <CardHeader>
           <CardTitle>Your Medical History</CardTitle>
           <CardDescription>Here is your most recently uploaded document.</CardDescription>
@@ -95,3 +95,5 @@ export function PatientDashboard({ user }: { user: User }) {
     </div>
   );
 }
+
+    
