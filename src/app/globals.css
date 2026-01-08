@@ -14,6 +14,8 @@ h1, h2, h3, h4, h5, h6 {
 @layer base {
   :root {
     --background: 240 20% 98%;
+    --background-soft: 240 10% 96%;
+    --background-softer: 240 10% 94%;
     --foreground: 240 5% 20%;
     --card: 0 0% 100%;
     --card-foreground: 240 5% 15%;
@@ -51,6 +53,8 @@ h1, h2, h3, h4, h5, h6 {
 
   .dark {
     --background: 240 5% 12%;
+    --background-soft: 240 5% 15%;
+    --background-softer: 240 5% 18%;
     --foreground: 0 0% 98%;
     --card: 240 5% 15%;
     --card-foreground: 0 0% 98%;
@@ -88,6 +92,8 @@ h1, h2, h3, h4, h5, h6 {
   
   .premium-dashboard {
     --background: 45 30% 97%;
+    --background-soft: 45 30% 95%;
+    --background-softer: 45 30% 93%;
     --foreground: 40 10% 15%;
     --card: 0 0% 100%;
     --card-foreground: 40 10% 10%;

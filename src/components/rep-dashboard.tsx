@@ -18,7 +18,7 @@ export function RepDashboard({ user }: { user: User }) {
           As a Marketing Representative, you are viewing sample data for demonstration purposes only.
         </AlertDescription>
       </Alert>
-      <Card className="bg-secondary/50">
+      <Card className="bg-background-soft">
         <CardHeader>
           <CardTitle>Demo Medical Records</CardTitle>
           <CardDescription>This is an example of how medical records are displayed in the system.</CardDescription>

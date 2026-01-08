@@ -51,7 +51,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
 
   return (
     <div className="space-y-6">
-      <Card className="bg-secondary/50">
+      <Card className="bg-background-soft">
         <CardHeader className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
           <Avatar className="h-24 w-24">
             <AvatarImage data-ai-hint="person portrait" src={`https://picsum.photos/seed/${patient.id}/100/100`} />
@@ -90,7 +90,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
               <MedicalRecordCard key={record.id} record={record} currentUserRole={activeRole!} />
             ))
           ) : (
-            <Card className="flex items-center justify-center p-8 bg-secondary/50">
+            <Card className="flex items-center justify-center p-8 bg-background-soft">
                 <p className="text-muted-foreground">No medical records found for this patient.</p>
             </Card>
           )}

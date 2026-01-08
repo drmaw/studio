@@ -208,7 +208,7 @@ export default function MyHealthRecordsPage() {
                     <p className="text-muted-foreground">Upload, manage, and view your personal medical documents.</p>
                 </div>
 
-                <Card className="bg-secondary/50">
+                <Card className="bg-background-soft">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <UploadCloud className="h-5 w-5 text-primary" />
@@ -315,7 +315,7 @@ export default function MyHealthRecordsPage() {
                     {records.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {recordsSorted.map((record, index) => (
-                                <Card key={record.id} className={cn("group overflow-hidden flex flex-col relative", selectedRecords.includes(record.id) && "ring-2 ring-primary")}>
+                                <Card key={record.id} className={cn("group overflow-hidden flex flex-col relative bg-card", selectedRecords.includes(record.id) && "ring-2 ring-primary")}>
                                      <div className="absolute top-2 left-2 z-10">
                                         <Checkbox 
                                             checked={selectedRecords.includes(record.id)}
@@ -377,7 +377,7 @@ export default function MyHealthRecordsPage() {
                             ))}
                         </div>
                     ) : (
-                        <Card className="flex items-center justify-center p-12 bg-secondary/50">
+                        <Card className="flex items-center justify-center p-12 bg-background-soft">
                             <div className="text-center text-muted-foreground">
                                 <ImageIcon className="h-12 w-12 mx-auto mb-2" />
                                 <p>You haven't uploaded any records yet.</p>
@@ -388,9 +388,4 @@ export default function MyHealthRecordsPage() {
             </div>
         </>
     );
-
-    
-
-
-
-    
+}

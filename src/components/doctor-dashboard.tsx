@@ -44,7 +44,7 @@ const appointmentsByChamber = {
 function PatientSearchResultCard({ patient }: { patient: Patient }) {
   const patientInitials = patient.name.split(' ').map(n => n[0]).join('');
   return (
-    <Card className="bg-background">
+    <Card className="bg-card">
       <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-4">
          <Avatar className="h-20 w-20">
             <AvatarImage data-ai-hint="person portrait" src={`https://picsum.photos/seed/${patient.id}/100/100`} />
@@ -108,7 +108,7 @@ export function DoctorDashboard({ user }: { user: User }) {
       </div>
 
       {/* Patient Search */}
-      <Card className="bg-secondary/50">
+      <Card className="bg-background-soft">
         <CardHeader>
           <CardTitle>Patient Search</CardTitle>
           <CardDescription>Find a patient by their Health ID or mobile number.</CardDescription>
@@ -142,7 +142,7 @@ export function DoctorDashboard({ user }: { user: User }) {
             {Object.entries(appointmentsByChamber).map(([chamber, appointments], index) => {
                 const schedule = chamberSchedules.find(s => s.hospital === chamber);
                 return (
-                <Card key={chamber} className={index % 2 === 0 ? "bg-card" : "bg-accent/30"}>
+                <Card key={chamber} className={index % 2 === 0 ? "bg-card" : "bg-background-softer"}>
                     <CardHeader>
                         <CardTitle className="flex justify-between items-start">
                             <span>{chamber}</span>
@@ -199,7 +199,7 @@ export function DoctorDashboard({ user }: { user: User }) {
       </div>
       
       {/* Chamber Schedules */}
-      <Card className="bg-secondary/50">
+      <Card className="bg-background-soft">
         <CardHeader>
           <CardTitle>Your Chamber Schedules</CardTitle>
         </CardHeader>

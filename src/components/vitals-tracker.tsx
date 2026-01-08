@@ -157,7 +157,7 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
   );
 
   return (
-    <Card className="bg-accent/30">
+    <Card className="bg-background-softer">
       <CardHeader>
         <CardTitle>Vitals Tracking</CardTitle>
         <CardDescription>
@@ -184,7 +184,7 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
         </Tabs>
         
         {currentUserRole === 'patient' && (
-             <div className="space-y-4 p-4 border rounded-lg bg-background">
+             <div className="space-y-4 p-4 border rounded-lg bg-card">
                 <h4 className="font-medium text-center">Log New Vitals</h4>
                 {isSubmitting ? 
                   <div className="flex justify-center items-center h-10">
@@ -198,7 +198,7 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
 
         <div className="space-y-2">
             <h4 className="font-medium">History</h4>
-            <ScrollArea className="h-64 border rounded-md bg-background">
+            <ScrollArea className="h-64 border rounded-md bg-card">
                 <Table>
                     <TableHeader className="sticky top-0 bg-secondary">
                         <TableRow>
