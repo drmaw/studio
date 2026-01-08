@@ -1,9 +1,10 @@
+
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogOut, Mail, ShieldCheck, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -11,6 +12,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { differenceInYears, parseISO } from 'date-fns';
+import { useToast } from "@/hooks/use-toast";
 
 function ApplyForRoleCard() {
   const [selectedRole, setSelectedRole] = useState('');
