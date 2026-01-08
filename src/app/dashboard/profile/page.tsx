@@ -172,7 +172,13 @@ export default function ProfilePage() {
   }
 
   const handleCancel = () => {
-    setFormData(user?.demographics || {});
+    if (user) {
+      setFormData({
+        ...user.demographics,
+        chronicConditions: user.demographics?.chronicConditions || [],
+        allergies: user.demographics?.allergies || [],
+      });
+    }
     setIsEditing(false);
   }
 
@@ -268,7 +274,7 @@ export default function ProfilePage() {
                                 </div>
                                 <div className="flex flex-wrap gap-2 pt-2">
                                     {formData.allergies?.map(allergy => (
-                                        <Badge key={allergy} variant="secondary" className="pr-1">
+                                        <Badge key={allergy} variant="destructive" className="pr-1 capitalize bg-destructive/10 text-destructive-foreground border-destructive/20">
                                             {allergy}
                                             <button onClick={() => handleRemoveAllergy(allergy)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 text-destructive">
                                                 <X className="h-3 w-3" />
@@ -325,7 +331,7 @@ export default function ProfilePage() {
                              {formData.allergies && formData.allergies.length > 0 ? (
                                 <div className="flex flex-wrap gap-2 pt-1">
                                     {formData.allergies.map(allergy => (
-                                        <Badge key={allergy} variant="destructive" className="bg-destructive/10 text-destructive-foreground border-destructive/20">
+                                        <Badge key={allergy} variant="destructive" className="pr-1 capitalize bg-destructive/10 text-destructive-foreground border-destructive/20">
                                             {allergy}
                                         </Badge>
                                     ))}
@@ -363,3 +369,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
