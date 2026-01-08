@@ -1,10 +1,11 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { type User } from "@/lib/definitions";
-import { Camera, Mail, QrCode } from "lucide-react";
+import { Camera, Mail, QrCode, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import { useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -56,14 +57,14 @@ export function HealthIdCard({ user }: { user: User }) {
                 </div>
                 <div className="flex-1">
                     <CardTitle className="text-3xl">{user.name}</CardTitle>
-                    <CardDescription className="text-base pt-1 flex items-center gap-2 justify-center sm:justify-start">
-                        <Mail className="h-4 w-4" />
-                        <span>{user.email}</span>
+                    <CardDescription className="text-base pt-1 flex items-center gap-2 justify-center sm:justify-start text-muted-foreground">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        <span>Health ID: {user.id}</span>
                     </CardDescription>
                      <div className="flex flex-wrap gap-2 pt-3 justify-center sm:justify-start">
                         {user.roles.map(role => (
                             <Badge key={role} variant="secondary" className="capitalize">
-                                {role.replace('_', ' ')}
+                                {role.replace(/_/g, ' ')}
                             </Badge>
                         ))}
                     </div>
