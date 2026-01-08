@@ -25,17 +25,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
-
-type RecordFile = {
-  id: string;
-  name: string;
-  fileType: 'image' | 'pdf';
-  recordType: 'prescription' | 'report';
-  url: string;
-  date: string; // ISO String
-  size: string;
-  uploadedBy: string;
-};
+import { RecordViewer } from '@/components/dashboard/record-viewer';
+import type { RecordFile } from '@/lib/definitions';
 
 const initialRecords: RecordFile[] = [
     { id: 'rec1', name: 'Blood Test Report.pdf', fileType: 'pdf', recordType: 'report', url: '#', date: '2024-06-15T10:30:00.000Z', size: '1.2 MB', uploadedBy: 'Lab Assistant' },
@@ -67,6 +58,8 @@ export default function MyHealthRecordsPage() {
     const [recordType, setRecordType] = useState<'prescription' | 'report' | ''>('');
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
+    const [viewerOpen, setViewerOpen] = useState(false);
+    const [viewerStartIndex, setViewerStartIndex] = useState(0);
 
     const MAX_RECORDS_STANDARD = 10;
     const MAX_RECORDS_PREMIUM = 40;
@@ -154,130 +147,143 @@ export default function MyHealthRecordsPage() {
         })
     }
 
+    const openRecordViewer = (index: number) => {
+        setViewerStartIndex(index);
+        setViewerOpen(true);
+    }
+
     const recordsSorted = records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const storagePercentage = (records.length / maxRecords) * 100;
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold">My Health Records</h1>
-                <p className="text-muted-foreground">Upload, manage, and view your personal medical documents.</p>
-            </div>
+        <>
+            <RecordViewer 
+                records={recordsSorted}
+                open={viewerOpen}
+                onOpenChange={setViewerOpen}
+                startIndex={viewerStartIndex}
+            />
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-3xl font-bold">My Health Records</h1>
+                    <p className="text-muted-foreground">Upload, manage, and view your personal medical documents.</p>
+                </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <UploadCloud className="h-5 w-5 text-primary" />
-                        Upload New Document
-                    </CardTitle>
-                    <CardDescription>You can upload photos (JPEG, PNG) or PDF files. Each PDF counts as one report.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                         <Input type="file" onChange={handleFileChange} disabled={isUploading} accept="image/jpeg,image/png,application/pdf" />
-                         <Select value={recordType} onValueChange={(value) => setRecordType(value as 'prescription' | 'report')} disabled={isUploading}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select record type..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="prescription">Prescription</SelectItem>
-                                <SelectItem value="report">Medical Report</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <Button onClick={handleUpload} disabled={isUploading || !selectedFile || !recordType} className="w-full">
-                        {isUploading ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...</>
-                        ) : (
-                            'Upload Document'
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <UploadCloud className="h-5 w-5 text-primary" />
+                            Upload New Document
+                        </CardTitle>
+                        <CardDescription>You can upload photos (JPEG, PNG) or PDF files. Each PDF counts as one report.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input type="file" onChange={handleFileChange} disabled={isUploading} accept="image/jpeg,image/png,application/pdf" />
+                            <Select value={recordType} onValueChange={(value) => setRecordType(value as 'prescription' | 'report')} disabled={isUploading}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select record type..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="prescription">Prescription</SelectItem>
+                                    <SelectItem value="report">Medical Report</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button onClick={handleUpload} disabled={isUploading || !selectedFile || !recordType} className="w-full">
+                            {isUploading ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...</>
+                            ) : (
+                                'Upload Document'
+                            )}
+                        </Button>
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-2 pt-4 border-t">
+                        <div className="w-full flex justify-between text-sm text-muted-foreground">
+                            <span>Storage Usage</span>
+                            <span>{records.length} / {maxRecords} reports</span>
+                        </div>
+                        <Progress value={storagePercentage} />
+                        {!user?.isPremium && (
+                            <div className="pt-2 text-center text-sm">
+                            <Button variant="link" className="p-0 h-auto text-primary">
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                    Upgrade to Premium for {MAX_RECORDS_PREMIUM} slots
+                            </Button>
+                            </div>
                         )}
-                    </Button>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-2 pt-4 border-t">
-                    <div className="w-full flex justify-between text-sm text-muted-foreground">
-                        <span>Storage Usage</span>
-                        <span>{records.length} / {maxRecords} reports</span>
-                    </div>
-                    <Progress value={storagePercentage} />
-                    {!user?.isPremium && (
-                        <div className="pt-2 text-center text-sm">
-                           <Button variant="link" className="p-0 h-auto text-primary">
-                                <Sparkles className="mr-2 h-4 w-4" />
-                                Upgrade to Premium for {MAX_RECORDS_PREMIUM} slots
-                           </Button>
-                        </div>
-                    )}
-                </CardFooter>
-            </Card>
+                    </CardFooter>
+                </Card>
 
-            <div className="space-y-4">
-                <h2 className="text-2xl font-bold">Your Documents</h2>
-                {records.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {recordsSorted.map(record => (
-                            <Card key={record.id} className="group overflow-hidden flex flex-col">
-                                <CardContent className="p-0">
-                                    {record.fileType === 'image' ? (
-                                        <Image src={record.url} alt={record.name} width={400} height={300} className="w-full h-48 object-cover transition-transform group-hover:scale-105" />
-                                    ) : (
-                                        <div className="w-full h-48 bg-secondary flex flex-col items-center justify-center text-center p-4">
-                                            <File className="h-16 w-16 text-muted-foreground" />
-                                            <p className="text-sm mt-2 text-muted-foreground font-semibold truncate">{record.name}</p>
+                <div className="space-y-4">
+                    <h2 className="text-2xl font-bold">Your Documents</h2>
+                    {records.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {recordsSorted.map((record, index) => (
+                                <Card key={record.id} className="group overflow-hidden flex flex-col">
+                                    <CardContent className="p-0 cursor-pointer" onClick={() => openRecordViewer(index)}>
+                                        {record.fileType === 'image' ? (
+                                            <Image src={record.url} alt={record.name} width={400} height={300} className="w-full h-48 object-cover transition-transform group-hover:scale-105" />
+                                        ) : (
+                                            <div className="w-full h-48 bg-secondary flex flex-col items-center justify-center text-center p-4">
+                                                <File className="h-16 w-16 text-muted-foreground" />
+                                                <p className="text-sm mt-2 text-muted-foreground font-semibold truncate">{record.name}</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                    <div className="p-4 border-t flex flex-col flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="font-semibold truncate flex-1 pr-2">{record.name}</h3>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This action cannot be undone. This will permanently delete your record "{record.name}".
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDelete(record.id)}>Delete</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </div>
-                                    )}
-                                </CardContent>
-                                <div className="p-4 border-t flex flex-col flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <h3 className="font-semibold truncate flex-1 pr-2">{record.name}</h3>
-                                         <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This action cannot be undone. This will permanently delete your record "{record.name}".
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(record.id)}>Delete</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                    <div className="mt-2 flex gap-2 flex-wrap">
-                                        <Badge variant={record.fileType === 'pdf' ? 'destructive' : 'secondary'}>{record.fileType.toUpperCase()}</Badge>
-                                        <Badge variant="outline" className="capitalize">{record.recordType}</Badge>
-                                    </div>
-                                    <div className="flex-1" />
-                                    <div className="mt-4 space-y-2 text-xs text-muted-foreground pt-4 border-t border-dashed">
-                                        <div className="flex items-center gap-2">
-                                            <Clock className="h-3 w-3"/>
-                                            <FormattedDate date={record.date} />
-                                            <span className="font-semibold text-foreground/80">&bull; {record.size}</span>
+                                        <div className="mt-2 flex gap-2 flex-wrap">
+                                            <Badge variant={record.fileType === 'pdf' ? 'destructive' : 'secondary'}>{record.fileType.toUpperCase()}</Badge>
+                                            <Badge variant="outline" className="capitalize">{record.recordType}</Badge>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <User className="h-3 w-3" />
-                                            <span>Uploaded by: <span className="font-semibold text-foreground/80">{record.uploadedBy}</span></span>
+                                        <div className="flex-1" />
+                                        <div className="mt-4 space-y-2 text-xs text-muted-foreground pt-4 border-t border-dashed">
+                                            <div className="flex items-center gap-2">
+                                                <Clock className="h-3 w-3"/>
+                                                <FormattedDate date={record.date} />
+                                                <span className="font-semibold text-foreground/80">&bull; {record.size}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <User className="h-3 w-3" />
+                                                <span>Uploaded by: <span className="font-semibold text-foreground/80">{record.uploadedBy}</span></span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <Card className="flex items-center justify-center p-12">
-                        <div className="text-center text-muted-foreground">
-                            <ImageIcon className="h-12 w-12 mx-auto mb-2" />
-                            <p>You haven't uploaded any records yet.</p>
+                                </Card>
+                            ))}
                         </div>
-                    </Card>
-                )}
+                    ) : (
+                        <Card className="flex items-center justify-center p-12">
+                            <div className="text-center text-muted-foreground">
+                                <ImageIcon className="h-12 w-12 mx-auto mb-2" />
+                                <p>You haven't uploaded any records yet.</p>
+                            </div>
+                        </Card>
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
 }

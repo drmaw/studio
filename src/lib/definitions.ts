@@ -54,6 +54,17 @@ export type MedicalRecord = {
   notes: string;
 };
 
+export type RecordFile = {
+  id: string;
+  name: string;
+  fileType: 'image' | 'pdf';
+  recordType: 'prescription' | 'report';
+  url: string;
+  date: string; // ISO String
+  size: string;
+  uploadedBy: string;
+};
+
 export type Vitals = {
   id: string;
   date: string; // ISO 8601 string
