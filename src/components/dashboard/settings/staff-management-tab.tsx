@@ -25,7 +25,7 @@ import type { User } from "@/lib/definitions";
 
 const formSchema = z.object({
   healthId: z.string().min(1, { message: "Health ID is required." }),
-  role: z.enum(['doctor', 'nurse'], { required_error: "You must select a role." }),
+  role: z.enum(['doctor', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'], { required_error: "You must select a role." }),
 });
 
 // Mock staff list for the hospital
@@ -58,7 +58,7 @@ export function StaffManagementTab() {
       setStaff(prevStaff => [...prevStaff, { ...userToAdd, role: values.role }]);
       toast({
         title: "Staff Added",
-        description: `${userToAdd.name} has been added as a ${values.role}.`,
+        description: `${userToAdd.name} has been added as a ${values.role.replace('_', ' ')}.`,
       });
       form.reset();
     } else if (staff.some(s => s.id === userToAdd?.id)) {
@@ -116,6 +116,12 @@ export function StaffManagementTab() {
                             <SelectContent>
                                 <SelectItem value="doctor">Doctor</SelectItem>
                                 <SelectItem value="nurse">Nurse</SelectItem>
+                                <SelectItem value="lab_technician">Lab Technician</SelectItem>
+                                <SelectItem value="pathologist">Pathologist</SelectItem>
+                                <SelectItem value="pharmacist">Pharmacist</SelectItem>
+                                <SelectItem value="manager">Manager</SelectItem>
+                                <SelectItem value="assistant_manager">Assistant Manager</SelectItem>
+                                <SelectItem value="front_desk">Front Desk</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />

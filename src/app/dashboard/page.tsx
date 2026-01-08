@@ -38,7 +38,7 @@ export default function DashboardPage() {
     case 'hospital_owner':
       return <HospitalOwnerDashboard user={user} />;
     default:
-      // Render a dashboard for 'nurse' or a default view
+      // Render a dashboard for 'nurse' or other staff roles
       return <div>Welcome, {user.name}. Your dashboard is under construction.</div>;
   }
 }
