@@ -12,7 +12,7 @@ type MedicalRecordCardProps = {
 
 export function MedicalRecordCard({ record, currentUserRole }: MedicalRecordCardProps) {
   return (
-    <Card className="bg-card/50">
+    <Card className="bg-card hover:bg-muted/50 transition-colors">
       <CardHeader>
         <div className="flex justify-between items-start">
             <div>
