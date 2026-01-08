@@ -8,15 +8,18 @@ import {
 } from "@/components/ui/card";
 import { Button } from "../ui/button";
 import { Users, Activity, Settings, PlusCircle } from "lucide-react";
+import Link from "next/link";
 
 export function HospitalOwnerDashboard({ user }: { user: User }) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Welcome, {user.name}</h1>
-        <Button>
-          <Settings className="mr-2 h-4 w-4" />
-          Hospital Settings
+        <Button asChild>
+          <Link href="/dashboard/settings">
+            <Settings className="mr-2 h-4 w-4" />
+            Hospital Settings
+          </Link>
         </Button>
       </div>
 
@@ -32,9 +35,11 @@ export function HospitalOwnerDashboard({ user }: { user: User }) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add New Staff
+            <Button className="w-full" asChild>
+              <Link href="/dashboard/settings">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Manage Staff
+              </Link>
             </Button>
           </CardContent>
         </Card>
