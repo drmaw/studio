@@ -87,6 +87,8 @@ const ProfileEditRow = ({ label, name, value, onChange, placeholder }: { label: 
     )
 }
 
+const availableConditions = ['Asthma', 'Diabetes', 'Hypertension', 'CKD'];
+
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -96,8 +98,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<UserDemographics>>({});
   const [allergyInput, setAllergyInput] = useState('');
-  const [conditionInput, setConditionInput] = useState('');
-
+  
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
@@ -148,16 +149,15 @@ export default function ProfilePage() {
     setFormData(prev => ({ ...prev, allergies: prev.allergies?.filter(a => a !== allergyToRemove)}));
   }
 
-  const handleAddCondition = () => {
-    if (conditionInput && !formData.chronicConditions?.includes(conditionInput)) {
-        setFormData(prev => ({ ...prev, chronicConditions: [...(prev.chronicConditions || []), conditionInput]}));
-        setConditionInput('');
-    }
-  }
-
-  const handleRemoveCondition = (conditionToRemove: string) => {
-    setFormData(prev => ({ ...prev, chronicConditions: prev.chronicConditions?.filter(c => c !== conditionToRemove)}));
-  }
+  const handleToggleCondition = (condition: string) => {
+    setFormData(prev => {
+        const currentConditions = prev.chronicConditions || [];
+        const newConditions = currentConditions.includes(condition)
+            ? currentConditions.filter(c => c !== condition)
+            : [...currentConditions, condition];
+        return { ...prev, chronicConditions: newConditions };
+    });
+  };
 
   const handleSave = async () => {
      // Mock API call to save user data
@@ -239,25 +239,21 @@ export default function ProfilePage() {
                             <h3 className="text-lg font-semibold border-b pb-2">Medical Information</h3>
                             <div className="space-y-2">
                                 <Label htmlFor="conditions" className="text-base">Chronic Conditions</Label>
-                                <div className="flex gap-2">
-                                    <Input 
-                                        id="conditions" 
-                                        placeholder="e.g., Diabetes" 
-                                        value={conditionInput} 
-                                        onChange={(e) => setConditionInput(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCondition())}
-                                    />
-                                    <Button type="button" onClick={handleAddCondition}><Plus className="mr-2 h-4 w-4" /> Add</Button>
-                                </div>
+                                <p className="text-sm text-muted-foreground">Select one or more conditions.</p>
                                 <div className="flex flex-wrap gap-2 pt-2">
-                                    {formData.chronicConditions?.map(condition => (
-                                        <Badge key={condition} variant="outline" className="pr-1 capitalize">
-                                            {condition}
-                                            <button onClick={() => handleRemoveCondition(condition)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 text-destructive">
-                                                <X className="h-3 w-3" />
-                                            </button>
-                                        </Badge>
-                                    ))}
+                                    {availableConditions.map(condition => {
+                                        const isSelected = formData.chronicConditions?.includes(condition);
+                                        return (
+                                            <Badge
+                                                key={condition}
+                                                variant={isSelected ? "default" : "outline"}
+                                                onClick={() => handleToggleCondition(condition)}
+                                                className="cursor-pointer text-base py-1 px-3 transition-all"
+                                            >
+                                                {condition}
+                                            </Badge>
+                                        );
+                                    })}
                                 </div>
                             </div>
                              <div className="space-y-2">
@@ -369,7 +365,5 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
 
     
