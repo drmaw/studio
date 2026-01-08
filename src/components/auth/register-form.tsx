@@ -44,9 +44,13 @@ export function RegisterForm() {
     // and create a user document in Firestore.
     await new Promise(resolve => setTimeout(resolve, 1000));
     
+    // In a real app, you would add this user to your database.
+    // We are just logging it here.
     const newUser = {
+        id: `user-${Date.now()}`,
         ...values,
         roles: ['patient'], // All new users are patients by default
+        avatarUrl: `https://picsum.photos/seed/${values.email}/100/100`
     }
     console.log("New user registered:", newUser);
 

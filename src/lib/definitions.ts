@@ -33,7 +33,7 @@ export type MedicalRecord = {
 
 export type Vitals = {
   id: string;
-  date: string; // "YYYY-MM-DD HH:mm"
+  date: string; // ISO 8601 string
   bpSystolic: number | null;
   bpDiastolic: number | null;
   pulse: number | null;

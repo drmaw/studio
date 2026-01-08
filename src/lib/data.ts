@@ -68,12 +68,12 @@ export const medicalRecords: MedicalRecord[] = [
 ];
 
 export const vitalsHistory: Vitals[] = [
-  { id: 'v1', date: '2024-07-20 08:00', bpSystolic: 125, bpDiastolic: 82, pulse: 70, weight: 75, rbs: null },
-  { id: 'v2', date: '2024-07-21 08:15', bpSystolic: 122, bpDiastolic: 80, pulse: 68, weight: 75.2, rbs: 5.5 },
-  { id: 'v3', date: '2024-07-22 08:05', bpSystolic: 128, bpDiastolic: 85, pulse: 75, weight: 75.1, rbs: null },
-  { id: 'v4', date: '2024-07-23 09:00', bpSystolic: 120, bpDiastolic: 78, pulse: 65, weight: 74.8, rbs: 5.8 },
-  { id: 'v5', date: '2024-07-24 08:30', bpSystolic: 124, bpDiastolic: 81, pulse: 72, weight: 74.9, rbs: null },
-  { id: 'v6', date: '2024-07-25 08:00', bpSystolic: 126, bpDiastolic: 83, pulse: 71, weight: 75.0, rbs: 5.6 },
+  { id: 'v1', date: '2024-07-20T08:00:00.000Z', bpSystolic: 125, bpDiastolic: 82, pulse: 70, weight: 75, rbs: null },
+  { id: 'v2', date: '2024-07-21T08:15:00.000Z', bpSystolic: 122, bpDiastolic: 80, pulse: 68, weight: 75.2, rbs: 5.5 },
+  { id: 'v3', date: '2024-07-22T08:05:00.000Z', bpSystolic: 128, bpDiastolic: 85, pulse: 75, weight: 75.1, rbs: null },
+  { id: 'v4', date: '2024-07-23T09:00:00.000Z', bpSystolic: 120, bpDiastolic: 78, pulse: 65, weight: 74.8, rbs: 5.8 },
+  { id: 'v5', date: '2024-07-24T08:30:00.000Z', bpSystolic: 124, bpDiastolic: 81, pulse: 72, weight: 74.9, rbs: null },
+  { id: 'v6', date: '2024-07-25T08:00:00.000Z', bpSystolic: 126, bpDiastolic: 83, pulse: 71, weight: 75.0, rbs: 5.6 },
 ];
 
 // Demo data for marketing rep

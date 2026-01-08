@@ -8,6 +8,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+function GenericDashboard({ name }: { name: string }) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Welcome, {name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p>Your dashboard is under construction.</p>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function DashboardPage() {
   const { user, loading, activeRole } = useAuth();
@@ -38,7 +52,7 @@ export default function DashboardPage() {
     case 'hospital_owner':
       return <HospitalOwnerDashboard user={user} />;
     default:
-      // Render a dashboard for 'nurse' or other staff roles
-      return <div>Welcome, {user.name}. Your dashboard is under construction.</div>;
+      // Render a generic dashboard for other roles
+      return <GenericDashboard name={user.name} />;
   }
 }

@@ -103,7 +103,7 @@ function ApplyForRoleCard() {
 }
 
 export default function ProfilePage() {
-  const { user, loading, hasRole } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -124,6 +124,9 @@ export default function ProfilePage() {
   }
   
   const userInitials = user.name.split(' ').map(n => n[0]).join('');
+
+  // A user is only a "pure" patient if they have exactly one role, and it's 'patient'.
+  const isOnlyPatient = user.roles.length === 1 && user.roles[0] === 'patient';
 
   return (
     <div className="flex justify-center">
@@ -162,7 +165,7 @@ export default function ProfilePage() {
                 </Button>
             </CardContent>
         </Card>
-        {hasRole('patient') && <ApplyForRoleCard />}
+        {isOnlyPatient && <ApplyForRoleCard />}
       </div>
     </div>
   );
