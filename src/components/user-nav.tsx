@@ -12,18 +12,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
-import { LogOut, Settings, User as UserIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Settings, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 
 export function UserNav() {
   const { user, loading } = useAuth();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    localStorage.removeItem("digi-health-user-id");
-    router.push('/');
-  };
 
   if (loading) {
     return (
@@ -71,11 +64,6 @@ export function UserNav() {
             <span>Settings</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
