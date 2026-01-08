@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut, Mail, ShieldCheck, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, QrCode, Camera } from "lucide-react";
+import { LogOut, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Wind, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,8 @@ import type { UserDemographics } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthIdCard } from "@/components/dashboard/health-id-card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 
 function ApplyForRoleCard() {
@@ -62,14 +64,15 @@ function ApplyForRoleCard() {
   );
 }
 
-const ProfileInfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string | null }) => {
-  if (!value) return null;
+const ProfileInfoRow = ({ icon: Icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | null, children?: React.ReactNode }) => {
+  if (!value && !children) return null;
   return (
     <div className="flex items-start gap-3">
       <Icon className="h-4 w-4 mt-1 text-muted-foreground" />
       <div className="flex-1">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="font-medium">{value}</p>
+        {value && <p className="font-medium">{value}</p>}
+        {children}
       </div>
     </div>
   );
@@ -84,6 +87,13 @@ const ProfileEditRow = ({ label, name, value, onChange, placeholder }: { label: 
     )
 }
 
+const chronicConditionsOptions = [
+    { id: 'diabetes', label: 'Diabetes', icon: Droplet },
+    { id: 'hypertension', label: 'Hypertension', icon: HeartPulse },
+    { id: 'asthma', label: 'Asthma', icon: Wind },
+] as const;
+
+
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -92,13 +102,20 @@ export default function ProfilePage() {
   const [age, setAge] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<UserDemographics>>({});
+  const [allergyInput, setAllergyInput] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
     if (user) {
-      setFormData(user.demographics || {});
+      const initialData = {
+          ...user.demographics,
+          chronicConditions: user.demographics?.chronicConditions || [],
+          allergies: user.demographics?.allergies || [],
+      };
+      setFormData(initialData);
+
       if (user.demographics?.dob) {
         try {
           const birthDate = parseISO(user.demographics.dob);
@@ -126,6 +143,28 @@ export default function ProfilePage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   }
 
+  const handleChronicConditionChange = (conditionId: 'diabetes' | 'hypertension' | 'asthma', checked: boolean) => {
+    setFormData(prev => {
+        const currentConditions = prev.chronicConditions || [];
+        if (checked) {
+            return { ...prev, chronicConditions: [...currentConditions, conditionId] };
+        } else {
+            return { ...prev, chronicConditions: currentConditions.filter(c => c !== conditionId) };
+        }
+    });
+  };
+
+  const handleAddAllergy = () => {
+    if (allergyInput && !formData.allergies?.includes(allergyInput)) {
+        setFormData(prev => ({ ...prev, allergies: [...(prev.allergies || []), allergyInput]}));
+        setAllergyInput('');
+    }
+  }
+  
+  const handleRemoveAllergy = (allergyToRemove: string) => {
+    setFormData(prev => ({ ...prev, allergies: prev.allergies?.filter(a => a !== allergyToRemove)}));
+  }
+
   const handleSave = async () => {
      // Mock API call to save user data
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -149,7 +188,6 @@ export default function ProfilePage() {
     </div>;
   }
   
-  // A user is only a "pure" patient if they have exactly one role, and it's 'patient'.
   const isOnlyPatient = user.roles.length === 1 && user.roles[0] === 'patient';
   
   const dobDate = formData.dob ? parseISO(formData.dob) : null;
@@ -163,9 +201,9 @@ export default function ProfilePage() {
             <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle className="text-xl">Personal Details</CardTitle>
+                    <CardTitle className="text-xl">Personal & Medical Details</CardTitle>
                     <CardDescription className="text-sm pt-1">
-                        Your personal information and demographics.
+                        Your personal information, demographics, and health conditions.
                     </CardDescription>
                   </div>
                    {!isEditing && (
@@ -177,24 +215,73 @@ export default function ProfilePage() {
                 </div>
             </CardHeader>
             <Separator />
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 space-y-6">
                 {isEditing ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ProfileEditRow label="Mobile Number" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} />
-                        <ProfileEditRow label="Date of Birth (YYYY-MM-DD)" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="YYYY-MM-DD" />
-                        <ProfileEditRow label="Gender" name="gender" value={formData.gender} onChange={handleInputChange} />
-                        <ProfileEditRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleInputChange} />
-                        <ProfileEditRow label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleInputChange} />
-                        <ProfileEditRow label="NID" name="nid" value={formData.nid} onChange={handleInputChange} />
-                        <ProfileEditRow label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} />
-                        <div className="md:col-span-2">
-                            <ProfileEditRow label="Present Address" name="presentAddress" value={formData.presentAddress} onChange={handleInputChange} />
+                    <>
+                        <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <ProfileEditRow label="Mobile Number" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} />
+                            <ProfileEditRow label="Date of Birth (YYYY-MM-DD)" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="YYYY-MM-DD" />
+                            <ProfileEditRow label="Gender" name="gender" value={formData.gender} onChange={handleInputChange} />
+                            <ProfileEditRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleInputChange} />
+                            <ProfileEditRow label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleInputChange} />
+                            <ProfileEditRow label="NID" name="nid" value={formData.nid} onChange={handleInputChange} />
+                            <ProfileEditRow label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} />
+                            <div className="md:col-span-2">
+                                <ProfileEditRow label="Present Address" name="presentAddress" value={formData.presentAddress} onChange={handleInputChange} />
+                            </div>
+                            <div className="md:col-span-2">
+                                <ProfileEditRow label="Permanent Address" name="permanentAddress" value={formData.permanentAddress} onChange={handleInputChange} />
+                            </div>
                         </div>
-                        <div className="md:col-span-2">
-                            <ProfileEditRow label="Permanent Address" name="permanentAddress" value={formData.permanentAddress} onChange={handleInputChange} />
+                        <Separator />
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold border-b pb-2">Medical Information</h3>
+                            <div className="space-y-2">
+                               <Label className="text-base">Chronic Conditions</Label>
+                                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                                    {chronicConditionsOptions.map(condition => (
+                                        <div key={condition.id} className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={condition.id}
+                                                checked={formData.chronicConditions?.includes(condition.id)}
+                                                onCheckedChange={(checked) => handleChronicConditionChange(condition.id, !!checked)}
+                                            />
+                                            <label htmlFor={condition.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                {condition.label}
+                                            </label>
+                                        </div>
+                                    ))}
+                               </div>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="allergies" className="text-base">Allergies</Label>
+                                <div className="flex gap-2">
+                                    <Input 
+                                        id="allergies" 
+                                        placeholder="e.g., Penicillin" 
+                                        value={allergyInput} 
+                                        onChange={(e) => setAllergyInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAllergy())}
+                                    />
+                                    <Button type="button" onClick={handleAddAllergy}><Plus className="mr-2 h-4 w-4" /> Add</Button>
+                                </div>
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                    {formData.allergies?.map(allergy => (
+                                        <Badge key={allergy} variant="secondary" className="pr-1">
+                                            {allergy}
+                                            <button onClick={() => handleRemoveAllergy(allergy)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 text-destructive">
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </>
                 ) : (
+                  <>
+                    <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                         <ProfileInfoRow icon={Phone} label="Mobile Number" value={formData.mobileNumber} />
                         <div className="flex items-start gap-3">
@@ -220,14 +307,47 @@ export default function ProfilePage() {
                         <ProfileInfoRow icon={MapPin} label="Permanent Address" value={formData.permanentAddress} />
                         </div>
                     </div>
+                    <Separator />
+                    <h3 className="text-lg font-semibold border-b pb-2">Medical Information</h3>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                         <ProfileInfoRow icon={HeartPulse} label="Chronic Conditions">
+                             {formData.chronicConditions && formData.chronicConditions.length > 0 ? (
+                                <div className="flex flex-wrap gap-2 pt-1">
+                                    {formData.chronicConditions.map(c => {
+                                        const condition = chronicConditionsOptions.find(opt => opt.id === c);
+                                        return (
+                                             <Badge key={c} variant="outline" className="capitalize flex items-center gap-1.5">
+                                                 {condition && <condition.icon className="h-3 w-3" />}
+                                                 {c}
+                                            </Badge>
+                                        )
+                                    })}
+                                </div>
+                            ) : <p className="font-medium text-muted-foreground/80">None reported</p>}
+                        </ProfileInfoRow>
+                        <ProfileInfoRow icon={Siren} label="Allergies">
+                             {formData.allergies && formData.allergies.length > 0 ? (
+                                <div className="flex flex-wrap gap-2 pt-1">
+                                    {formData.allergies.map(allergy => (
+                                        <Badge key={allergy} variant="destructive" className="bg-destructive/10 text-destructive-foreground border-destructive/20">
+                                            {allergy}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            ) : <p className="font-medium text-muted-foreground/80">None reported</p>}
+                        </ProfileInfoRow>
+                     </div>
+                  </>
                 )}
             </CardContent>
 
-            <CardFooter className="bg-muted/50 p-4 border-t flex justify-between">
-                 <Button onClick={handleLogout} variant="destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                </Button>
+            <CardFooter className={cn("bg-muted/50 p-4 border-t flex", isEditing ? "justify-end" : "justify-between")}>
+                 {!isEditing && (
+                    <Button onClick={handleLogout} variant="destructive">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                    </Button>
+                )}
                 {isEditing && (
                     <div className="flex gap-2">
                         <Button onClick={handleCancel} variant="outline">

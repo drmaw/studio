@@ -20,6 +20,8 @@ export const users: User[] = [
       bloodGroup: 'O+',
       presentAddress: "123 Health St, Medical Road, Dhaka, Bangladesh",
       permanentAddress: "456 Village Rd, Health District, Country",
+      allergies: ['Pollen'],
+      chronicConditions: [],
     },
     isPremium: true
   },
@@ -40,6 +42,8 @@ export const users: User[] = [
       bloodGroup: 'A+',
       presentAddress: "789 Patient Ave, Wellness City, Dhaka",
       permanentAddress: "101 Native Town, Home District, Country",
+      allergies: ['Dust', 'Penicillin'],
+      chronicConditions: ['asthma'],
     },
     isPremium: false
   },
@@ -49,7 +53,7 @@ export const users: User[] = [
     email: 'rep@digihealth.com', 
     roles: ['marketing_rep', 'patient'], 
     avatarUrl: 'https://picsum.photos/seed/rep1/100/100',
-    demographics: { dob: '1995-02-10T00:00:00.000Z', gender: 'Female', mobileNumber: '+8801987654321' },
+    demographics: { dob: '1995-02-10T00:00:00.000Z', gender: 'Female', mobileNumber: '+8801987654321', allergies: [], chronicConditions: [] },
     isPremium: false
   },
   { 
@@ -58,7 +62,7 @@ export const users: User[] = [
     email: 'doctor2@digihealth.com', 
     roles: ['doctor', 'patient'], 
     avatarUrl: 'https://picsum.photos/seed/doc2/100/100',
-    demographics: { dob: '1975-11-30T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801654321987' },
+    demographics: { dob: '1975-11-30T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801654321987', allergies: [], chronicConditions: ['hypertension'] },
     isPremium: true
   },
   { 
@@ -67,7 +71,7 @@ export const users: User[] = [
     email: 'owner@digihealth.com', 
     roles: ['hospital_owner', 'patient'], 
     avatarUrl: 'https://picsum.photos/seed/owner1/100/100',
-    demographics: { dob: '1970-01-01T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801512345678' },
+    demographics: { dob: '1970-01-01T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801512345678', allergies: [], chronicConditions: [] },
     isPremium: true
   }
 ];

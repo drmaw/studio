@@ -13,6 +13,8 @@ export type UserDemographics = {
   presentAddress?: string;
   permanentAddress?: string;
   mobileNumber?: string;
+  chronicConditions?: ('diabetes' | 'hypertension' | 'asthma')[];
+  allergies?: string[];
 };
 
 export type User = {
