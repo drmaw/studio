@@ -1,3 +1,4 @@
+
 import { patients } from "@/lib/data";
 import type { Patient, User } from "@/lib/definitions";
 import {
@@ -11,20 +12,31 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Search, QrCode, User as UserIcon, AlertTriangle, Phone } from "lucide-react";
+import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone } from "lucide-react";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { ScrollArea } from "../ui/scroll-area";
 
 const chamberSchedules = [
     { id: 1, hospital: 'Digital Health Clinic', room: '302', days: 'Sat, Mon, Wed', time: '5 PM - 9 PM' },
     { id: 2, hospital: 'City General Hospital', room: '501A', days: 'Sun, Tue', time: '6 PM - 10 PM' },
 ]
 
-const upcomingAppointments = [
-    { ...patients[0], time: '5:30 PM', hospital: 'Digital Health Clinic' },
-    { ...patients[1], time: '6:00 PM', hospital: 'Digital Health Clinic' },
-]
+const appointmentsByChamber = {
+  'Digital Health Clinic': [
+    { ...patients[0], time: '5:30 PM' },
+    { ...patients[1], time: '6:00 PM' },
+    { ...patients[2], id: 'patient-3-clone', name: 'Rina Chowdhury', time: '6:30 PM' },
+    { ...patients[0], id: 'patient-1-clone-1', name: 'Sohel Rana', time: '7:00 PM' },
+    { ...patients[1], id: 'patient-2-clone-1', name: 'Ayesha Akhter', time: '7:30 PM' },
+    { ...patients[0], id: 'patient-1-clone-2', name: 'Kamal Hasan', time: '8:00 PM' },
+  ],
+  'City General Hospital': [
+    { ...patients[2], time: '6:15 PM' },
+    { ...patients[0], id: 'patient-1-clone-3', name: 'Jamila Khatun', time: '6:45 PM' },
+  ]
+};
 
 function PatientSearchResultCard({ patient }: { patient: Patient }) {
   const patientInitials = patient.name.split(' ').map(n => n[0]).join('');
@@ -88,85 +100,96 @@ export function DoctorDashboard({ user }: { user: User }) {
             </div>
         </CardContent>
       </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Chamber Schedules */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Chamber Schedules</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Hospital</TableHead>
-                  <TableHead>Schedule</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {chamberSchedules.map((schedule) => (
-                  <TableRow key={schedule.id}>
-                    <TableCell>
-                        <div className="font-medium">{schedule.hospital}</div>
-                        <div className="text-xs text-muted-foreground">Room: {schedule.room}</div>
-                    </TableCell>
-                    <TableCell>
-                        <div>{schedule.days}</div>
-                        <div className="text-xs text-muted-foreground">{schedule.time}</div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Appointments */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarDays />
-              Upcoming Appointments
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Patient</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {upcomingAppointments.map((patient) => (
-                  <TableRow key={patient.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={`https://picsum.photos/seed/${patient.id}/32/32`} />
-                          <AvatarFallback>{patient.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <span>{patient.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                        <Badge variant="outline">{patient.time}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/dashboard/patients/${patient.id}`}>
-                          View <ArrowRight className="ml-1 h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+      
+      {/* Upcoming Appointments Section */}
+      <div>
+        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+          <CalendarDays />
+          Upcoming Appointments
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {Object.entries(appointmentsByChamber).map(([chamber, appointments]) => (
+                <Card key={chamber}>
+                    <CardHeader>
+                        <CardTitle className="flex justify-between items-center">
+                            <span>{chamber}</span>
+                            <Badge variant="secondary">{appointments.length} Patients</Badge>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ScrollArea className="h-72">
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                    <TableHead>Patient</TableHead>
+                                    <TableHead>Time</TableHead>
+                                    <TableHead className="text-right">Action</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {appointments.map((patient, index) => (
+                                    <TableRow key={`${patient.id}-${index}`}>
+                                        <TableCell className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                            <Avatar className="h-8 w-8">
+                                            <AvatarImage src={`https://picsum.photos/seed/${patient.id}/32/32`} />
+                                            <AvatarFallback>{patient.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                            </Avatar>
+                                            <span>{patient.name}</span>
+                                        </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline">{patient.time}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                        <Button asChild variant="ghost" size="sm">
+                                            <Link href={`/dashboard/patients/${patient.id}`}>
+                                            View <ArrowRight className="ml-1 h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
       </div>
+      
+      {/* Chamber Schedules */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Chamber Schedules</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Hospital</TableHead>
+                <TableHead>Schedule</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {chamberSchedules.map((schedule) => (
+                <TableRow key={schedule.id}>
+                  <TableCell>
+                      <div className="font-medium">{schedule.hospital}</div>
+                      <div className="text-xs text-muted-foreground">Room: {schedule.room}</div>
+                  </TableCell>
+                  <TableCell>
+                      <div>{schedule.days}</div>
+                      <div className="text-xs text-muted-foreground">{schedule.time}</div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
