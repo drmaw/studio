@@ -27,7 +27,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Label } from "../ui/label";
+import { Label } from "@/components/ui/label";
 
 
 type FeeItem = {
