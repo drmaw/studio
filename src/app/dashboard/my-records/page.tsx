@@ -5,11 +5,10 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, File, Trash2, Loader2, Image as ImageIcon, Sparkles, AlertTriangle } from 'lucide-react';
+import { UploadCloud, File, Trash2, Loader2, Image as ImageIcon, Sparkles, User, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -24,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format } from 'date-fns';
 
 type RecordFile = {
   id: string;
@@ -31,14 +31,15 @@ type RecordFile = {
   fileType: 'image' | 'pdf';
   recordType: 'prescription' | 'report';
   url: string;
-  date: string;
+  date: string; // ISO String
   size: string;
+  uploadedBy: string;
 };
 
 const initialRecords: RecordFile[] = [
-    { id: 'rec1', name: 'Blood Test Report.pdf', fileType: 'pdf', recordType: 'report', url: '#', date: '2024-06-15', size: '1.2 MB'},
-    { id: 'rec2', name: 'X-Ray Scan', fileType: 'image', recordType: 'report', url: 'https://picsum.photos/seed/xray/800/600', date: '2024-05-20', size: '2.5 MB'},
-    { id: 'rec3', name: 'Prescription_Dr_Anika.jpg', fileType: 'image', recordType: 'prescription', url: 'https://picsum.photos/seed/prescription/800/600', date: '2024-05-10', size: '800 KB' }
+    { id: 'rec1', name: 'Blood Test Report.pdf', fileType: 'pdf', recordType: 'report', url: '#', date: '2024-06-15T10:30:00.000Z', size: '1.2 MB', uploadedBy: 'Lab Assistant' },
+    { id: 'rec2', name: 'X-Ray Scan', fileType: 'image', recordType: 'report', url: 'https://picsum.photos/seed/xray/800/600', date: '2024-05-20T14:00:00.000Z', size: '2.5 MB', uploadedBy: 'Dr. Anika Rahman' },
+    { id: 'rec3', name: 'Prescription_Dr_Anika.jpg', fileType: 'image', recordType: 'prescription', url: 'https://picsum.photos/seed/prescription/800/600', date: '2024-05-10T11:45:00.000Z', size: '800 KB', uploadedBy: 'Self' }
 ];
 
 export default function MyHealthRecordsPage() {
@@ -96,8 +97,9 @@ export default function MyHealthRecordsPage() {
             fileType: selectedFile.type.startsWith('image/') ? 'image' : 'pdf',
             recordType: recordType,
             url: selectedFile.type.startsWith('image/') ? URL.createObjectURL(selectedFile) : '#',
-            date: new Date().toISOString(), // Use ISO string for accurate sorting
+            date: new Date().toISOString(),
             size: `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`,
+            uploadedBy: 'Self',
         };
         
         setRecords(prev => {
@@ -150,7 +152,7 @@ export default function MyHealthRecordsPage() {
                         <UploadCloud className="h-5 w-5 text-primary" />
                         Upload New Document
                     </CardTitle>
-                    <CardDescription>You can upload photos (JPEG, PNG) or PDF files. PDFs are counted as a single report.</CardDescription>
+                    <CardDescription>You can upload photos (JPEG, PNG) or PDF files. Each PDF counts as one report.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -195,7 +197,7 @@ export default function MyHealthRecordsPage() {
                 {records.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {recordsSorted.map(record => (
-                            <Card key={record.id} className="group overflow-hidden">
+                            <Card key={record.id} className="group overflow-hidden flex flex-col">
                                 <CardContent className="p-0">
                                     {record.fileType === 'image' ? (
                                         <Image src={record.url} alt={record.name} width={400} height={300} className="w-full h-48 object-cover transition-transform group-hover:scale-105" />
@@ -206,12 +208,9 @@ export default function MyHealthRecordsPage() {
                                         </div>
                                     )}
                                 </CardContent>
-                                <div className="p-4 border-t">
+                                <div className="p-4 border-t flex flex-col flex-1">
                                     <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="font-semibold truncate">{record.name}</h3>
-                                            <p className="text-xs text-muted-foreground">{new Date(record.date).toLocaleDateString()} &bull; {record.size}</p>
-                                        </div>
+                                        <h3 className="font-semibold truncate flex-1 pr-2">{record.name}</h3>
                                          <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
@@ -232,9 +231,21 @@ export default function MyHealthRecordsPage() {
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </div>
-                                    <div className="mt-2 flex gap-2">
+                                    <div className="mt-2 flex gap-2 flex-wrap">
                                         <Badge variant={record.fileType === 'pdf' ? 'destructive' : 'secondary'}>{record.fileType.toUpperCase()}</Badge>
                                         <Badge variant="outline" className="capitalize">{record.recordType}</Badge>
+                                    </div>
+                                    <div className="flex-1" />
+                                    <div className="mt-4 space-y-2 text-xs text-muted-foreground pt-4 border-t border-dashed">
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="h-3 w-3"/>
+                                            <span>{format(new Date(record.date), "dd MMM yyyy, hh:mm a")}</span>
+                                            <span className="font-semibold text-foreground/80">&bull; {record.size}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <User className="h-3 w-3" />
+                                            <span>Uploaded by: <span className="font-semibold text-foreground/80">{record.uploadedBy}</span></span>
+                                        </div>
                                     </div>
                                 </div>
                             </Card>
