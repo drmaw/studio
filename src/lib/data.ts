@@ -80,17 +80,39 @@ export const patients: Patient[] = [
   { 
     id: 'patient-1', 
     name: 'Karim Ahmed',
-    demographics: { dob: '1985-05-20', gender: 'Male', contact: '+8801712345678', address: '123 Gulshan, Dhaka' }
+    demographics: { 
+      dob: '1985-05-20', 
+      gender: 'Male', 
+      contact: '+8801712345678', 
+      address: '123 Gulshan, Dhaka',
+      chronicConditions: ['Asthma', 'Diabetes'],
+      allergies: ['Dust', 'Penicillin']
+    }
   },
   { 
     id: 'patient-2', 
     name: 'Fatima Begum',
-    demographics: { dob: '1992-11-15', gender: 'Female', contact: '+8801812345679', address: '456 Banani, Dhaka' }
+    demographics: { 
+      dob: '1992-11-15', 
+      gender: 'Female', 
+      contact: '+8801812345679', 
+      address: '456 Banani, Dhaka',
+      chronicConditions: ['Hypertension'],
+      allergies: []
+    }
   },
   {
     id: 'patient-3',
     name: 'Rashedul Islam',
-    demographics: { dob: '1978-01-30', gender: 'Male', contact: '+8801912345680', address: '789 Dhanmondi, Dhaka' }
+    demographics: { 
+      dob: '1978-01-30', 
+      gender: 'Male', 
+      contact: '+8801912345680', 
+      address: '789 Dhanmondi, Dhaka',
+      chronicConditions: [],
+      allergies: ['Shellfish']
+    },
+    redFlag: 'Patient has a severe allergy to shellfish. Anaphylaxis risk.'
   }
 ];
 

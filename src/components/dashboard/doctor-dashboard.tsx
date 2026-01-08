@@ -1,4 +1,5 @@
 
+
 import { patients } from "@/lib/data";
 import type { Patient, User } from "@/lib/definitions";
 import {
@@ -12,11 +13,13 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock } from "lucide-react";
+import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock, ShieldCheck, HeartPulse, Siren } from "lucide-react";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { ScrollArea } from "../ui/scroll-area";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { Textarea } from "../ui/textarea";
 
 const chamberSchedules = [
     { id: 1, hospital: 'Digital Health Clinic', room: '302', days: 'Sat, Mon, Wed', time: '5 PM - 9 PM' },
@@ -42,27 +45,55 @@ function PatientSearchResultCard({ patient }: { patient: Patient }) {
   const patientInitials = patient.name.split(' ').map(n => n[0]).join('');
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-         <Avatar className="h-16 w-16">
+      <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-4">
+         <Avatar className="h-20 w-20">
             <AvatarImage data-ai-hint="person portrait" src={`https://picsum.photos/seed/${patient.id}/100/100`} />
-            <AvatarFallback>{patientInitials}</AvatarFallback>
+            <AvatarFallback className="text-2xl">{patientInitials}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <CardTitle>{patient.name}</CardTitle>
-            <CardDescription className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+            <CardTitle className="text-2xl">{patient.name}</CardTitle>
+            <CardDescription className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm mt-2">
+              <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {patient.id}</span>
+              <span className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {patient.demographics.contact}</span>
               <span>DOB: {patient.demographics.dob}</span>
               <span>{patient.demographics.gender}</span>
             </CardDescription>
           </div>
-          <Button asChild variant="default" size="sm">
+          <Button asChild variant="default" size="sm" className="self-start">
             <Link href={`/dashboard/patients/${patient.id}`}>
-              View Records <ArrowRight className="ml-2 h-4 w-4" />
+              View Full Records <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
       </CardHeader>
-      <CardContent className="border-t pt-4 space-y-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-4 w-4" /> {patient.demographics.contact}</div>
-        <div className="flex items-center gap-2 text-sm text-destructive font-medium"><AlertTriangle className="h-4 w-4" /> Red Flag: Allergic to Penicillin</div>
+      <CardContent className="space-y-4">
+        {patient.redFlag && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Red Flag</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>{patient.redFlag}</p>
+              <Textarea placeholder="Add a note for this alert..." defaultValue="" />
+            </AlertDescription>
+          </Alert>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <h4 className="font-semibold flex items-center gap-2 text-sm"><HeartPulse className="h-4 w-4"/> Chronic Conditions</h4>
+            <div className="flex flex-wrap gap-2">
+              {patient.demographics.chronicConditions && patient.demographics.chronicConditions.length > 0 ? (
+                patient.demographics.chronicConditions.map(c => <Badge key={c} variant="outline">{c}</Badge>)
+              ) : <p className="text-xs text-muted-foreground">None</p>}
+            </div>
+          </div>
+           <div className="space-y-2">
+            <h4 className="font-semibold flex items-center gap-2 text-sm"><Siren className="h-4 w-4"/> Allergies</h4>
+            <div className="flex flex-wrap gap-2">
+              {patient.demographics.allergies && patient.demographics.allergies.length > 0 ? (
+                patient.demographics.allergies.map(a => <Badge key={a} variant="destructive" className="bg-destructive/10 text-destructive-foreground border-destructive/20">{a}</Badge>)
+              ) : <p className="text-xs text-muted-foreground">None</p>}
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

@@ -1,4 +1,5 @@
 
+
 export type Role = 'doctor' | 'patient' | 'marketing_rep' | 'nurse' | 'hospital_owner' | 'lab_technician' | 'pathologist' | 'pharmacist' | 'manager' | 'assistant_manager' | 'front_desk';
 
 export type UserDemographics = {
@@ -34,7 +35,10 @@ export type Patient = {
     gender: 'Male' | 'Female' | 'Other';
     contact: string;
     address: string;
+    chronicConditions?: string[];
+    allergies?: string[];
   };
+  redFlag?: string;
 };
 
 export type MedicalRecord = {
