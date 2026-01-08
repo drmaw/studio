@@ -6,9 +6,6 @@ import { MedicalRecordCard } from "./medical-record-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { VitalsTracker } from "./vitals-tracker";
 import { HealthIdCard } from "./health-id-card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldAlert, HeartPulse, Siren } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { RedBanner } from "./red-banner";
 
 
