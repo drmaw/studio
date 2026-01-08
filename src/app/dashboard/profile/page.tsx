@@ -6,9 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut, Mail, ShieldCheck, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, QrCode } from "lucide-react";
+import { LogOut, Mail, ShieldCheck, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, QrCode, Camera } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { differenceInYears, parseISO, format, isValid } from 'date-fns';
@@ -100,6 +100,7 @@ export default function ProfilePage() {
   const [age, setAge] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<UserDemographics>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -150,6 +151,26 @@ export default function ProfilePage() {
     setFormData(user?.demographics || {});
     setIsEditing(false);
   }
+  
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // In a real app, you would upload the file to a storage service
+      // and update the user's avatarUrl.
+      // For this mock, we'll just show a toast.
+      toast({
+        title: 'Profile Picture Selected',
+        description: `${file.name} is ready to be uploaded.`,
+      });
+      // To demonstrate the change, we can use a local object URL
+      // This is temporary and will be gone on page refresh.
+      // setUser(prev => prev ? ({ ...prev, avatarUrl: URL.createObjectURL(file) }) : null);
+    }
+  };
 
   if (loading || !user) {
     return <div className="flex justify-center">
@@ -173,14 +194,27 @@ export default function ProfilePage() {
       <div className="w-full max-w-2xl">
         <Card>
             <CardHeader className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-                <div className="flex-shrink-0 relative">
+                <div className="flex-shrink-0 relative group">
                   <Avatar className="h-24 w-24">
                       <AvatarImage src={user.avatarUrl} alt={user.name} />
                       <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
                   </Avatar>
+                  <div 
+                    className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    onClick={handleAvatarClick}
+                  >
+                    <Camera className="h-8 w-8 text-white" />
+                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/png, image/jpeg"
+                  />
                   <Dialog>
                     <DialogTrigger asChild>
-                      <div className="absolute -bottom-2 -right-2 cursor-pointer rounded-full bg-background p-1 border shadow-md hover:bg-accent">
+                      <div className="absolute -top-1 -right-1 cursor-pointer rounded-full bg-background p-1.5 border shadow-md hover:bg-accent">
                           <QrCode className="h-6 w-6 text-primary" />
                       </div>
                     </DialogTrigger>
