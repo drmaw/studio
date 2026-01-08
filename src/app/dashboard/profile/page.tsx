@@ -71,7 +71,7 @@ function ApplyForRoleCard() {
 }
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, activeRole } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -93,6 +93,9 @@ export default function ProfilePage() {
   
   const userInitials = user.name.split(' ').map(n => n[0]).join('');
 
+  // A user is only a "pure" patient if they have exactly one role, and it's 'patient'.
+  const isOnlyPatient = user.roles.length === 1 && user.roles[0] === 'patient';
+
   return (
     <div className="flex justify-center">
       <div className="w-full max-w-lg">
@@ -104,9 +107,13 @@ export default function ProfilePage() {
                 </Avatar>
                 <CardTitle className="text-3xl">{user.name}</CardTitle>
                 <CardDescription className="text-base pt-1">
-                    <Badge variant="secondary" className="capitalize">
-                        {user.role.replace('_', ' ')}
-                    </Badge>
+                    <div className="flex flex-wrap justify-center gap-2">
+                        {user.roles.map(role => (
+                            <Badge key={role} variant="secondary" className="capitalize">
+                                {role.replace('_', ' ')}
+                            </Badge>
+                        ))}
+                    </div>
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 text-center border-t pt-6">
@@ -126,7 +133,7 @@ export default function ProfilePage() {
                 </Button>
             </CardContent>
         </Card>
-        {user.role === 'patient' && <ApplyForRoleCard />}
+        {isOnlyPatient && <ApplyForRoleCard />}
       </div>
     </div>
   );
