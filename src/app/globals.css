@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -47,6 +48,7 @@ h1, h2, h3, h4, h5, h6 {
     --sidebar-border: 240 5% 25%;
     --sidebar-ring: 220 75% 55%;
   }
+
   .dark {
     --background: 240 5% 12%;
     --foreground: 0 0% 98%;
@@ -82,6 +84,29 @@ h1, h2, h3, h4, h5, h6 {
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 240 5% 25%;
     --sidebar-ring: 220 75% 55%;
+  }
+  
+  .premium-dashboard {
+    --background: 45 30% 97%;
+    --foreground: 40 10% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 40 10% 10%;
+    --primary: 45 90% 50%;
+    --primary-foreground: 45 10% 10%;
+    --secondary: 45 20% 94%;
+    --accent: 45 95% 96%;
+    --border: 45 15% 88%;
+    --input: 45 15% 90%;
+    --ring: 45 90% 50%;
+
+    --sidebar-background: 35 15% 20%;
+    --sidebar-foreground: 40 15% 95%;
+    --sidebar-primary: 45 90% 55%;
+    --sidebar-primary-foreground: 35 15% 10%;
+    --sidebar-accent: 35 15% 30%;
+    --sidebar-accent-foreground: 40 15% 98%;
+    --sidebar-border: 35 15% 30%;
+    --sidebar-ring: 45 90% 55%;
   }
 }
 
