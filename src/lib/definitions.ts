@@ -1,3 +1,4 @@
+
 export type Role = 'doctor' | 'patient' | 'marketing_rep' | 'nurse' | 'hospital_owner' | 'lab_technician' | 'pathologist' | 'pharmacist' | 'manager' | 'assistant_manager' | 'front_desk';
 
 export type User = {
@@ -27,4 +28,14 @@ export type MedicalRecord = {
   date: string;
   diagnosis: string;
   notes: string;
+};
+
+export type Vitals = {
+  id: string;
+  date: string; // "YYYY-MM-DD HH:mm"
+  bpSystolic: number | null;
+  bpDiastolic: number | null;
+  pulse: number | null;
+  weight: number | null;
+  rbs: number | null;
 };

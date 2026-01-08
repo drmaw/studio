@@ -1,7 +1,8 @@
+
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
-import { medicalRecords, patients } from "@/lib/data";
+import { medicalRecords, patients, vitalsHistory } from "@/lib/data";
 import { notFound, useRouter } from "next/navigation";
 import { MedicalRecordCard } from "@/components/dashboard/medical-record-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Cake, Home, Phone, User as UserIcon } from "lucide-react";
 import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { VitalsTracker } from "@/components/dashboard/vitals-tracker";
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
   const { user, loading } = useAuth();
@@ -65,6 +67,9 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
           </div>
         </CardContent>
       </Card>
+      
+      <VitalsTracker vitalsData={vitalsHistory} currentUserRole={user.role} />
+
       <div>
         <h2 className="text-2xl font-bold mb-4">Medical Records</h2>
         <div className="space-y-4">

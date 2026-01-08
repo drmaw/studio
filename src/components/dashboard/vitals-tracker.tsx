@@ -1,0 +1,184 @@
+
+'use client'
+
+import { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { format, parseISO } from 'date-fns';
+import { PlusCircle, Loader2, HeartPulse, Droplet, Weight, Activity } from 'lucide-react';
+import type { Role, Vitals } from '@/lib/definitions';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { ScrollArea } from '../ui/scroll-area';
+
+type VitalsTrackerProps = {
+  vitalsData: Vitals[];
+  currentUserRole: Role;
+};
+
+const chartConfig = {
+  bp: {
+    label: "BP",
+    color: "hsl(var(--chart-1))",
+  },
+  pulse: {
+    label: "Pulse",
+    color: "hsl(var(--chart-2))",
+  },
+  weight: {
+    label: "Weight",
+    color: "hsl(var(--chart-3))",
+  },
+  rbs: {
+    label: "RBS",
+    color: "hsl(var(--chart-4))",
+  },
+};
+
+export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProps) {
+  const [vitals, setVitals] = useState<Vitals[]>(vitalsData);
+  const [bpSystolic, setBpSystolic] = useState('');
+  const [bpDiastolic, setBpDiastolic] = useState('');
+  const [pulse, setPulse] = useState('');
+  const [weight, setWeight] = useState('');
+  const [rbs, setRbs] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const formattedData = vitals.map(v => ({
+    ...v,
+    name: format(parseISO(v.date), 'dd MMM'),
+    bp: v.bpSystolic ? `${v.bpSystolic}/${v.bpDiastolic}`: null,
+  }));
+
+  const handleAddVitals = async () => {
+    setIsSubmitting(true);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const newVital: Vitals = {
+      id: `v${Date.now()}`,
+      date: new Date().toISOString(),
+      bpSystolic: bpSystolic ? parseInt(bpSystolic) : null,
+      bpDiastolic: bpDiastolic ? parseInt(bpDiastolic) : null,
+      pulse: pulse ? parseInt(pulse) : null,
+      weight: weight ? parseFloat(weight) : null,
+      rbs: rbs ? parseFloat(rbs) : null,
+    };
+    
+    setVitals(prev => [newVital, ...prev]);
+
+    setBpSystolic('');
+    setBpDiastolic('');
+    setPulse('');
+    setWeight('');
+    setRbs('');
+    
+    toast({
+      title: "Vitals Logged",
+      description: "Your latest health vitals have been recorded.",
+    });
+
+    setIsSubmitting(false);
+  };
+  
+  const renderChart = (dataKey: "bpSystolic" | "pulse" | "weight" | "rbs", label: string, color: string) => (
+      <ResponsiveContainer width="100%" height={250}>
+        <LineChart
+          data={formattedData.slice().reverse()}
+          margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis domain={['dataMin - 5', 'dataMax + 5']} />
+          <Tooltip
+            contentStyle={{
+                backgroundColor: 'hsl(var(--background))',
+                borderColor: 'hsl(var(--border))'
+            }}
+          />
+          <Legend />
+          <Line type="monotone" dataKey={dataKey} name={label} stroke={color} strokeWidth={2} dot={{r: 4}} activeDot={{r: 6}} />
+          {dataKey === 'bpSystolic' && <Line type="monotone" dataKey="bpDiastolic" name="Diastolic" stroke={color} strokeOpacity={0.5} />}
+        </LineChart>
+      </ResponsiveContainer>
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Vitals Tracking</CardTitle>
+        <CardDescription>
+            {currentUserRole === 'patient' 
+                ? "Log and monitor your health metrics over time." 
+                : "Patient's self-reported health metrics."
+            }
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <Tabs defaultValue="bp">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="bp"><HeartPulse className="mr-2 h-4 w-4 hidden sm:inline" />BP</TabsTrigger>
+            <TabsTrigger value="pulse"><Activity className="mr-2 h-4 w-4 hidden sm:inline" />Pulse</TabsTrigger>
+            <TabsTrigger value="weight"><Weight className="mr-2 h-4 w-4 hidden sm:inline" />Weight</TabsTrigger>
+            <TabsTrigger value="rbs"><Droplet className="mr-2 h-4 w-4 hidden sm:inline" />RBS</TabsTrigger>
+          </TabsList>
+          <TabsContent value="bp" className="mt-4">{renderChart('bpSystolic', "Systolic BP", chartConfig.bp.color)}</TabsContent>
+          <TabsContent value="pulse" className="mt-4">{renderChart('pulse', "Pulse (bpm)", chartConfig.pulse.color)}</TabsContent>
+          <TabsContent value="weight" className="mt-4">{renderChart('weight', "Weight (kg)", chartConfig.weight.color)}</TabsContent>
+          <TabsContent value="rbs" className="mt-4">{renderChart('rbs', "RBS (mmol/L)", chartConfig.rbs.color)}</TabsContent>
+        </Tabs>
+        
+        {currentUserRole === 'patient' && (
+             <div className="space-y-4 p-4 border rounded-lg">
+                <h4 className="font-medium text-center">Log New Vitals</h4>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 gap-2 col-span-2 md:col-span-2">
+                        <Input placeholder="Systolic" value={bpSystolic} onChange={e => setBpSystolic(e.target.value)} type="number" />
+                        <Input placeholder="Diastolic" value={bpDiastolic} onChange={e => setBpDiastolic(e.target.value)} type="number" />
+                    </div>
+                    <Input placeholder="Pulse (bpm)" value={pulse} onChange={e => setPulse(e.target.value)} type="number" />
+                    <Input placeholder="Weight (kg)" value={weight} onChange={e => setWeight(e.target.value)} type="number" />
+                    <Input placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
+                </div>
+                <Button onClick={handleAddVitals} disabled={isSubmitting} className="w-full">
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Reading
+                </Button>
+            </div>
+        )}
+
+        <div className="space-y-2">
+            <h4 className="font-medium">History</h4>
+            <ScrollArea className="h-64 border rounded-md">
+                <Table>
+                    <TableHeader className="sticky top-0 bg-secondary">
+                        <TableRow>
+                            <TableHead className="w-1/3">Date</TableHead>
+                            <TableHead>BP (Sys/Dia)</TableHead>
+                            <TableHead>Pulse</TableHead>
+                            <TableHead>Weight</TableHead>
+                            <TableHead>RBS</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {formattedData.map(v => (
+                            <TableRow key={v.id}>
+                                <TableCell className="font-medium">{format(parseISO(v.date), 'dd MMM yyyy, hh:mm a')}</TableCell>
+                                <TableCell>{v.bp ?? 'N/A'}</TableCell>
+                                <TableCell>{v.pulse ?? 'N/A'}</TableCell>
+                                <TableCell>{v.weight ?? 'N/A'}</TableCell>
+                                <TableCell>{v.rbs ?? 'N/A'}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </ScrollArea>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
