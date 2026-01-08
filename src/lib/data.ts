@@ -4,7 +4,7 @@ import type { User, Patient, MedicalRecord, Vitals } from '@/lib/definitions';
 
 export const users: User[] = [
   { 
-    id: 'user-doc-1', 
+    id: '8912409021', 
     name: 'Dr. Anika Rahman', 
     email: 'doctor@digihealth.com', 
     roles: ['doctor', 'patient'], 
@@ -24,7 +24,7 @@ export const users: User[] = [
     isPremium: true
   },
   { 
-    id: 'user-pat-1', 
+    id: '3049582012', 
     name: 'Karim Ahmed', 
     email: 'patient@digihealth.com', 
     roles: ['patient'], 
@@ -44,7 +44,7 @@ export const users: User[] = [
     isPremium: false
   },
   { 
-    id: 'user-rep-1', 
+    id: '1234567890', 
     name: 'Salma Khan', 
     email: 'rep@digihealth.com', 
     roles: ['marketing_rep', 'patient'], 
@@ -53,7 +53,7 @@ export const users: User[] = [
     isPremium: false
   },
   { 
-    id: 'user-doc-2', 
+    id: '0987654321', 
     name: 'Dr. Farid Uddin', 
     email: 'doctor2@digihealth.com', 
     roles: ['doctor', 'patient'], 
@@ -62,7 +62,7 @@ export const users: User[] = [
     isPremium: true
   },
   { 
-    id: 'user-owner-1', 
+    id: '1122334455', 
     name: 'Admin Owner', 
     email: 'owner@digihealth.com', 
     roles: ['hospital_owner', 'patient'], 
@@ -94,7 +94,7 @@ export const medicalRecords: MedicalRecord[] = [
   {
     id: 'rec-1',
     patientId: 'patient-1',
-    doctorId: 'user-doc-1',
+    doctorId: '8912409021',
     doctorName: 'Dr. Anika Rahman',
     date: '2024-05-10',
     diagnosis: 'Common Cold',
@@ -103,7 +103,7 @@ export const medicalRecords: MedicalRecord[] = [
   {
     id: 'rec-2',
     patientId: 'patient-1',
-    doctorId: 'user-doc-1',
+    doctorId: '8912409021',
     doctorName: 'Dr. Anika Rahman',
     date: '2023-11-22',
     diagnosis: 'Seasonal Allergies',
@@ -112,7 +112,7 @@ export const medicalRecords: MedicalRecord[] = [
   {
     id: 'rec-3',
     patientId: 'patient-2',
-    doctorId: 'user-doc-2',
+    doctorId: '0987654321',
     doctorName: 'Dr. Farid Uddin',
     date: '2024-04-01',
     diagnosis: 'Hypertension',
@@ -121,7 +121,7 @@ export const medicalRecords: MedicalRecord[] = [
   {
     id: 'rec-4',
     patientId: 'patient-3',
-    doctorId: 'user-doc-1',
+    doctorId: '8912409021',
     doctorName: 'Dr. Anika Rahman',
     date: '2024-06-15',
     diagnosis: 'Type 2 Diabetes',

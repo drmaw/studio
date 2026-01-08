@@ -25,6 +25,17 @@ const formSchema = z.object({
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
 });
 
+// Function to generate a unique 10-digit alphanumeric ID
+const generateHealthId = () => {
+  const characters = '0123456789';
+  let result = '';
+  for (let i = 0; i < 10; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+};
+
+
 export function RegisterForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +58,7 @@ export function RegisterForm() {
     // In a real app, you would add this user to your database.
     // We are just logging it here.
     const newUser = {
-        id: `user-${Date.now()}`,
+        id: generateHealthId(),
         ...values,
         roles: ['patient'], // All new users are patients by default
         avatarUrl: `https://picsum.photos/seed/${values.email}/100/100`

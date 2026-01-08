@@ -5,6 +5,7 @@ import type { User } from "@/lib/definitions";
 import { MedicalRecordCard } from "./medical-record-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { VitalsTracker } from "./vitals-tracker";
+import { HealthIdCard } from "./health-id-card";
 
 export function PatientDashboard({ user }: { user: User }) {
   // In a real app, this would be a DB query. Here, we link patient by name.
@@ -14,7 +15,7 @@ export function PatientDashboard({ user }: { user: User }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Welcome, {user.name}</h1>
+      <HealthIdCard user={user} />
       
       <VitalsTracker 
         vitalsData={vitalsHistory}

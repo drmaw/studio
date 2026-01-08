@@ -2,7 +2,6 @@
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,14 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { UserDemographics } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import Image from "next/image";
+import { HealthIdCard } from "@/components/dashboard/health-id-card";
 
 
 function ApplyForRoleCard() {
@@ -100,7 +92,6 @@ export default function ProfilePage() {
   const [age, setAge] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<UserDemographics>>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -151,26 +142,6 @@ export default function ProfilePage() {
     setFormData(user?.demographics || {});
     setIsEditing(false);
   }
-  
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  }
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // In a real app, you would upload the file to a storage service
-      // and update the user's avatarUrl.
-      // For this mock, we'll just show a toast.
-      toast({
-        title: 'Profile Picture Selected',
-        description: `${file.name} is ready to be uploaded.`,
-      });
-      // To demonstrate the change, we can use a local object URL
-      // This is temporary and will be gone on page refresh.
-      // setUser(prev => prev ? ({ ...prev, avatarUrl: URL.createObjectURL(file) }) : null);
-    }
-  };
 
   if (loading || !user) {
     return <div className="flex justify-center">
@@ -178,86 +149,35 @@ export default function ProfilePage() {
     </div>;
   }
   
-  const userInitials = user.name.split(' ').map(n => n[0]).join('');
-
   // A user is only a "pure" patient if they have exactly one role, and it's 'patient'.
   const isOnlyPatient = user.roles.length === 1 && user.roles[0] === 'patient';
   
   const dobDate = formData.dob ? parseISO(formData.dob) : null;
   const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd MMMM, yyyy') : 'N/A';
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.id}`;
-  const largeQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${user.id}`;
-
 
   return (
     <div className="flex justify-center">
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-2xl space-y-6">
+        <HealthIdCard user={user} />
         <Card>
-            <CardHeader className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-                <div className="flex-shrink-0 relative group">
-                  <Avatar className="h-24 w-24">
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
-                      <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
-                  </Avatar>
-                  <div 
-                    className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    onClick={handleAvatarClick}
-                  >
-                    <Camera className="h-8 w-8 text-white" />
-                  </div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    className="hidden"
-                    accept="image/png, image/jpeg"
-                  />
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <div className="absolute -top-1 -right-1 cursor-pointer rounded-full bg-background p-1.5 border shadow-md hover:bg-accent">
-                          <QrCode className="h-6 w-6 text-primary" />
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md items-center flex flex-col">
-                        <DialogHeader>
-                            <DialogTitle className="text-center">Health ID: {user.id}</DialogTitle>
-                        </DialogHeader>
-                        <Image src={largeQrCodeUrl} alt="Enlarged QR Code" width={400} height={400} />
-                    </DialogContent>
-                  </Dialog>
-                </div>
-                <div className="flex-1">
-                    <CardTitle className="text-3xl">{user.name}</CardTitle>
-                    <CardDescription className="text-base pt-2 flex flex-wrap gap-x-4 gap-y-2">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <Mail className="h-4 w-4" />
-                            <span>{user.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <ShieldCheck className="h-4 w-4" />
-                            <span>ID: {user.id}</span>
-                        </div>
+            <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-xl">Personal Details</CardTitle>
+                    <CardDescription className="text-sm pt-1">
+                        Your personal information and demographics.
                     </CardDescription>
-                    <div className="flex flex-wrap gap-2 pt-3">
-                        {user.roles.map(role => (
-                            <Badge key={role} variant="secondary" className="capitalize">
-                                {role.replace('_', ' ')}
-                            </Badge>
-                        ))}
-                    </div>
-                </div>
-                {!isEditing && (
+                  </div>
+                   {!isEditing && (
                     <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Profile
                     </Button>
                 )}
+                </div>
             </CardHeader>
-            
             <Separator />
-
             <CardContent className="pt-6">
-                <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
                 {isEditing ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <ProfileEditRow label="Mobile Number" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} />
@@ -303,9 +223,13 @@ export default function ProfilePage() {
                 )}
             </CardContent>
 
-            <CardFooter className="bg-muted/50 p-4 border-t flex justify-end gap-2">
-                {isEditing ? (
-                    <>
+            <CardFooter className="bg-muted/50 p-4 border-t flex justify-between">
+                 <Button onClick={handleLogout} variant="destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                </Button>
+                {isEditing && (
+                    <div className="flex gap-2">
                         <Button onClick={handleCancel} variant="outline">
                             <XCircle className="mr-2 h-4 w-4" />
                             Cancel
@@ -314,12 +238,7 @@ export default function ProfilePage() {
                             <Save className="mr-2 h-4 w-4" />
                             Save Changes
                         </Button>
-                    </>
-                ) : (
-                    <Button onClick={handleLogout} variant="destructive">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                    </Button>
+                    </div>
                 )}
             </CardFooter>
         </Card>
