@@ -87,14 +87,6 @@ const ProfileEditRow = ({ label, name, value, onChange, placeholder }: { label: 
     )
 }
 
-const chronicConditionsOptions = [
-    { id: 'diabetes', label: 'Diabetes', icon: Droplet },
-    { id: 'hypertension', label: 'Hypertension', icon: HeartPulse },
-    { id: 'asthma', label: 'Asthma', icon: Wind },
-    { id: 'ckd', label: 'CKD', icon: ShieldAlert },
-] as const;
-
-
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -104,6 +96,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<UserDemographics>>({});
   const [allergyInput, setAllergyInput] = useState('');
+  const [conditionInput, setConditionInput] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -144,17 +137,6 @@ export default function ProfilePage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   }
 
-  const handleChronicConditionChange = (conditionId: 'diabetes' | 'hypertension' | 'asthma' | 'ckd', checked: boolean) => {
-    setFormData(prev => {
-        const currentConditions = prev.chronicConditions || [];
-        if (checked) {
-            return { ...prev, chronicConditions: [...currentConditions, conditionId] };
-        } else {
-            return { ...prev, chronicConditions: currentConditions.filter(c => c !== conditionId) };
-        }
-    });
-  };
-
   const handleAddAllergy = () => {
     if (allergyInput && !formData.allergies?.includes(allergyInput)) {
         setFormData(prev => ({ ...prev, allergies: [...(prev.allergies || []), allergyInput]}));
@@ -164,6 +146,17 @@ export default function ProfilePage() {
   
   const handleRemoveAllergy = (allergyToRemove: string) => {
     setFormData(prev => ({ ...prev, allergies: prev.allergies?.filter(a => a !== allergyToRemove)}));
+  }
+
+  const handleAddCondition = () => {
+    if (conditionInput && !formData.chronicConditions?.includes(conditionInput)) {
+        setFormData(prev => ({ ...prev, chronicConditions: [...(prev.chronicConditions || []), conditionInput]}));
+        setConditionInput('');
+    }
+  }
+
+  const handleRemoveCondition = (conditionToRemove: string) => {
+    setFormData(prev => ({ ...prev, chronicConditions: prev.chronicConditions?.filter(c => c !== conditionToRemove)}));
   }
 
   const handleSave = async () => {
@@ -239,21 +232,27 @@ export default function ProfilePage() {
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold border-b pb-2">Medical Information</h3>
                             <div className="space-y-2">
-                               <Label className="text-base">Chronic Conditions</Label>
-                                <div className="flex flex-wrap gap-x-6 gap-y-2">
-                                    {chronicConditionsOptions.map(condition => (
-                                        <div key={condition.id} className="flex items-center space-x-2">
-                                            <Checkbox
-                                                id={condition.id}
-                                                checked={formData.chronicConditions?.includes(condition.id)}
-                                                onCheckedChange={(checked) => handleChronicConditionChange(condition.id, !!checked)}
-                                            />
-                                            <label htmlFor={condition.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                                {condition.label}
-                                            </label>
-                                        </div>
+                                <Label htmlFor="conditions" className="text-base">Chronic Conditions</Label>
+                                <div className="flex gap-2">
+                                    <Input 
+                                        id="conditions" 
+                                        placeholder="e.g., Diabetes" 
+                                        value={conditionInput} 
+                                        onChange={(e) => setConditionInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCondition())}
+                                    />
+                                    <Button type="button" onClick={handleAddCondition}><Plus className="mr-2 h-4 w-4" /> Add</Button>
+                                </div>
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                    {formData.chronicConditions?.map(condition => (
+                                        <Badge key={condition} variant="outline" className="pr-1 capitalize">
+                                            {condition}
+                                            <button onClick={() => handleRemoveCondition(condition)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 text-destructive">
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </Badge>
                                     ))}
-                               </div>
+                                </div>
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="allergies" className="text-base">Allergies</Label>
@@ -314,15 +313,11 @@ export default function ProfilePage() {
                          <ProfileInfoRow icon={HeartPulse} label="Chronic Conditions">
                              {formData.chronicConditions && formData.chronicConditions.length > 0 ? (
                                 <div className="flex flex-wrap gap-2 pt-1">
-                                    {formData.chronicConditions.map(c => {
-                                        const condition = chronicConditionsOptions.find(opt => opt.id === c);
-                                        return (
-                                             <Badge key={c} variant="outline" className="capitalize flex items-center gap-1.5">
-                                                 {condition && <condition.icon className="h-3 w-3" />}
-                                                 {condition?.label || c}
-                                            </Badge>
-                                        )
-                                    })}
+                                    {formData.chronicConditions.map(c => (
+                                        <Badge key={c} variant="outline" className="capitalize">
+                                            {c}
+                                        </Badge>
+                                    ))}
                                 </div>
                             ) : <p className="font-medium text-muted-foreground/80">None reported</p>}
                         </ProfileInfoRow>

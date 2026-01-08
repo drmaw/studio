@@ -13,7 +13,7 @@ export type UserDemographics = {
   presentAddress?: string;
   permanentAddress?: string;
   mobileNumber?: string;
-  chronicConditions?: ('diabetes' | 'hypertension' | 'asthma' | 'ckd')[];
+  chronicConditions?: string[];
   allergies?: string[];
 };
 
@@ -57,4 +57,5 @@ export type Vitals = {
   weight: number | null;
   rbs: number | null;
 };
+
 
