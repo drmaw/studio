@@ -21,7 +21,7 @@ export const users: User[] = [
       presentAddress: "123 Health St, Medical Road, Dhaka, Bangladesh",
       permanentAddress: "456 Village Rd, Health District, Country",
       allergies: ['Pollen'],
-      chronicConditions: [],
+      chronicConditions: ['Hypertension'],
     },
     isPremium: true
   },
@@ -43,7 +43,7 @@ export const users: User[] = [
       presentAddress: "789 Patient Ave, Wellness City, Dhaka",
       permanentAddress: "101 Native Town, Home District, Country",
       allergies: ['Dust', 'Penicillin'],
-      chronicConditions: ['asthma'],
+      chronicConditions: ['Asthma', 'Diabetes'],
     },
     isPremium: false
   },
@@ -62,7 +62,7 @@ export const users: User[] = [
     email: 'doctor2@digihealth.com', 
     roles: ['doctor', 'patient'], 
     avatarUrl: 'https://picsum.photos/seed/doc2/100/100',
-    demographics: { dob: '1975-11-30T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801654321987', allergies: [], chronicConditions: ['hypertension'] },
+    demographics: { dob: '1975-11-30T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801654321987', allergies: [], chronicConditions: ['Hypertension'] },
     isPremium: true
   },
   { 
@@ -163,3 +163,5 @@ export const demoRecords: MedicalRecord[] = [
     notes: 'This note illustrates the structure of a medical record within the Digi Health system.'
   }
 ];
+
+    
