@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StaffManagementTab } from "@/components/dashboard/settings/staff-management-tab";
+import { BillingFeesTab } from "@/components/dashboard/settings/billing-fees-tab";
 
 export default function HospitalSettingsPage() {
     return (
@@ -12,7 +13,7 @@ export default function HospitalSettingsPage() {
             <Tabs defaultValue="staff">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="staff">Staff Management</TabsTrigger>
-                    <TabsTrigger value="billing" disabled>Billing & Fees</TabsTrigger>
+                    <TabsTrigger value="billing">Billing & Fees</TabsTrigger>
                     <TabsTrigger value="schedules" disabled>Doctor Schedules</TabsTrigger>
                 </TabsList>
                 <TabsContent value="staff">
@@ -27,7 +28,15 @@ export default function HospitalSettingsPage() {
                     </Card>
                 </TabsContent>
                 <TabsContent value="billing">
-                    {/* Billing content will go here */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Billing & Fees</CardTitle>
+                            <CardDescription>Manage the price chart for various services offered at your hospital.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <BillingFeesTab />
+                        </CardContent>
+                    </Card>
                 </TabsContent>
                 <TabsContent value="schedules">
                     {/* Scheduling content will go here */}
