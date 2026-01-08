@@ -22,6 +22,7 @@ export type User = {
   roles: Role[];
   avatarUrl: string;
   demographics?: UserDemographics;
+  isPremium?: boolean;
 };
 
 export type Patient = {

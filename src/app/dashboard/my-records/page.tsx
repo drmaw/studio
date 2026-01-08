@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, File, Trash2, Loader2, Image as ImageIcon } from 'lucide-react';
+import { UploadCloud, File, Trash2, Loader2, Image as ImageIcon, Sparkles, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { useAuth } from '@/hooks/use-auth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,13 +39,26 @@ const initialRecords: RecordFile[] = [
 ];
 
 export default function MyHealthRecordsPage() {
+    const { user } = useAuth();
     const [records, setRecords] = useState<RecordFile[]>(initialRecords);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
 
+    const MAX_RECORDS_STANDARD = 10;
+    const MAX_RECORDS_PREMIUM = 40;
+    const maxRecords = user?.isPremium ? MAX_RECORDS_PREMIUM : MAX_RECORDS_STANDARD;
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
+            if (isUploading) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Upload in progress',
+                    description: 'Please wait for the current upload to finish.',
+                });
+                return;
+            }
             setSelectedFile(e.target.files[0]);
         }
     };
@@ -66,11 +82,27 @@ export default function MyHealthRecordsPage() {
             name: selectedFile.name,
             type: selectedFile.type.startsWith('image/') ? 'image' : 'pdf',
             url: selectedFile.type.startsWith('image/') ? URL.createObjectURL(selectedFile) : '#',
-            date: new Date().toISOString().split('T')[0],
+            date: new Date().toISOString(), // Use ISO string for accurate sorting
             size: `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`,
         };
         
-        setRecords(prev => [newRecord, ...prev]);
+        setRecords(prev => {
+            let updatedRecords = [newRecord, ...prev];
+            if (updatedRecords.length > maxRecords) {
+                // Remove the oldest record
+                const oldestRecord = updatedRecords.reduce((oldest, current) => 
+                    new Date(current.date) < new Date(oldest.date) ? current : oldest
+                );
+                updatedRecords = updatedRecords.filter(r => r.id !== oldestRecord.id);
+                toast({
+                    variant: "destructive",
+                    title: "Storage Limit Reached",
+                    description: `The oldest record "${oldestRecord.name}" was deleted to make space.`,
+                });
+            }
+            return updatedRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        });
+        
         setSelectedFile(null);
         setIsUploading(false);
         toast({
@@ -87,6 +119,9 @@ export default function MyHealthRecordsPage() {
         })
     }
 
+    const recordsSorted = records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const storagePercentage = (records.length / maxRecords) * 100;
+
     return (
         <div className="space-y-6">
             <div>
@@ -100,10 +135,10 @@ export default function MyHealthRecordsPage() {
                         <UploadCloud className="h-5 w-5 text-primary" />
                         Upload New Document
                     </CardTitle>
-                    <CardDescription>You can upload photos (JPEG, PNG) or PDF files.</CardDescription>
+                    <CardDescription>You can upload photos (JPEG, PNG) or PDF files. PDFs are counted as a single report.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-                    <Input type="file" onChange={handleFileChange} accept="image/jpeg,image/png,application/pdf" className="flex-1" />
+                    <Input type="file" onChange={handleFileChange} disabled={isUploading} accept="image/jpeg,image/png,application/pdf" className="flex-1" />
                     <Button onClick={handleUpload} disabled={isUploading || !selectedFile} className="w-full sm:w-auto">
                         {isUploading ? (
                             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...</>
@@ -112,13 +147,28 @@ export default function MyHealthRecordsPage() {
                         )}
                     </Button>
                 </CardContent>
+                <CardFooter className="flex flex-col gap-2 pt-4 border-t">
+                    <div className="w-full flex justify-between text-sm text-muted-foreground">
+                        <span>Storage Usage</span>
+                        <span>{records.length} / {maxRecords} reports</span>
+                    </div>
+                    <Progress value={storagePercentage} />
+                    {!user?.isPremium && (
+                        <div className="pt-2 text-center text-sm">
+                           <Button variant="link" className="p-0 h-auto text-primary">
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Upgrade to Premium for {MAX_RECORDS_PREMIUM} slots
+                           </Button>
+                        </div>
+                    )}
+                </CardFooter>
             </Card>
 
             <div className="space-y-4">
                 <h2 className="text-2xl font-bold">Your Documents</h2>
                 {records.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {records.map(record => (
+                        {recordsSorted.map(record => (
                             <Card key={record.id} className="group overflow-hidden">
                                 <CardContent className="p-0">
                                     {record.type === 'image' ? (
@@ -134,7 +184,7 @@ export default function MyHealthRecordsPage() {
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <h3 className="font-semibold truncate">{record.name}</h3>
-                                            <p className="text-xs text-muted-foreground">{record.date} &bull; {record.size}</p>
+                                            <p className="text-xs text-muted-foreground">{new Date(record.date).toLocaleDateString()} &bull; {record.size}</p>
                                         </div>
                                          <AlertDialog>
                                             <AlertDialogTrigger asChild>
