@@ -33,14 +33,14 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
     const [isVisible, setIsVisible] = useState(true);
 
     const handleSave = async () => {
-        // Mock API call to save the comment
-        console.log(`Saving comment for patient ${patientId}:`, comment);
+        // Mock API call to save the comment (disease name)
+        console.log(`Saving red flag for patient ${patientId}:`, comment);
         await new Promise(resolve => setTimeout(resolve, 500));
         setRedFlag(prev => ({ ...prev, comment }));
         setIsEditing(false);
         toast({
-            title: "Comment Saved",
-            description: "The red flag comment has been updated.",
+            title: "Alert Saved",
+            description: "The critical alert has been updated.",
         });
     };
 
@@ -50,7 +50,7 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
         await new Promise(resolve => setTimeout(resolve, 500));
         setIsVisible(false);
         toast({
-            title: "Red Flag Removed",
+            title: "Alert Removed",
             description: "The critical alert has been removed for this patient.",
         });
     };
@@ -64,18 +64,19 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
     return (
         <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <div className="flex justify-between items-start">
-                <div>
+            <div className="flex justify-between items-start gap-4">
+                <div className="flex-1">
                     <AlertTitle>{redFlag.title}</AlertTitle>
-                    <AlertDescription className="mt-2 space-y-2 pr-4">
+                    <AlertDescription className="mt-2 space-y-2">
                         {isEditing && isDoctor ? (
                             <Textarea 
                                 value={comment} 
                                 onChange={(e) => setComment(e.target.value)}
-                                rows={3}
+                                placeholder="Enter disease name (e.g., HIV Positive)"
+                                rows={2}
                             />
                         ) : (
-                            <p className="text-sm whitespace-pre-wrap">{comment || 'No comments added.'}</p>
+                            <p className="text-sm whitespace-pre-wrap pt-1">{comment || 'No condition specified.'}</p>
                         )}
                     </AlertDescription>
                 </div>
@@ -105,7 +106,7 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                This action cannot be undone. This will permanently delete the red flag alert for this patient.
+                                                This action cannot be undone. This will permanently delete the critical alert for this patient.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
