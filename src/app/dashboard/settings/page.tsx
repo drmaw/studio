@@ -4,6 +4,7 @@ import { StaffManagementTab } from "@/components/dashboard/settings/staff-manage
 import { BillingFeesTab } from "@/components/dashboard/settings/billing-fees-tab";
 import { DoctorSchedulesTab } from "@/components/dashboard/settings/doctor-schedules-tab";
 import { FacilityManagementTab } from "@/components/dashboard/settings/facility-management-tab";
+import { GeneralSettingsTab } from "@/components/dashboard/settings/general-settings-tab";
 
 export default function HospitalSettingsPage() {
     return (
@@ -12,13 +13,25 @@ export default function HospitalSettingsPage() {
                 <h1 className="text-3xl font-bold">Hospital Settings</h1>
                 <p className="text-muted-foreground">Manage your organization's staff, services, and schedules.</p>
             </div>
-            <Tabs defaultValue="staff">
-                <TabsList className="grid w-full grid-cols-4">
+            <Tabs defaultValue="general">
+                <TabsList className="grid w-full grid-cols-5">
+                    <TabsTrigger value="general">General</TabsTrigger>
                     <TabsTrigger value="staff">Staff Management</TabsTrigger>
                     <TabsTrigger value="billing">Billing & Fees</TabsTrigger>
                     <TabsTrigger value="schedules">Doctor Schedules</TabsTrigger>
                     <TabsTrigger value="facilities">Facility Management</TabsTrigger>
                 </TabsList>
+                <TabsContent value="general">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>General Settings</CardTitle>
+                            <CardDescription>View and manage your hospital's general information.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <GeneralSettingsTab />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
                 <TabsContent value="staff">
                     <Card>
                         <CardHeader>
