@@ -7,7 +7,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -33,6 +33,12 @@ export function SidebarNav() {
       label: "My Health Records",
       icon: FileHeart,
       roles: ['patient'],
+    },
+    {
+        href: "/dashboard/privacy-log",
+        label: "Privacy Log",
+        icon: History,
+        roles: ['patient'],
     },
     {
       href: "/dashboard/settings",

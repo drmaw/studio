@@ -76,3 +76,11 @@ export type Vitals = {
   rbs: number | null;
   sCreatinine: number | null;
 };
+
+export type PrivacyLogEntry = {
+    id: string;
+    actorId: string;
+    actorName: string;
+    actorAvatarUrl: string;
+    timestamp: string; // ISO 8601 string
+};

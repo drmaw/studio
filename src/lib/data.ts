@@ -1,6 +1,5 @@
 
-
-import type { User, Patient, MedicalRecord, Vitals, RecordFile } from '@/lib/definitions';
+import type { User, Patient, MedicalRecord, Vitals, RecordFile, PrivacyLogEntry } from '@/lib/definitions';
 
 export const users: User[] = [
   { 
@@ -198,4 +197,17 @@ export const demoRecords: MedicalRecord[] = [
   }
 ];
 
-    
+export const searchLogs: PrivacyLogEntry[] = [
+    { id: 'slog-1', actorId: '8912409021', actorName: 'Dr. Anika Rahman', actorAvatarUrl: 'https://picsum.photos/seed/doc1/100/100', timestamp: '2024-07-24T10:00:00.000Z' },
+    { id: 'slog-2', actorId: '0987654321', actorName: 'Dr. Farid Uddin', actorAvatarUrl: 'https://picsum.photos/seed/doc2/100/100', timestamp: '2024-07-23T15:30:00.000Z' },
+];
+
+export const viewLogs: PrivacyLogEntry[] = [
+    { id: 'vlog-1', actorId: '8912409021', actorName: 'Dr. Anika Rahman', actorAvatarUrl: 'https://picsum.photos/seed/doc1/100/100', timestamp: '2024-07-24T10:01:00.000Z' },
+    { id: 'vlog-2', actorId: '8912409021', actorName: 'Dr. Anika Rahman', actorAvatarUrl: 'https://picsum.photos/seed/doc1/100/100', timestamp: '2024-07-20T09:00:00.000Z' },
+    { id: 'vlog-3', actorId: '0987654321', actorName: 'Dr. Farid Uddin', actorAvatarUrl: 'https://picsum.photos/seed/doc2/100/100', timestamp: '2024-07-23T15:32:00.000Z' },
+];
+
+export const addLogs: PrivacyLogEntry[] = [
+    { id: 'alog-1', actorId: '3049582012', actorName: 'Karim Ahmed (Self)', actorAvatarUrl: 'https://picsum.photos/seed/pat1/100/100', timestamp: '2024-07-25T11:00:00.000Z' },
+];
