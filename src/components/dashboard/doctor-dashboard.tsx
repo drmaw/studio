@@ -112,8 +112,8 @@ export function DoctorDashboard({ user }: { user: User }) {
 
     try {
         const patientsRef = collection(firestore, "patients");
-        // Check if it's a Health ID or mobile
-        const isHealthId = !/^\+?\d+$/.test(finalQuery); 
+        // Check if it's a Health ID (non-numeric or not a typical phone number format)
+        const isHealthId = !/^\+?\d{10,}$/.test(finalQuery); 
         
         let q;
         if(isHealthId) {

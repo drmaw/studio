@@ -1,7 +1,6 @@
 {
   "entities": {
     "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "description": "Represents a user profile in Digi Health.",
       "type": "object",
@@ -18,7 +17,6 @@
       "required": ["name", "email", "roles", "organizationId", "createdAt"]
     },
     "Patient": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Patient",
       "description": "Represents a patient's core record, linked to a user.",
       "type": "object",
@@ -35,7 +33,6 @@
       "required": ["userId", "name", "organizationId", "createdAt"]
     },
     "MedicalRecord": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "MedicalRecord",
       "description": "A single medical record for a patient.",
       "type": "object",
@@ -52,7 +49,6 @@
       "required": ["patientId", "doctorId", "doctorName", "organizationId", "date", "diagnosis", "createdAt"]
     },
     "RecordFile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "RecordFile",
       "description": "A file (image or PDF) uploaded by a user.",
       "type": "object",
@@ -71,7 +67,6 @@
       "required": ["name", "fileType", "recordType", "url", "size", "uploadedBy", "uploaderName", "patientId", "organizationId", "createdAt"]
     },
     "Vitals": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
         "title": "Vitals",
         "description": "A snapshot of a patient's vital signs.",
         "type": "object",
@@ -90,7 +85,6 @@
         "required": ["patientId", "organizationId", "date", "createdAt"]
     },
     "PrivacyLog": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
         "title": "PrivacyLog",
         "description": "An audit log entry for privacy-related actions.",
         "type": "object",

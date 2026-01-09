@@ -40,7 +40,7 @@ export function StaffManagementTab() {
   const firestore = useFirestore();
 
   const staffQuery = useMemoFirebase(() => {
-    if (!firestore || !hospitalOwner) return null;
+    if (!firestore || !hospitalOwner?.organizationId) return null;
     return query(collection(firestore, 'users'), where('organizationId', '==', hospitalOwner.organizationId));
   }, [firestore, hospitalOwner]);
 
