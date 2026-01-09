@@ -59,33 +59,76 @@ export function RegisterForm() {
       const firebaseUser = userCredential.user;
 
       const batch = writeBatch(firestore);
+      
+      const isDevUser = values.email === 'dev@digihealth.com';
+      const userId = isDevUser ? '1122334455' : firebaseUser.uid;
+      const patientId = isDevUser ? '1122334455' : firebaseUser.uid;
 
-      const userRef = doc(firestore, "users", firebaseUser.uid);
-      const newUser: Omit<User, 'id'> = {
-        name: values.name,
-        email: firebaseUser.email!,
-        roles: ['patient'],
-        organizationId: "org-1", // Default org for new sign-ups
-        avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
-        createdAt: serverTimestamp(),
-        demographics: {}
-      };
-      batch.set(userRef, newUser);
+      // Use a fixed ID for the dev user, otherwise use the auth UID
+      const userRef = doc(firestore, "users", userId);
+      const patientRef = doc(firestore, "patients", patientId);
 
-      const patientRef = doc(firestore, "patients", firebaseUser.uid);
-      const newPatient: Omit<Patient, 'id'> = {
-          userId: firebaseUser.uid,
-          name: values.name,
-          organizationId: "org-1",
-          demographics: {
-              dob: '',
-              gender: 'Other',
-              contact: '',
-              address: ''
-          },
-          createdAt: serverTimestamp(),
-      };
-      batch.set(patientRef, newPatient);
+
+      if (isDevUser) {
+        // Create the super-user with all roles
+         const newUser: Omit<User, 'id'> = {
+            name: 'Dr. Dev',
+            email: firebaseUser.email!,
+            roles: ['doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'],
+            organizationId: 'org-1',
+            avatarUrl: `https://picsum.photos/seed/1122334455/100/100`,
+            createdAt: serverTimestamp(),
+            demographics: {
+                dob: '1985-01-01',
+                gender: 'Male',
+                contact: '+1234567890',
+                mobileNumber: '+1234567890',
+            }
+        };
+        batch.set(userRef, newUser);
+
+        const newPatient: Omit<Patient, 'id'> = {
+            userId: userId,
+            name: 'Dr. Dev',
+            organizationId: 'org-1',
+            demographics: {
+                dob: '1985-01-01',
+                gender: 'Male',
+                contact: '+1234567890',
+                address: '123 Dev Lane'
+            },
+            createdAt: serverTimestamp(),
+        };
+        batch.set(patientRef, newPatient);
+
+      } else {
+        // Standard patient registration
+        const newUser: Omit<User, 'id'> = {
+            name: values.name,
+            email: firebaseUser.email!,
+            roles: ['patient'],
+            organizationId: "org-1", 
+            avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
+            createdAt: serverTimestamp(),
+            demographics: {}
+        };
+        batch.set(userRef, newUser);
+
+        const newPatient: Omit<Patient, 'id'> = {
+            userId: firebaseUser.uid,
+            name: values.name,
+            organizationId: "org-1",
+            demographics: {
+                dob: '',
+                gender: 'Other',
+                contact: '',
+                address: ''
+            },
+            createdAt: serverTimestamp(),
+        };
+        batch.set(patientRef, newPatient);
+      }
+
 
       await batch.commit();
 
