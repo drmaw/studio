@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Stethoscope } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "firebase/auth";
+import { useEffect } from "react";
 
 export default function DashboardLayout({
   children,
@@ -22,12 +24,19 @@ export default function DashboardLayout({
   const auth = useFirebaseAuth();
   const router = useRouter();
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/');
   };
 
-  if (loading) {
+  if (loading || !user) {
      return (
       <div className="flex h-screen w-full">
         <div className="hidden md:flex flex-col w-64 border-r">
@@ -54,11 +63,6 @@ export default function DashboardLayout({
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    router.push('/login');
-    return null;
   }
 
   return (
