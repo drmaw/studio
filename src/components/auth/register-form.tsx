@@ -61,22 +61,19 @@ export function RegisterForm() {
       const batch = writeBatch(firestore);
       
       const isDevUser = values.email === 'dev@digihealth.com';
-      const userId = isDevUser ? '1122334455' : firebaseUser.uid;
-      const patientId = isDevUser ? '1122334455' : firebaseUser.uid;
-
-      // Use a fixed ID for the dev user, otherwise use the auth UID
-      const userRef = doc(firestore, "users", userId);
-      const patientRef = doc(firestore, "patients", patientId);
-
-
+      
       if (isDevUser) {
-        // Create the super-user with all roles
-         const newUser: Omit<User, 'id'> = {
+        // Create the super-user with a fixed ID and all roles
+        const userId = '1122334455';
+        const userRef = doc(firestore, "users", userId);
+        const patientRef = doc(firestore, "patients", userId);
+        
+        const newUser: Omit<User, 'id'> = {
             name: 'Dr. Dev',
             email: firebaseUser.email!,
             roles: ['doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'],
             organizationId: 'org-1',
-            avatarUrl: `https://picsum.photos/seed/1122334455/100/100`,
+            avatarUrl: `https://picsum.photos/seed/${userId}/100/100`,
             createdAt: serverTimestamp(),
             demographics: {
                 dob: '1985-01-01',
@@ -100,22 +97,25 @@ export function RegisterForm() {
             createdAt: serverTimestamp(),
         };
         batch.set(patientRef, newPatient);
-
       } else {
         // Standard patient registration
+        const userId = firebaseUser.uid;
+        const userRef = doc(firestore, "users", userId);
+        const patientRef = doc(firestore, "patients", userId);
+
         const newUser: Omit<User, 'id'> = {
             name: values.name,
             email: firebaseUser.email!,
             roles: ['patient'],
             organizationId: "org-1", 
-            avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
+            avatarUrl: `https://picsum.photos/seed/${userId}/100/100`,
             createdAt: serverTimestamp(),
             demographics: {}
         };
         batch.set(userRef, newUser);
 
         const newPatient: Omit<Patient, 'id'> = {
-            userId: firebaseUser.uid,
+            userId: userId,
             name: values.name,
             organizationId: "org-1",
             demographics: {
@@ -128,7 +128,6 @@ export function RegisterForm() {
         };
         batch.set(patientRef, newPatient);
       }
-
 
       await batch.commit();
 
