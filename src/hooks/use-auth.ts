@@ -1,27 +1,35 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { users } from '@/lib/data';
-import type { Role, User } from '@/lib/definitions';
+import { useMemo } from 'react';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import type { Role, User } from "@/lib/definitions";
+import { doc } from 'firebase/firestore';
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: firebaseUser, isUserLoading } = useUser();
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    const userId = localStorage.getItem('digi-health-user-id');
-    if (userId) {
-      const foundUser = users.find(u => u.id === userId);
-      setUser(foundUser || null);
-    }
-    setLoading(false);
-  }, []);
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !firebaseUser) return null;
+    return doc(firestore, "users", firebaseUser.uid);
+  }, [firestore, firebaseUser]);
+  
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<User>(userDocRef);
+
+  const loading = isUserLoading || isProfileLoading;
 
   const activeRole = useMemo(() => {
-    if (!user) return null;
+    if (!userProfile) return null;
     // The "active" role is the first non-patient role, or 'patient' if that's all they are.
-    return user.roles.find(r => r !== 'patient') || 'patient';
-  }, [user]);
+    return userProfile.roles.find(r => r !== 'patient') || 'patient';
+  }, [userProfile]);
 
-  return { user, loading, activeRole, hasRole: (role: Role) => user?.roles.includes(role) ?? false };
+  const user = firebaseUser && userProfile ? { ...firebaseUser, ...userProfile } : null;
+
+  return { 
+    user, 
+    loading, 
+    activeRole, 
+    hasRole: (role: Role) => userProfile?.roles.includes(role) ?? false 
+  };
 }

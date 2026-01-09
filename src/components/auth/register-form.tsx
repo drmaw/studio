@@ -19,11 +19,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useAuth, useFirestore } from "@/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import type { User } from "@/lib/definitions";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email." }).optional().or(z.literal('')),
-  mobile: z.string().min(1, { message: "Mobile number is required."}),
+  email: z.string().email({ message: "Please enter a valid email." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
   confirmPassword: z.string()
 }).refine(data => data.password === data.confirmPassword, {
@@ -31,27 +34,17 @@ const formSchema = z.object({
     path: ["confirmPassword"]
 });
 
-// Function to generate a unique 10-digit alphanumeric ID
-const generateHealthId = () => {
-  const characters = '0123456789';
-  let result = '';
-  for (let i = 0; i < 10; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
-};
-
-
 export function RegisterForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const auth = useAuth();
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       email: "",
-      mobile: "",
       password: "",
       confirmPassword: ""
     },
@@ -59,30 +52,38 @@ export function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    // Mock registration. In a real app, this would call a backend service (e.g., Firebase Auth)
-    // and create a user document in Firestore.
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // In a real app, you would add this user to your database.
-    // We are just logging it here.
-    const newUser = {
-        id: generateHealthId(),
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const firebaseUser = userCredential.user;
+
+      const newUser: Omit<User, 'id'> = {
         name: values.name,
-        email: values.email,
-        demographics: {
-            mobileNumber: values.mobile
-        },
-        roles: ['patient'], // All new users are patients by default
-        avatarUrl: `https://picsum.photos/seed/${values.email || values.mobile}/100/100`
+        email: firebaseUser.email!,
+        roles: ['patient'],
+        organizationId: "org-1", // Default org for new sign-ups
+        avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
+        createdAt: serverTimestamp(),
+      };
+
+      await setDoc(doc(firestore, "users", firebaseUser.uid), newUser);
+
+      toast({
+        title: "Registration Successful",
+        description: "You can now log in with your credentials.",
+      });
+
+      router.push("/login");
+
+    } catch (error: any) {
+      console.error("Registration failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: error.message || "Could not create account. Please try again.",
+      });
+      setIsLoading(false);
     }
-    console.log("New user registered:", newUser);
-
-    toast({
-      title: "Registration Successful",
-      description: "You can now log in with your credentials.",
-    });
-
-    router.push("/login");
   }
 
   return (
@@ -103,23 +104,10 @@ export function RegisterForm() {
         />
         <FormField
           control={form.control}
-          name="mobile"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mobile Number</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. 01712345678" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email (Optional)</FormLabel>
+              <FormLabel>Email</FormLabel>
               <FormControl>
                 <Input placeholder="your.email@example.com" {...field} />
               </FormControl>

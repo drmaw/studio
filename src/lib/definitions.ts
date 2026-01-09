@@ -1,3 +1,4 @@
+import { FieldValue } from "firebase/firestore";
 
 export type Role = 'doctor' | 'patient' | 'marketing_rep' | 'nurse' | 'hospital_owner' | 'lab_technician' | 'pathologist' | 'pharmacist' | 'manager' | 'assistant_manager' | 'front_desk';
 
@@ -30,15 +31,18 @@ export type User = {
   name: string;
   email: string;
   roles: Role[];
+  organizationId: string;
   avatarUrl: string;
   demographics?: UserDemographics;
   isPremium?: boolean;
+  createdAt: FieldValue;
 };
 
 export type Patient = {
   id: string;
   name: string;
-  healthId: string;
+  userId: string;
+  organizationId: string;
   demographics: {
     dob: string;
     gender: 'Male' | 'Female' | 'Other';
@@ -51,6 +55,7 @@ export type Patient = {
     title: string;
     comment: string;
   };
+  createdAt: FieldValue;
 };
 
 export type MedicalRecord = {
@@ -58,9 +63,11 @@ export type MedicalRecord = {
   patientId: string;
   doctorId: string;
   doctorName: string;
-  date: string;
+  organizationId: string;
+  date: string; // ISO String
   diagnosis: string;
   notes: string;
+  createdAt: FieldValue;
 };
 
 export type RecordFile = {
@@ -71,11 +78,17 @@ export type RecordFile = {
   url: string;
   date: string; // ISO String
   size: string;
-  uploadedBy: string;
+  uploadedBy: string; // User ID
+  uploaderName: string;
+  patientId: string;
+  organizationId: string;
+  createdAt: FieldValue;
 };
 
 export type Vitals = {
   id: string;
+  patientId: string;
+  organizationId: string;
   date: string; // ISO 8601 string
   bpSystolic: number | null;
   bpDiastolic: number | null;
@@ -83,6 +96,7 @@ export type Vitals = {
   weight: number | null;
   rbs: number | null;
   sCreatinine: number | null;
+  createdAt: FieldValue;
 };
 
 export type PrivacyLogEntry = {
@@ -90,5 +104,8 @@ export type PrivacyLogEntry = {
     actorId: string;
     actorName: string;
     actorAvatarUrl: string;
-    timestamp: string; // ISO 8601 string
+    patientId: string;
+    organizationId: string;
+    action: 'search' | 'view_record' | 'add_record';
+    timestamp: FieldValue; // ISO 8601 string
 };

@@ -1,7 +1,8 @@
 'use client'
 
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth as useAppAuth } from "@/hooks/use-auth";
+import { useAuth as useFirebaseAuth } from "@/firebase";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -10,25 +11,44 @@ import { UserNav } from "@/components/dashboard/user-nav";
 import { Button } from "@/components/ui/button";
 import { LogOut, Stethoscope } from "lucide-react";
 import Link from "next/link";
+import { signOut } from "firebase/auth";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading, activeRole } = useAuth();
+  const { user, loading } = useAppAuth();
+  const auth = useFirebaseAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem("digi-health-user-id");
+  const handleLogout = async () => {
+    await signOut(auth);
     router.push('/');
   };
 
   if (loading) {
      return (
       <div className="flex h-screen w-full">
+        <div className="hidden md:flex flex-col w-64 border-r">
+             <div className="flex items-center gap-2 font-semibold text-lg h-14 px-4 border-b">
+                <Skeleton className="h-6 w-6 rounded-full" />
+                <Skeleton className="h-6 w-24" />
+            </div>
+            <div className="flex-1 p-4 space-y-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+            </div>
+             <div className="p-4 mt-auto border-t">
+                 <Skeleton className="h-8 w-full" />
+            </div>
+        </div>
         <div className="flex-1 flex flex-col">
-          <div className="flex-1 p-6">
+          <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+            <Skeleton className="h-8 w-8 rounded-full" />
+          </header>
+          <div className="flex-1 p-4 sm:p-6">
             <Skeleton className="h-full w-full" />
           </div>
         </div>
@@ -43,7 +63,7 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className={cn("min-h-screen w-full flex", user?.isPremium && "premium-dashboard")}>
+      <div className={cn("min-h-screen w-full flex")}>
         <Sidebar>
             <SidebarHeader>
                  <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-lg text-sidebar-primary-foreground">
@@ -55,7 +75,7 @@ export default function DashboardLayout({
                 <SidebarNav />
             </SidebarContent>
             <SidebarFooter>
-                <Button variant="ghost" className="justify-start w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleLogout}>
+                <Button variant="destructive" className="justify-start w-full" onClick={handleLogout}>
                     <LogOut />
                     <span>Logout</span>
                 </Button>

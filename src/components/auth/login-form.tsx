@@ -19,50 +19,45 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { users } from "@/lib/data";
+import { useAuth as useFirebaseAuth } from "@/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 const formSchema = z.object({
-  credential: z.string().min(1, { message: "Please enter your email, mobile number, or Health ID." }),
+  email: z.string().email({ message: "Please enter a valid email." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 
 export function LoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const auth = useFirebaseAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      credential: "",
+      email: "",
       password: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    // Mock authentication
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const credential = values.credential.toLowerCase();
-    const user = users.find(u => 
-        u.email.toLowerCase() === credential || 
-        u.demographics?.mobileNumber === values.credential ||
-        u.id === values.credential
-    );
-
-    if (user) {
-      // In a real app, you'd verify the password hash. Here we just check if user exists.
-      localStorage.setItem("digi-health-user-id", user.id);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+      
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${user.name}!`,
+        description: `Welcome back!`,
       });
       router.push("/dashboard");
-    } else {
+    } catch (error: any) {
+      console.error("Login failed:", error);
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Invalid credentials or password. Please try again.",
+        description: error.message || "Invalid credentials or password. Please try again.",
       });
       setIsLoading(false);
     }
@@ -73,12 +68,12 @@ export function LoginForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name="credential"
+          name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email / Mobile / Health ID</FormLabel>
+              <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your credentials" {...field} />
+                <Input placeholder="your.email@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

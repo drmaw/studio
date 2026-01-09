@@ -3,224 +3,138 @@
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
+      "description": "Represents a user profile in Digi Health.",
       "type": "object",
-      "description": "Represents a user of the Digi Health application.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user."
-        },
-        "name": {
-          "type": "string",
-          "description": "The user's full name."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's email address.",
-          "format": "email"
-        },
-        "role": {
-          "type": "string",
-          "description": "The user's role within the application (e.g., doctor, patient, marketing_rep)."
-        },
-        "organizationId": {
-          "type": "string",
-          "description": "Reference to the Organization the user belongs to. (Relationship: Organization 1:N User)"
-        }
+        "name": { "type": "string", "description": "User's full name." },
+        "email": { "type": "string", "format": "email" },
+        "roles": { "type": "array", "items": { "type": "string" } },
+        "organizationId": { "type": "string" },
+        "avatarUrl": { "type": "string", "format": "uri" },
+        "demographics": { "type": "object" },
+        "isPremium": { "type": "boolean" },
+        "createdAt": { "type": "object" }
       },
-      "required": [
-        "id",
-        "name",
-        "email",
-        "role",
-        "organizationId"
-      ]
+      "required": ["name", "email", "roles", "organizationId", "createdAt"]
     },
     "Patient": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Patient",
+      "description": "Represents a patient's core record, linked to a user.",
       "type": "object",
-      "description": "Represents a patient within the Digi Health application.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the patient."
-        },
-        "demographics": {
-          "type": "string",
-          "description": "Patient demographic information stored as JSON string."
-        },
-        "organizationId": {
-          "type": "string",
-          "description": "Reference to the Organization the patient belongs to. (Relationship: Organization 1:N Patient)"
-        }
+        "userId": { "type": "string", "description": "Links to the User document ID." },
+        "name": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "demographics": { "type": "object" },
+        "chronicConditions": { "type": "array", "items": { "type": "string" } },
+        "allergies": { "type": "array", "items": { "type": "string" } },
+        "redFlag": { "type": "object" },
+        "createdAt": { "type": "object" }
       },
-      "required": [
-        "id",
-        "demographics",
-        "organizationId"
-      ]
+      "required": ["userId", "name", "organizationId", "createdAt"]
     },
     "MedicalRecord": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "MedicalRecord",
+      "description": "A single medical record for a patient.",
       "type": "object",
-      "description": "Represents a medical record for a patient.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the medical record."
-        },
-        "patientId": {
-          "type": "string",
-          "description": "Reference to the Patient this record belongs to. (Relationship: Patient 1:N MedicalRecord)"
-        },
-        "doctorId": {
-          "type": "string",
-          "description": "Reference to the Doctor who created this record. (Relationship: Doctor 1:N MedicalRecord)"
-        },
-        "diagnosis": {
-          "type": "string",
-          "description": "Diagnosis information."
-        },
-        "notes": {
-          "type": "string",
-          "description": "Additional notes regarding the medical record."
-        },
-        "timestamp": {
-          "type": "number",
-          "description": "Timestamp indicating when the record was created."
-        },
-        "organizationId": {
-          "type": "string",
-          "description": "Reference to the Organization that owns this record. (Relationship: Organization 1:N MedicalRecord)"
-        }
+        "patientId": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "date": { "type": "string" },
+        "diagnosis": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "object" }
       },
-      "required": [
-        "id",
-        "patientId",
-        "doctorId",
-        "diagnosis",
-        "notes",
-        "timestamp",
-        "organizationId"
-      ]
+      "required": ["patientId", "doctorId", "doctorName", "organizationId", "date", "diagnosis", "createdAt"]
     },
-    "Organization": {
+    "RecordFile": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Organization",
+      "title": "RecordFile",
+      "description": "A file (image or PDF) uploaded by a user.",
       "type": "object",
-      "description": "Represents a hospital or healthcare organization.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the organization."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the organization."
-        },
-        "address": {
-          "type": "string",
-          "description": "The address of the organization."
-        }
+        "name": { "type": "string" },
+        "fileType": { "type": "string" },
+        "recordType": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "size": { "type": "string" },
+        "uploadedBy": { "type": "string" },
+        "uploaderName": { "type": "string" },
+        "patientId": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "createdAt": { "type": "object" }
       },
-      "required": [
-        "id",
-        "name",
-        "address"
-      ]
+      "required": ["name", "fileType", "recordType", "url", "size", "uploadedBy", "uploaderName", "patientId", "organizationId", "createdAt"]
+    },
+    "Vitals": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Vitals",
+        "description": "A snapshot of a patient's vital signs.",
+        "type": "object",
+        "properties": {
+            "patientId": { "type": "string" },
+            "organizationId": { "type": "string" },
+            "date": { "type": "string" },
+            "bpSystolic": { "type": ["number", "null"] },
+            "bpDiastolic": { "type": ["number", "null"] },
+            "pulse": { "type": ["number", "null"] },
+            "weight": { "type": ["number", "null"] },
+            "rbs": { "type": ["number", "null"] },
+            "sCreatinine": { "type": ["number", "null"] },
+            "createdAt": { "type": "object" }
+        },
+        "required": ["patientId", "organizationId", "date", "createdAt"]
+    },
+    "PrivacyLog": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "PrivacyLog",
+        "description": "An audit log entry for privacy-related actions.",
+        "type": "object",
+        "properties": {
+            "actorId": { "type": "string" },
+            "actorName": { "type": "string" },
+            "actorAvatarUrl": { "type": "string", "format": "uri" },
+            "patientId": { "type": "string" },
+            "organizationId": { "type": "string" },
+            "action": { "type": "string" },
+            "timestamp": { "type": "object" }
+        },
+        "required": ["actorId", "actorName", "patientId", "organizationId", "action", "timestamp"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password"]
   },
   "firestore": {
     "structure": [
       {
-        "path": "/organizations/{organizationId}",
-        "definition": {
-          "entityName": "Organization",
-          "schema": {
-            "$ref": "#/backend/entities/Organization"
-          },
-          "description": "Stores organization information.  Root level collection. Contains organization details like name and address.",
-          "params": [
-            {
-              "name": "organizationId",
-              "description": "The unique identifier for the organization."
-            }
-          ]
-        }
+        "path": "/users/{userId}",
+        "definition": { "schema": { "$ref": "#/entities/User" }, "description": "Top-level collection for all user profiles." }
       },
       {
-        "path": "/organizations/{organizationId}/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user profiles. Includes denormalized 'organizationId' for authorization independence.",
-          "params": [
-            {
-              "name": "organizationId",
-              "description": "The unique identifier for the organization."
-            },
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
-        }
+        "path": "/patients/{patientId}",
+        "definition": { "schema": { "$ref": "#/entities/Patient" }, "description": "Top-level collection for all patient records." }
       },
       {
-        "path": "/organizations/{organizationId}/patients/{patientId}",
-        "definition": {
-          "entityName": "Patient",
-          "schema": {
-            "$ref": "#/backend/entities/Patient"
-          },
-          "description": "Stores patient information. Includes denormalized 'organizationId' for authorization independence.",
-          "params": [
-            {
-              "name": "organizationId",
-              "description": "The unique identifier for the organization."
-            },
-            {
-              "name": "patientId",
-              "description": "The unique identifier for the patient."
-            }
-          ]
-        }
+        "path": "/patients/{patientId}/medical_records/{recordId}",
+        "definition": { "schema": { "$ref": "#/entities/MedicalRecord" }, "description": "Subcollection for a patient's medical records." }
       },
       {
-        "path": "/organizations/{organizationId}/patients/{patientId}/medical_records/{recordId}",
-        "definition": {
-          "entityName": "MedicalRecord",
-          "schema": {
-            "$ref": "#/backend/entities/MedicalRecord"
-          },
-          "description": "Stores medical records for patients. Includes denormalized 'organizationId' for authorization independence.",
-          "params": [
-            {
-              "name": "organizationId",
-              "description": "The unique identifier for the organization."
-            },
-            {
-              "name": "patientId",
-              "description": "The unique identifier for the patient."
-            },
-            {
-              "name": "recordId",
-              "description": "The unique identifier for the medical record."
-            }
-          ]
-        }
+        "path": "/patients/{patientId}/record_files/{fileId}",
+        "definition": { "schema": { "$ref": "#/entities/RecordFile" }, "description": "Subcollection for files uploaded by a patient." }
+      },
+      {
+        "path": "/patients/{patientId}/vitals/{vitalId}",
+        "definition": { "schema": { "$ref": "#/entities/Vitals" }, "description": "Subcollection for a patient's vital signs history." }
+      },
+      {
+        "path": "/patients/{patientId}/privacy_log/{logId}",
+        "definition": { "schema": { "$ref": "#/entities/PrivacyLog" }, "description": "Subcollection for a patient's privacy audit trail." }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to ensure data privacy, role-based access, and an audit-friendly setup for the Digi Health application. It leverages path-based ownership and denormalization to enforce security rules efficiently and independently, avoiding complex hierarchical dependencies. Each collection's security posture is homogeneous, and naming conventions are strictly followed for clarity and maintainability.\n\n*   **Authorization Independence:** The design denormalizes authorization data (specifically `organizationId`) into subcollections where access control needs to be inherited from a parent organization. This eliminates the need for `get()` calls in security rules, which are problematic for atomic operations.\n*   **Segregation:** Different data types with differing security needs are segregated into separate collections. User profiles, patients, and medical records reside in distinct collections to simplify access control rules.\n*   **Access Modeling:** The structure uses path-based ownership (`/organizations/{organizationId}/users/{userId}`) for user-related data and the organization's entities. Medical records are stored within patients. This pattern facilitates straightforward security rules based on the user's role and the organization they belong to.\n*   **QAPs (Rules are not Filters):** List operations are secured by the structural organization and the enforced data model. For example, listing medical records is scoped within a patient's document, which is only accessible to authorized doctors and the patient.  The organization ID being included in all subcollections allows for listing only items within the users organization.\n*   **Invariants:** The structure will enforce ownership and relationships through the defined paths and security rules. Timestamp management will be handled within the application logic and validated by security rules to prevent tampering."
+    ]
   }
 }

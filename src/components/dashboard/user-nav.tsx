@@ -11,17 +11,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth as useAppAuth } from "@/hooks/use-auth";
+import { useAuth as useFirebaseAuth } from "@/firebase";
 import { LogOut, Settings, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signOut } from "firebase/auth";
 
 export function UserNav() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAppAuth();
+  const auth = useFirebaseAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem("digi-health-user-id");
+  const handleLogout = async () => {
+    await signOut(auth);
     router.push('/');
   };
 
@@ -37,14 +40,14 @@ export function UserNav() {
     return null;
   }
   
-  const userInitials = user.name.split(' ').map(n => n[0]).join('');
+  const userInitials = user.name ? user.name.split(' ').map(n => n[0]).join('') : '';
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user.avatarUrl} alt={user.name} />
+            <AvatarImage src={user.avatarUrl} alt={user.name || ''} />
             <AvatarFallback>{userInitials}</AvatarFallback>
           </Avatar>
         </Button>
