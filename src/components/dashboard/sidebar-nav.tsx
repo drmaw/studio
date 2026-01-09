@@ -5,15 +5,23 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { hasRole } = useAuth();
+  const { setOpenMobile, isMobile } = useSidebar();
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }
 
   const menuItems = [
     {
@@ -34,6 +42,12 @@ export function SidebarNav() {
       icon: FileHeart,
       roles: ['patient'],
     },
+     {
+        href: "/dashboard/privacy-log",
+        label: "Privacy Log",
+        icon: History,
+        roles: ['patient'],
+    },
     {
       href: "/dashboard/settings",
       label: "Hospital Settings",
@@ -49,7 +63,7 @@ export function SidebarNav() {
       {availableMenuItems.map((item) => (
         <SidebarMenuItem key={item.label}>
           <Link href={item.href} passHref>
-            <SidebarMenuButton asChild isActive={pathname === item.href}>
+            <SidebarMenuButton asChild isActive={pathname === item.href} onClick={handleLinkClick}>
               <span>
                 <item.icon />
                 <span>{item.label}</span>
