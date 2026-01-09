@@ -39,7 +39,7 @@ import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, serverTimestamp, query, orderBy, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, commitBatchNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 // Client-side only component to format date and avoid hydration mismatch
@@ -151,7 +151,7 @@ export default function MyHealthRecordsPage() {
         })
     }
 
-    const handleDeleteSelected = async () => {
+    const handleDeleteSelected = () => {
         if (!user || selectedRecords.length === 0) return;
         
         const batch = writeBatch(firestore);
@@ -160,17 +160,13 @@ export default function MyHealthRecordsPage() {
             batch.delete(docRef);
         });
 
-        try {
-            await batch.commit();
-            toast({
-                title: `${selectedRecords.length} records deleted`,
-                description: 'The selected health records have been removed.',
-            });
-            setSelectedRecords([]);
-        } catch (error) {
-             console.error("Batch delete failed: ", error);
-             toast({ variant: 'destructive', title: 'Deletion Failed', description: 'Could not delete selected records.'});
-        }
+        commitBatchNonBlocking(batch, { operation: 'delete', path: `patients/${user.id}/record_files` });
+        
+        toast({
+            title: `${selectedRecords.length} records deleted`,
+            description: 'The selected health records have been removed.',
+        });
+        setSelectedRecords([]);
     };
 
     const handleDownloadSelected = () => {

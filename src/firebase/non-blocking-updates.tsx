@@ -8,6 +8,7 @@ import {
   CollectionReference,
   DocumentReference,
   SetOptions,
+  WriteBatch,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import {FirestorePermissionError} from '@/firebase/errors';
@@ -85,5 +86,21 @@ export function deleteDocumentNonBlocking(docRef: DocumentReference) {
           operation: 'delete',
         })
       )
+    });
+}
+
+/**
+ * Initiates a batch commit operation.
+ * Does NOT await the write operation internally.
+ */
+export function commitBatchNonBlocking(batch: WriteBatch, context: { operation: 'update' | 'delete' | 'create', path: string }) {
+    batch.commit().catch(error => {
+        errorEmitter.emit(
+            'permission-error',
+            new FirestorePermissionError({
+                path: context.path, // Provide a representative path for the batch
+                operation: context.operation
+            })
+        );
     });
 }
