@@ -55,7 +55,7 @@ export default function DashboardLayout({
                 <SidebarNav />
             </SidebarContent>
             <SidebarFooter>
-                <Button variant="ghost" className="justify-start" onClick={handleLogout}>
+                <Button variant="ghost" className="justify-start w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleLogout}>
                     <LogOut />
                     <span>Logout</span>
                 </Button>

@@ -505,9 +505,9 @@ export default function ProfilePage() {
                                         </div>
                                         <div className="flex flex-wrap gap-2 pt-2">
                                             {formData.allergies?.map(allergy => (
-                                                <Badge key={allergy} variant="destructive" className="pr-1 capitalize bg-destructive/10 text-destructive-foreground border-destructive/20">
+                                                <Badge key={allergy} variant="destructive" className="pr-1 capitalize">
                                                     {allergy}
-                                                    <button onClick={() => handleRemoveAllergy(allergy)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 text-destructive">
+                                                    <button onClick={() => handleRemoveAllergy(allergy)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 text-destructive-foreground">
                                                         <X className="h-3 w-3" />
                                                     </button>
                                                 </Badge>
@@ -527,7 +527,7 @@ export default function ProfilePage() {
                                         </div>
                                         <div className="flex items-center">
                                             <EditContactDialog contact={contact} onSave={handleUpdateEmergencyContact} />
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleRemoveEmergencyContact(contact.id)}>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleRemoveEmergencyContact(contact.id)}>
                                                 <Trash2 className="h-4 w-4"/>
                                             </Button>
                                         </div>
@@ -599,7 +599,7 @@ export default function ProfilePage() {
                                     {formData.allergies && formData.allergies.length > 0 ? (
                                         <div className="flex flex-wrap gap-2 pt-1">
                                             {formData.allergies.map(allergy => (
-                                                <Badge key={allergy} variant="destructive" className="pr-1 capitalize bg-destructive/10 text-destructive-foreground border-destructive/20">
+                                                <Badge key={allergy} variant="destructive" className="pr-1 capitalize">
                                                     {allergy}
                                                 </Badge>
                                             ))}

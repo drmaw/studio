@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Calendar, DollarSign, Loader2, PlusCircle, UserPlus, Users, X } from "lucide-react";
+import { Calendar, DollarSign, Loader2, PlusCircle, Trash2, UserPlus, Users, X } from "lucide-react";
 import { users as allUsers } from "@/lib/data";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -246,8 +246,8 @@ export function DoctorSchedulesTab() {
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(schedule.id)}>
-                                        <X className="h-4 w-4" />
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(schedule.id)}>
+                                        <Trash2 className="h-4 w-4" />
                                     </Button>
                                 </TableCell>
                             </TableRow>

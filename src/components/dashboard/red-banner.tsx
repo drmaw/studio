@@ -98,7 +98,7 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
                                 </Button>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button size="sm" variant="ghost">
+                                        <Button size="sm" variant="destructive_ghost">
                                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                                         </Button>
                                     </AlertDialogTrigger>
@@ -111,7 +111,7 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDelete}>Delete Alert</AlertDialogAction>
+                                            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete Alert</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
