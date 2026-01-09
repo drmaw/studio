@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +22,7 @@ import { Loader2 } from "lucide-react";
 import { users } from "@/lib/data";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email." }),
+  credential: z.string().min(1, { message: "Please enter your email, mobile number, or Health ID." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 
@@ -32,7 +33,7 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      credential: "",
       password: "",
     },
   });
@@ -42,7 +43,12 @@ export function LoginForm() {
     // Mock authentication
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const user = users.find(u => u.email === values.email);
+    const credential = values.credential.toLowerCase();
+    const user = users.find(u => 
+        u.email.toLowerCase() === credential || 
+        u.demographics?.mobileNumber === values.credential ||
+        u.id === values.credential
+    );
 
     if (user) {
       // In a real app, you'd verify the password hash. Here we just check if user exists.
@@ -56,7 +62,7 @@ export function LoginForm() {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        description: "Invalid credentials or password. Please try again.",
       });
       setIsLoading(false);
     }
@@ -67,12 +73,12 @@ export function LoginForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name="email"
+          name="credential"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Email / Mobile / Health ID</FormLabel>
               <FormControl>
-                <Input placeholder="your.email@example.com" {...field} />
+                <Input placeholder="Enter your credentials" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
