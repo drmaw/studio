@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -8,13 +7,13 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, Briefcase } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { hasRole } = useAuth();
+  const { user, hasRole } = useAuth();
   const { setOpenMobile, isMobile } = useSidebar();
 
   const handleLinkClick = () => {
@@ -23,12 +22,21 @@ export function SidebarNav() {
     }
   }
 
+  const isProfessional = user?.roles && user.roles.some(r => r !== 'patient');
+
   const menuItems = [
     {
       href: "/dashboard",
-      label: "Dashboard",
+      label: "My Dashboard",
       icon: LayoutDashboard,
       roles: ['doctor', 'patient', 'hospital_owner', 'marketing_rep'],
+    },
+    {
+      href: "/dashboard/professional",
+      label: "Professional Dashboard",
+      icon: Briefcase,
+      roles: ['doctor', 'hospital_owner', 'marketing_rep'],
+      condition: isProfessional
     },
     {
       href: "/dashboard/profile",
@@ -56,7 +64,9 @@ export function SidebarNav() {
     }
   ];
 
-  const availableMenuItems = menuItems.filter(item => item.roles.some(role => hasRole(role as any)));
+  const availableMenuItems = menuItems.filter(item => 
+    (item.condition !== false) && item.roles.some(role => hasRole(role as any))
+  );
 
   return (
     <SidebarMenu>
