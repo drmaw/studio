@@ -23,6 +23,7 @@ export function SidebarNav() {
   }
 
   const isProfessional = user?.roles && user.roles.some(r => r !== 'patient');
+  const isHospitalOwner = hasRole('hospital_owner');
 
   const menuItems = [
     {
@@ -58,6 +59,13 @@ export function SidebarNav() {
     },
     {
       href: "/dashboard/settings",
+      label: "Account Settings",
+      icon: Settings,
+      roles: ['patient', 'doctor', 'marketing_rep'],
+      condition: !isHospitalOwner
+    },
+    {
+      href: "/dashboard/settings/hospital",
       label: "Hospital Settings",
       icon: Settings,
       roles: ['hospital_owner'],
@@ -73,7 +81,7 @@ export function SidebarNav() {
       {availableMenuItems.map((item) => (
         <SidebarMenuItem key={item.label}>
           <Link href={item.href} passHref>
-            <SidebarMenuButton asChild isActive={pathname === item.href} onClick={handleLinkClick}>
+            <SidebarMenuButton asChild isActive={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')} onClick={handleLinkClick}>
               <span>
                 <item.icon />
                 <span>{item.label}</span>
