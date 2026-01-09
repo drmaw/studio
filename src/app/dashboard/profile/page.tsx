@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { UserDemographics, EmergencyContact } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { HealthIdCard } from "@/components/health-id-card";
+import { HealthIdCard } from "@/components/dashboard/health-id-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -380,7 +380,7 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                    ))}
-                                   <div className="p-4 border-2 border-dashed rounded-lg">
+                                   <div className="p-4 border-2 border-dashed rounded-lg bg-background">
                                        <Tabs value={newContactMethod} onValueChange={setNewContactMethod}>
                                            <TabsList className="grid w-full grid-cols-2">
                                                <TabsTrigger value="details">Add by Details</TabsTrigger>
@@ -501,5 +501,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
