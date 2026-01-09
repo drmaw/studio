@@ -107,45 +107,6 @@ export function AccountSettingsTab() {
                 )}
             </CardContent>
         </Card>
-
-        <Card className="border-destructive">
-            <CardHeader>
-                <CardTitle className="text-destructive flex items-center gap-2">
-                    <Trash2 className="h-5 w-5" />
-                    Danger Zone
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center justify-between p-4 border border-destructive/20 bg-destructive/5 rounded-lg">
-                    <div>
-                        <h3 className="font-semibold">Delete Account</h3>
-                        <p className="text-sm text-muted-foreground">Permanently delete your account and all associated data.</p>
-                    </div>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive">Delete Account</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete your account and remove your data from our servers.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={() => toast({ variant: 'destructive', title: 'Account Deletion Initiated', description: 'A request to delete your account has been sent.' })}
-                            >
-                                Yes, delete my account
-                            </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-            </CardContent>
-        </Card>
     </div>
   );
 }
