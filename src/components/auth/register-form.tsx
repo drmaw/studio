@@ -22,7 +22,7 @@ import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email." }),
+  email: z.string().email({ message: "Please enter a valid email." }).optional().or(z.literal('')),
   mobile: z.string().min(1, { message: "Mobile number is required."}),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
   confirmPassword: z.string()
@@ -73,7 +73,7 @@ export function RegisterForm() {
             mobileNumber: values.mobile
         },
         roles: ['patient'], // All new users are patients by default
-        avatarUrl: `https://picsum.photos/seed/${values.email}/100/100`
+        avatarUrl: `https://picsum.photos/seed/${values.email || values.mobile}/100/100`
     }
     console.log("New user registered:", newUser);
 
@@ -103,12 +103,12 @@ export function RegisterForm() {
         />
         <FormField
           control={form.control}
-          name="email"
+          name="mobile"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Mobile Number</FormLabel>
               <FormControl>
-                <Input placeholder="your.email@example.com" {...field} />
+                <Input placeholder="e.g. 01712345678" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -116,12 +116,12 @@ export function RegisterForm() {
         />
         <FormField
           control={form.control}
-          name="mobile"
+          name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Mobile Number</FormLabel>
+              <FormLabel>Email (Optional)</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. 01712345678" {...field} />
+                <Input placeholder="your.email@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
