@@ -191,7 +191,7 @@ export function DoctorDashboard({ user }: { user: User }) {
                         )}
                     </CardHeader>
                     <CardContent>
-                        <ScrollArea className="h-72">
+                        <ScrollArea className="h-60">
                              <Table>
                                 <TableHeader>
                                     <TableRow>
