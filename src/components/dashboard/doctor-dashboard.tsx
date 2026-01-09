@@ -23,6 +23,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { QrScannerDialog } from "./qr-scanner-dialog";
 
 
 const chamberSchedules = [
@@ -108,8 +109,9 @@ export function DoctorDashboard({ user }: { user: User }) {
   const [searchResult, setSearchResult] = useState<Patient | null | 'not_found'>(null);
   const { toast } = useToast();
 
-  const handleSearch = () => {
-    if (!searchQuery) {
+  const handleSearch = (query?: string) => {
+    const finalQuery = query || searchQuery;
+    if (!finalQuery) {
         toast({
             variant: "destructive",
             title: "Search field is empty",
@@ -117,8 +119,16 @@ export function DoctorDashboard({ user }: { user: User }) {
         });
         return;
     }
-    const result = patients.find(p => p.healthId === searchQuery || p.demographics.contact === searchQuery);
+    const result = patients.find(p => p.healthId === finalQuery || p.demographics.contact === finalQuery);
     setSearchResult(result || 'not_found');
+    if (result) {
+        setSearchQuery(finalQuery);
+    }
+  }
+  
+  const handleQrScan = (decodedId: string) => {
+    setSearchQuery(decodedId);
+    handleSearch(decodedId);
   }
 
   return (
@@ -146,11 +156,13 @@ export function DoctorDashboard({ user }: { user: User }) {
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     />
                 </div>
-                <Button variant="outline" size="icon">
-                    <QrCode className="h-5 w-5"/>
-                    <span className="sr-only">Scan QR</span>
-                </Button>
-                <Button onClick={handleSearch}>Search</Button>
+                <QrScannerDialog onScan={handleQrScan}>
+                    <Button variant="outline" size="icon">
+                        <QrCode className="h-5 w-5"/>
+                        <span className="sr-only">Scan QR</span>
+                    </Button>
+                </QrScannerDialog>
+                <Button onClick={() => handleSearch()}>Search</Button>
             </div>
             
             <div className="mt-6">
