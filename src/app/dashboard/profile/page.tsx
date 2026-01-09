@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Wind, Plus, X, ShieldAlert, Trash2 } from "lucide-react";
+import { LogOut, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Wind, Plus, X, ShieldAlert, Trash2, File, Building, Hash, IdCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 
 function ApplyForRoleCard() {
@@ -40,7 +41,8 @@ function ApplyForRoleCard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleApply = async () => {
+  const handleApply = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!selectedRole) {
       toast({
         variant: "destructive",
@@ -56,12 +58,70 @@ function ApplyForRoleCard() {
     
     toast({
       title: "Application Submitted",
-      description: `Your application for the ${selectedRole.replace('_', ' ')} role has been submitted for review.`,
+      description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role has been submitted for review.`,
     });
     
     setIsSubmitting(false);
     setSelectedRole('');
   };
+  
+  const renderRoleForm = () => {
+    switch(selectedRole) {
+      case 'doctor':
+        return (
+          <div className="space-y-4">
+             <div className="space-y-2">
+              <Label htmlFor="bmdc" className="flex items-center gap-2"><IdCard className="h-4 w-4" /> BMDC Registration Number</Label>
+              <Input id="bmdc" placeholder="Enter your BMDC number" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="doctor-photo" className="flex items-center gap-2"><File className="h-4 w-4" /> Your Picture</Label>
+              <Input id="doctor-photo" type="file" />
+            </div>
+          </div>
+        );
+      case 'nurse':
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nurse-reg" className="flex items-center gap-2"><IdCard className="h-4 w-4" /> Registration Number</Label>
+              <Input id="nurse-reg" placeholder="Enter your registration number" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nurse-photo" className="flex items-center gap-2"><File className="h-4 w-4" /> Your Photo</Label>
+              <Input id="nurse-photo" type="file" />
+            </div>
+          </div>
+        );
+      case 'organization_owner':
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="org-name" className="flex items-center gap-2"><Building className="h-4 w-4" /> Name of the Organization</Label>
+              <Input id="org-name" placeholder="Enter organization name" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="org-reg" className="flex items-center gap-2"><IdCard className="h-4 w-4" /> Registration Number</Label>
+              <Input id="org-reg" placeholder="Enter organization registration number" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="org-tin" className="flex items-center gap-2"><Hash className="h-4 w-4" /> TIN Number</Label>
+              <Input id="org-tin" placeholder="Enter TIN number" />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="org-address" className="flex items-center gap-2"><MapPin className="h-4 w-4" /> Address</Label>
+              <Textarea id="org-address" placeholder="Enter organization address" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="org-cert" className="flex items-center gap-2"><File className="h-4 w-4" /> Photo of Registration Certificate</Label>
+              <Input id="org-cert" type="file" />
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  }
 
   return (
     <Card className="mt-6 bg-background-soft">
@@ -71,10 +131,41 @@ function ApplyForRoleCard() {
           Apply for an Additional Role
         </CardTitle>
         <CardDescription>
-          If you are a medical professional, you can apply to upgrade your account.
+          If you are a medical professional or organization owner, you can apply to upgrade your account.
         </CardDescription>
       </CardHeader>
-      {/* Role application form can be re-added here if needed */}
+      <form onSubmit={handleApply}>
+        <CardContent className="space-y-6">
+          <div>
+            <Label htmlFor="role-select">Select a role to apply for</Label>
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger id="role-select">
+                <SelectValue placeholder="Select a role..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="doctor">Doctor</SelectItem>
+                <SelectItem value="nurse">Nurse</SelectItem>
+                <SelectItem value="organization_owner">Organization Owner</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {selectedRole && (
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="font-medium capitalize">{selectedRole.replace(/_/g, ' ')} Application</h3>
+              {renderRoleForm()}
+            </div>
+          )}
+
+        </CardContent>
+        {selectedRole && (
+          <CardFooter>
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? 'Submitting...' : `Apply for ${selectedRole.replace(/_/g, ' ')} Role`}
+            </Button>
+          </CardFooter>
+        )}
+      </form>
     </Card>
   );
 }
@@ -501,3 +592,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
