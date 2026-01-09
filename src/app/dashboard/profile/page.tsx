@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Wind, Plus, X, ShieldAlert, Trash2, File, Building, Hash, IdCard } from "lucide-react";
+import { LogOut, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Wind, Plus, X, ShieldAlert, Trash2, File, Building, Hash, IdCard, CheckCircle2, Clock, Hourglass } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,8 @@ function ApplyForRoleCard() {
   const [selectedRole, setSelectedRole] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const [applicationStatus, setApplicationStatus] = useState<'submitted' | 'waiting_for_approval' | 'approved' | null>(null);
+  const [appliedRole, setAppliedRole] = useState<string | null>(null);
 
   const handleApply = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -56,13 +58,24 @@ function ApplyForRoleCard() {
     // Mock API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
+    setAppliedRole(selectedRole);
+    setApplicationStatus('submitted');
+    
     toast({
       title: "Application Submitted",
-      description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role has been submitted for review.`,
+      description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is being processed.`,
     });
     
     setIsSubmitting(false);
     setSelectedRole('');
+
+    // Mock status progression
+    setTimeout(() => {
+        setApplicationStatus('waiting_for_approval');
+    }, 2000);
+     setTimeout(() => {
+        setApplicationStatus('approved');
+    }, 5000);
   };
   
   const renderRoleForm = () => {
@@ -123,6 +136,54 @@ function ApplyForRoleCard() {
     }
   }
 
+  const renderStatus = () => {
+    let statusText, Icon, colorClass, description;
+
+    switch(applicationStatus) {
+        case 'submitted':
+            statusText = 'Submitted';
+            Icon = Clock;
+            colorClass = 'text-blue-500';
+            description = 'Your application has been received and is pending review.';
+            break;
+        case 'waiting_for_approval':
+            statusText = 'Waiting For Approval';
+            Icon = Hourglass;
+            colorClass = 'text-yellow-500';
+            description = 'Your documents are being verified by our team. This may take some time.';
+            break;
+        case 'approved':
+            statusText = 'Approved';
+            Icon = CheckCircle2;
+            colorClass = 'text-green-500';
+            description = `Congratulations! Your role as a ${appliedRole?.replace(/_/g, ' ')} has been approved.`;
+            break;
+        default:
+            return null;
+    }
+    
+    return (
+         <Card className="mt-6 bg-background-soft">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                    <UserPlus className="h-5 w-5 text-primary" />
+                    Application Status
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center text-center p-8">
+                <Icon className={cn("h-16 w-16 mb-4", colorClass)} />
+                <h3 className="text-xl font-semibold capitalize">Role: {appliedRole?.replace(/_/g, ' ')}</h3>
+                <p className={cn("font-bold text-lg", colorClass)}>{statusText}</p>
+                <p className="text-sm text-muted-foreground mt-2">{description}</p>
+            </CardContent>
+        </Card>
+    )
+  }
+
+  if (applicationStatus) {
+    return renderStatus();
+  }
+
   return (
     <Card className="mt-6 bg-background-soft">
       <CardHeader>
@@ -138,7 +199,7 @@ function ApplyForRoleCard() {
         <CardContent className="space-y-6">
           <div>
             <Label htmlFor="role-select">Select a role to apply for</Label>
-            <Select value={selectedRole} onValueChange={setSelectedRole}>
+            <Select value={selectedRole} onValueChange={setSelectedRole} disabled={isSubmitting}>
               <SelectTrigger id="role-select">
                 <SelectValue placeholder="Select a role..." />
               </SelectTrigger>
@@ -592,5 +653,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
