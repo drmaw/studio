@@ -177,7 +177,7 @@ export function DoctorDashboard({ user }: { user: User }) {
             {Object.entries(appointmentsByChamber).map(([chamber, appointments], index) => {
                 const schedule = chamberSchedules.find(s => s.hospital === chamber);
                 return (
-                <Card key={chamber} className={index % 2 === 0 ? "bg-background-soft" : "bg-background-softer"}>
+                <Card key={chamber} className="bg-background-softer">
                     <CardHeader>
                         <CardTitle className="flex justify-between items-start">
                             <span>{chamber}</span>
@@ -191,7 +191,7 @@ export function DoctorDashboard({ user }: { user: User }) {
                         )}
                     </CardHeader>
                     <CardContent>
-                        <ScrollArea className="h-60">
+                        <ScrollArea className="h-48">
                              <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -267,3 +267,5 @@ export function DoctorDashboard({ user }: { user: User }) {
     </div>
   );
 }
+
+    
