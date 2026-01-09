@@ -107,6 +107,40 @@ export function AccountSettingsTab() {
                 )}
             </CardContent>
         </Card>
+        
+        <Card className="border-destructive/50">
+            <CardHeader>
+                <CardTitle className="text-destructive flex items-center gap-2">
+                     <Trash2 className="h-5 w-5" />
+                    Danger Zone
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                 <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg bg-destructive/5">
+                    <div>
+                        <h3 className="font-semibold text-destructive">Delete Account</h3>
+                        <p className="text-sm text-destructive/80">Permanently delete your account and all associated data.</p>
+                    </div>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive">Delete Account</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </CardContent>
+        </Card>
     </div>
   );
 }
