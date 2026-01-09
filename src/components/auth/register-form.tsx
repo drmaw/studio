@@ -58,78 +58,49 @@ export function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
-      const batch = writeBatch(firestore);
-      
       const isDevUser = values.email === 'dev@digihealth.com';
+      const userId = isDevUser ? '1122334455' : firebaseUser.uid;
+      const userName = isDevUser ? 'Dr. Dev' : values.name;
       
-      if (isDevUser) {
-        // Create the super-user with a fixed ID and all roles
-        const userId = '1122334455';
-        const userRef = doc(firestore, "users", userId);
-        const patientRef = doc(firestore, "patients", userId);
-        
-        const newUser: Omit<User, 'id'> = {
-            name: 'Dr. Dev',
-            email: firebaseUser.email!,
-            roles: ['doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'],
-            organizationId: 'org-1',
-            avatarUrl: `https://picsum.photos/seed/${userId}/100/100`,
-            createdAt: serverTimestamp(),
-            demographics: {
-                dob: '1985-01-01',
-                gender: 'Male',
-                contact: '+1234567890',
-                mobileNumber: '+1234567890',
-            }
-        };
-        batch.set(userRef, newUser);
+      const userRef = doc(firestore, "users", userId);
+      const patientRef = doc(firestore, "patients", userId);
+      
+      const newUser: Omit<User, 'id'> = {
+          name: userName,
+          email: firebaseUser.email!,
+          roles: isDevUser ? ['doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'] : ['patient'],
+          organizationId: 'org-1',
+          avatarUrl: `https://picsum.photos/seed/${userId}/100/100`,
+          createdAt: serverTimestamp(),
+          demographics: isDevUser ? {
+              dob: '1985-01-01',
+              gender: 'Male',
+              contact: '+1234567890',
+              mobileNumber: '+1234567890',
+          } : {}
+      };
 
-        const newPatient: Omit<Patient, 'id'> = {
-            userId: userId,
-            name: 'Dr. Dev',
-            organizationId: 'org-1',
-            demographics: {
-                dob: '1985-01-01',
-                gender: 'Male',
-                contact: '+1234567890',
-                address: '123 Dev Lane'
-            },
-            createdAt: serverTimestamp(),
-        };
-        batch.set(patientRef, newPatient);
-      } else {
-        // Standard patient registration
-        const userId = firebaseUser.uid;
-        const userRef = doc(firestore, "users", userId);
-        const patientRef = doc(firestore, "patients", userId);
-
-        const newUser: Omit<User, 'id'> = {
-            name: values.name,
-            email: firebaseUser.email!,
-            roles: ['patient'],
-            organizationId: "org-1", 
-            avatarUrl: `https://picsum.photos/seed/${userId}/100/100`,
-            createdAt: serverTimestamp(),
-            demographics: {}
-        };
-        batch.set(userRef, newUser);
-
-        const newPatient: Omit<Patient, 'id'> = {
-            userId: userId,
-            name: values.name,
-            organizationId: "org-1",
-            demographics: {
-                dob: '',
-                gender: 'Other',
-                contact: '',
-                address: ''
-            },
-            createdAt: serverTimestamp(),
-        };
-        batch.set(patientRef, newPatient);
-      }
-
-      await batch.commit();
+      const newPatient: Omit<Patient, 'id'> = {
+          userId: userId,
+          name: userName,
+          organizationId: 'org-1',
+          demographics: isDevUser ? {
+              dob: '1985-01-01',
+              gender: 'Male',
+              contact: '+1234567890',
+              address: '123 Dev Lane'
+          } : {
+              dob: '',
+              gender: 'Other',
+              contact: '',
+              address: ''
+          },
+          createdAt: serverTimestamp(),
+      };
+      
+      // Use individual setDoc calls instead of a batch to simplify security rules
+      await setDoc(userRef, newUser);
+      await setDoc(patientRef, newPatient);
 
       toast({
         title: "Registration Successful",

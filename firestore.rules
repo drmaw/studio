@@ -31,26 +31,26 @@ service cloud.firestore {
     }
     
     function isPatientUser(patientId) {
-       let patientDoc = get(/databases/$(database)/documents/patients/$(patientId));
-       return isOwner(patientDoc.data.userId);
+       // A patient document ID is the same as the user's UID
+       return isOwner(patientId);
     }
 
     // /users/{userId}
     match /users/{userId} {
       // Any signed-in user can create their own user document.
       allow create: if isOwner(userId);
-      // Only the owner can update their own profile.
-      allow update: if isOwner(userId);
-      // Any authenticated user can read any user's profile (for searching/linking).
-      allow get, list: if isSignedIn();
+      // Only the owner can read or update their own profile.
+      allow get, update: if isOwner(userId);
+      // For searching/linking, allow doctors in the same org to list users.
+      allow list: if isDoctorInOrg(request.query.organizationId);
       // Only the owner can delete their account.
       allow delete: if isOwner(userId);
     }
 
     // /patients/{patientId}
     match /patients/{patientId} {
-      // Doctors can create new patient records OR a user can create their own patient record on signup.
-      allow create: if (isDoctorInOrg(request.resource.data.organizationId) || isOwner(request.resource.data.userId));
+      // A user can create their own patient record on signup OR a doctor can create a record.
+      allow create: if isPatientUser(patientId) || isDoctorInOrg(request.resource.data.organizationId);
       // Doctors in the org and the patient themselves can view the record.
       allow get: if (isDoctorInOrg(resource.data.organizationId) || isPatientUser(patientId));
       // Doctors in the org can list patients.
