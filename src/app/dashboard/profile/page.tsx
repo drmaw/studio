@@ -6,21 +6,19 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Wind, Plus, X, ShieldAlert, Trash2, File, Building, Hash, IdCard, CheckCircle2, Clock, Hourglass } from "lucide-react";
+import { UserPlus, Cake, User as UserIcon, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Plus, X, File, Building, Hash, IdCard, CheckCircle2, Clock, Hourglass, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { differenceInYears, parseISO, format, isValid } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import type { UserDemographics, EmergencyContact } from "@/lib/definitions";
+import type { UserDemographics, EmergencyContact, User } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthIdCard } from "@/components/dashboard/health-id-card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { users } from "@/lib/data";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,11 +28,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useFirestore } from "@/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 function ApplyForRoleCard() {
@@ -263,6 +263,7 @@ export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
   
   const [age, setAge] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -306,11 +307,6 @@ export default function ProfilePage() {
     }
   }, [user, loading, router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("digi-health-user-id");
-    router.push('/');
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -341,19 +337,20 @@ export default function ProfilePage() {
     });
   };
 
-  const handleAddEmergencyContact = () => {
+  const handleAddEmergencyContact = async () => {
     let newContact: EmergencyContact | null = null;
     const common = { id: `ec-${Date.now()}`, relation: newContactRelation };
 
     if (newContactMethod === 'details' && newContactName && newContactRelation && newContactNumber) {
         newContact = { ...common, name: newContactName, contactNumber: newContactNumber };
     } else if (newContactMethod === 'healthId' && newContactHealthId && newContactRelation) {
-        // Optional: validate health ID exists
-        const contactUser = users.find(u => u.id === newContactHealthId);
-        if (!contactUser) {
+        const userDocRef = doc(firestore, 'users', newContactHealthId);
+        const contactUserDoc = await getDoc(userDocRef);
+        if (!contactUserDoc.exists()) {
             toast({ variant: "destructive", title: "User not found", description: "No user exists with that Health ID."});
             return;
         }
+        const contactUser = contactUserDoc.data() as User;
         newContact = { ...common, healthId: newContactHealthId, name: contactUser.name };
     } else {
         toast({ variant: "destructive", title: "Incomplete Information", description: "Please fill all required fields for the new contact."});
@@ -381,10 +378,11 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
-     // Mock API call to save user data
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // In a real app you would update this in the backend.
-    console.log("Updated user data:", formData);
+    if (!user) return;
+    
+    const userRef = doc(firestore, "users", user.id);
+    updateDocumentNonBlocking(userRef, { demographics: formData });
+
     toast({
         title: "Profile Updated",
         description: "Your personal information has been saved.",
@@ -569,8 +567,8 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
                                 <ProfileInfoRow icon={Users} label="Gender" value={formData.gender} />
-                                <ProfileInfoRow icon={User} label="Father's Name" value={formData.fatherName} />
-                                <ProfileInfoRow icon={User} label="Mother's Name" value={formData.motherName} />
+                                <ProfileInfoRow icon={UserIcon} label="Father's Name" value={formData.fatherName} />
+                                <ProfileInfoRow icon={UserIcon} label="Mother's Name" value={formData.motherName} />
                                 <ProfileInfoRow icon={Fingerprint} label="NID" value={formData.nid} />
                                 <ProfileInfoRow icon={Droplet} label="Blood Group" value={formData.bloodGroup} />
 
