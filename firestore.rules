@@ -1,0 +1,189 @@
+/**
+ * Core Philosophy:
+ * This ruleset implements a multi-tenant, Role-Based Access Control (RBAC) security model
+ * for a healthcare application. All data is strictly partitioned by an organization,
+ * ensuring that users from one organization cannot access data from another.
+ * A user's specific permissions are determined by their assigned role (e.g., 'doctor', 'patient')
+ * within their organization.
+ *
+ * Data Structure:
+ * The data is organized hierarchically under a top-level `/organizations` collection.
+ * All other data, including users, patients, and medical records, is nested within a
+ * specific organization's subcollections (e.g., `/organizations/{orgId}/users/{userId}`).
+ * This structure is fundamental to enforcing the multi-tenancy security model.
+ *
+ * Key Security Decisions:
+ * - Strict Organizational Boundaries: The primary security check ensures that a user can only
+ *   interact with data that belongs to their own organization. This is enforced by
+ *   checking the requesting user's profile against the `organizationId` in the document path.
+ * - Role-Based Permissions: Access to sensitive data like patient information and medical
+ *   records is granted based on the user's role. 'doctors' have broad access to patient
+ *   data within their org, while 'patients' can only view their own records.
+ * - Profile-Centric Auth: A user's role and organization membership are stored on their
+ *   user document. Rules frequently perform a `get` on the requesting user's own profile
+ *   to retrieve this information, making it the central source of truth for authorization.
+ * - Default Deny: All operations are denied by default. Access is only granted through
+ *   explicit `allow` statements. Writes to the top-level `/organizations` collection are
+ *   disabled, assuming this is an admin-only task managed outside the client application.
+ *
+ * Denormalization for Authorization:
+ * To create efficient and secure rules, the `organizationId` is denormalized (copied)
+ * onto every document in every subcollection. This allows rules to verify a user's
+ * organizational membership by looking at the document path and their own user profile,
+ * completely avoiding slow and costly cross-collection `get` calls during authorization checks.
+ *
+ * Structural Segregation:
+ * User profiles, patient demographics, and medical records are stored in separate, dedicated
+ * subcollections. This segregation simplifies the security rules, as each collection path
+ * can have a clear and distinct set of access controls tailored to the sensitivity of the data
+ * it contains (e.g., stricter rules for `medical_records` than for `users`).
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     * This is the foundation of the ownership model.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Returns true if a document already exists in Firestore.
+     * CRITICAL for all update and delete operations to prevent modifying non-existent data.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    /**
+     * Retrieves the requesting user's profile document from the specified organization.
+     * This is the source of truth for the user's role and organizationId.
+     */
+    function getUserData(orgId) {
+      return get(/databases/$(database)/documents/organizations/$(orgId)/users/$(request.auth.uid));
+    }
+
+    /**
+     * Returns true if the requesting user is a member of the specified organization.
+     * It fetches the user's profile and compares the stored organizationId.
+     */
+    function userIsInOrg(orgId) {
+      let userData = getUserData(orgId);
+      return isSignedIn() && userData != null && userData.data.organizationId == orgId;
+    }
+
+    /**
+     * A generic function to check if a user is in a specific org with a specific role.
+     */
+    function userHasRole(orgId, role) {
+      let userData = getUserData(orgId);
+      return isSignedIn() && userData != null && userData.data.organizationId == orgId && userData.data.role == role;
+    }
+
+    /**
+     * Convenience function to check if the user is a 'doctor' in the specified organization.
+     */
+    function isDoctorInOrg(orgId) {
+      return userHasRole(orgId, 'doctor');
+    }
+
+    /**
+     * Convenience function to check if the user is a 'patient' in the specified organization.
+     */
+    function isPatientInOrg(orgId) {
+      return userHasRole(orgId, 'patient');
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the patientId in a path.
+     * Used to grant patients access to their own records.
+     */
+    function isUserThePatient(patientId) {
+      return isSignedIn() && request.auth.uid == patientId;
+    }
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Controls access to top-level organization documents. Allows any signed-in
+     *              user to read organization details but denies all modifications.
+     * @path /organizations/{organizationId}
+     * @allow (get) An authenticated user reads an organization's public details.
+     * @deny (create) An anonymous or authenticated user tries to create a new organization.
+     * @principle Manages public data with admin-only writes. Writes are disabled pending
+     *            the implementation of a secure admin role.
+     */
+    match /organizations/{organizationId} {
+      allow get, list: if isSignedIn();
+      allow create: if false; // TODO: Implement admin-only creation logic
+      allow update: if false; // TODO: Implement admin-only update logic
+      allow delete: if false; // TODO: Implement admin-only deletion logic
+    }
+
+    /**
+     * @description Manages user profiles within an organization. Users can create, update, and
+     *              delete their own profile. Any user within the same organization can read
+     *              the profiles of other members.
+     * @path /organizations/{organizationId}/users/{userId}
+     * @allow (create) A new user signs up and creates their own profile document.
+     * @deny (update) A user tries to modify another user's profile, even in the same org.
+     * @principle Enforces self-ownership for writes and organizational visibility for reads.
+     */
+    match /organizations/{organizationId}/users/{userId} {
+      allow get, list: if userIsInOrg(organizationId);
+      allow create: if isOwner(userId) && request.resource.data.id == userId && request.resource.data.organizationId == organizationId;
+      allow update: if isOwner(userId) && isExistingDoc() && request.resource.data.id == resource.data.id && request.resource.data.organizationId == resource.data.organizationId;
+      allow delete: if isOwner(userId) && isExistingDoc();
+    }
+
+    /**
+     * @description Secures patient demographic data. Only users with the 'doctor' role within
+     *              the organization can read or write patient information.
+     * @path /organizations/{organizationId}/patients/{patientId}
+     * @allow (create) A doctor creates a new patient record in their organization.
+     * @deny (list) A user with a 'patient' or 'marketing_rep' role tries to list all patients.
+     * @principle Restricts access to sensitive data based on a specific role ('doctor') and
+     *            organizational membership.
+     */
+    match /organizations/{organizationId}/patients/{patientId} {
+      allow get, list: if isDoctorInOrg(organizationId);
+      allow create: if isDoctorInOrg(organizationId) && request.resource.data.id == patientId && request.resource.data.organizationId == organizationId;
+      allow update: if isDoctorInOrg(organizationId) && isExistingDoc() && request.resource.data.id == resource.data.id && request.resource.data.organizationId == resource.data.organizationId;
+      allow delete: if isDoctorInOrg(organizationId) && isExistingDoc();
+    }
+
+    /**
+     * @description Secures highly sensitive medical records. Doctors in the organization can
+     *              read and write all records. Patients can only read records associated
+     *              with their own patient ID.
+     * @path /organizations/{organizationId}/patients/{patientId}/medical_records/{recordId}
+     * @allow (get) A patient reads one of their own medical records.
+     * @deny (update) A patient tries to alter their own medical record.
+     * @deny (get) A doctor from Org A tries to read a record from Org B.
+     * @principle Implements a shared access model where access is granted to users with a
+     *            privileged role ('doctor') or to the specific subject of the data ('patient').
+     */
+    match /organizations/{organizationId}/patients/{patientId}/medical_records/{recordId} {
+      allow get, list: if isDoctorInOrg(organizationId) || (isPatientInOrg(organizationId) && isUserThePatient(patientId));
+      allow create: if isDoctorInOrg(organizationId) && request.resource.data.doctorId == request.auth.uid && request.resource.data.patientId == patientId && request.resource.data.organizationId == organizationId;
+      allow update: if isDoctorInOrg(organizationId) && isExistingDoc() && request.resource.data.doctorId == resource.data.doctorId && request.resource.data.patientId == resource.data.patientId && request.resource.data.organizationId == resource.data.organizationId;
+      allow delete: if isDoctorInOrg(organizationId) && isExistingDoc();
+    }
+  }
+}

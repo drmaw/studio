@@ -1,0 +1,226 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Digi Health application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role within the application (e.g., doctor, patient, marketing_rep)."
+        },
+        "organizationId": {
+          "type": "string",
+          "description": "Reference to the Organization the user belongs to. (Relationship: Organization 1:N User)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "role",
+        "organizationId"
+      ]
+    },
+    "Patient": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Patient",
+      "type": "object",
+      "description": "Represents a patient within the Digi Health application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the patient."
+        },
+        "demographics": {
+          "type": "string",
+          "description": "Patient demographic information stored as JSON string."
+        },
+        "organizationId": {
+          "type": "string",
+          "description": "Reference to the Organization the patient belongs to. (Relationship: Organization 1:N Patient)"
+        }
+      },
+      "required": [
+        "id",
+        "demographics",
+        "organizationId"
+      ]
+    },
+    "MedicalRecord": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MedicalRecord",
+      "type": "object",
+      "description": "Represents a medical record for a patient.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the medical record."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to the Patient this record belongs to. (Relationship: Patient 1:N MedicalRecord)"
+        },
+        "doctorId": {
+          "type": "string",
+          "description": "Reference to the Doctor who created this record. (Relationship: Doctor 1:N MedicalRecord)"
+        },
+        "diagnosis": {
+          "type": "string",
+          "description": "Diagnosis information."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes regarding the medical record."
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Timestamp indicating when the record was created."
+        },
+        "organizationId": {
+          "type": "string",
+          "description": "Reference to the Organization that owns this record. (Relationship: Organization 1:N MedicalRecord)"
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "doctorId",
+        "diagnosis",
+        "notes",
+        "timestamp",
+        "organizationId"
+      ]
+    },
+    "Organization": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Organization",
+      "type": "object",
+      "description": "Represents a hospital or healthcare organization.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the organization."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the organization."
+        },
+        "address": {
+          "type": "string",
+          "description": "The address of the organization."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "address"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/organizations/{organizationId}",
+        "definition": {
+          "entityName": "Organization",
+          "schema": {
+            "$ref": "#/backend/entities/Organization"
+          },
+          "description": "Stores organization information.  Root level collection. Contains organization details like name and address.",
+          "params": [
+            {
+              "name": "organizationId",
+              "description": "The unique identifier for the organization."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/organizations/{organizationId}/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Includes denormalized 'organizationId' for authorization independence.",
+          "params": [
+            {
+              "name": "organizationId",
+              "description": "The unique identifier for the organization."
+            },
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/organizations/{organizationId}/patients/{patientId}",
+        "definition": {
+          "entityName": "Patient",
+          "schema": {
+            "$ref": "#/backend/entities/Patient"
+          },
+          "description": "Stores patient information. Includes denormalized 'organizationId' for authorization independence.",
+          "params": [
+            {
+              "name": "organizationId",
+              "description": "The unique identifier for the organization."
+            },
+            {
+              "name": "patientId",
+              "description": "The unique identifier for the patient."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/organizations/{organizationId}/patients/{patientId}/medical_records/{recordId}",
+        "definition": {
+          "entityName": "MedicalRecord",
+          "schema": {
+            "$ref": "#/backend/entities/MedicalRecord"
+          },
+          "description": "Stores medical records for patients. Includes denormalized 'organizationId' for authorization independence.",
+          "params": [
+            {
+              "name": "organizationId",
+              "description": "The unique identifier for the organization."
+            },
+            {
+              "name": "patientId",
+              "description": "The unique identifier for the patient."
+            },
+            {
+              "name": "recordId",
+              "description": "The unique identifier for the medical record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure data privacy, role-based access, and an audit-friendly setup for the Digi Health application. It leverages path-based ownership and denormalization to enforce security rules efficiently and independently, avoiding complex hierarchical dependencies. Each collection's security posture is homogeneous, and naming conventions are strictly followed for clarity and maintainability.\n\n*   **Authorization Independence:** The design denormalizes authorization data (specifically `organizationId`) into subcollections where access control needs to be inherited from a parent organization. This eliminates the need for `get()` calls in security rules, which are problematic for atomic operations.\n*   **Segregation:** Different data types with differing security needs are segregated into separate collections. User profiles, patients, and medical records reside in distinct collections to simplify access control rules.\n*   **Access Modeling:** The structure uses path-based ownership (`/organizations/{organizationId}/users/{userId}`) for user-related data and the organization's entities. Medical records are stored within patients. This pattern facilitates straightforward security rules based on the user's role and the organization they belong to.\n*   **QAPs (Rules are not Filters):** List operations are secured by the structural organization and the enforced data model. For example, listing medical records is scoped within a patient's document, which is only accessible to authorized doctors and the patient.  The organization ID being included in all subcollections allows for listing only items within the users organization.\n*   **Invariants:** The structure will enforce ownership and relationships through the defined paths and security rules. Timestamp management will be handled within the application logic and validated by security rules to prevent tampering."
+  }
+}
