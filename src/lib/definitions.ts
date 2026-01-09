@@ -76,7 +76,6 @@ export type RecordFile = {
   fileType: 'image' | 'pdf';
   recordType: 'prescription' | 'report';
   url: string;
-  date: string; // ISO String
   size: string;
   uploadedBy: string; // User ID
   uploaderName: string;
