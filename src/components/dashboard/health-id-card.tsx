@@ -72,8 +72,8 @@ export function HealthIdCard({ user }: { user: User }) {
                         />
                     </div>
                     
-                    <div>
-                        <h2 className="text-2xl font-bold">{user.name}</h2>
+                    <div className="overflow-hidden">
+                        <h2 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">{user.name}</h2>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
                             <div className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {user.id}</div>
                             {user.demographics?.mobileNumber && <div className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {user.demographics.mobileNumber}</div>}
