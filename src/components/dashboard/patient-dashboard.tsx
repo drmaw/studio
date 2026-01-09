@@ -79,7 +79,7 @@ export function PatientDashboard({ user }: { user: User }) {
         currentUserRole="patient"
       />
 
-      <Card className="bg-secondary/50">
+      <Card className="bg-card">
         <CardHeader>
           <CardTitle>Your Medical History</CardTitle>
           <CardDescription>Here is your most recently uploaded document.</CardDescription>

@@ -157,7 +157,7 @@ export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProp
   );
 
   return (
-    <Card className="bg-accent/30">
+    <Card className="bg-background-soft">
       <CardHeader>
         <CardTitle>Vitals Tracking</CardTitle>
         <CardDescription>

@@ -24,7 +24,7 @@ export function HospitalOwnerDashboard({ user }: { user: User }) {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-        <Card className="bg-secondary/50">
+        <Card className="bg-background-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
@@ -41,7 +41,7 @@ export function HospitalOwnerDashboard({ user }: { user: User }) {
           </CardContent>
         </Card>
 
-        <Card className="bg-accent/30">
+        <Card className="bg-background-softer">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />

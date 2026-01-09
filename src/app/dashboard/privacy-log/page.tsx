@@ -75,9 +75,9 @@ export default function PrivacyLogPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <LogCategory title="Profile Searches" icon={<Search className="h-5 w-5 text-primary"/>} logs={searchLogs} className="bg-background-soft"/>
-                <LogCategory title="Record Views" icon={<Eye className="h-5 w-5 text-primary"/>} logs={viewLogs} className="bg-background-softer" />
-                <LogCategory title="Record Additions" icon={<FilePlus className="h-5 w-5 text-primary"/>} logs={addLogs} className="bg-background-soft" />
+                <LogCategory title="Profile Searches" icon={<Search className="h-5 w-5 text-primary"/>} logs={searchLogs} className="bg-card"/>
+                <LogCategory title="Record Views" icon={<Eye className="h-5 w-5 text-primary"/>} logs={viewLogs} className="bg-background-soft" />
+                <LogCategory title="Record Additions" icon={<FilePlus className="h-5 w-5 text-primary"/>} logs={addLogs} className="bg-background-softer" />
             </div>
         </div>
     )

@@ -51,7 +51,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
 
   return (
     <div className="space-y-6">
-      <Card className="bg-background-soft">
+      <Card className="bg-card">
         <CardHeader className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
           <Avatar className="h-24 w-24">
             <AvatarImage data-ai-hint="person portrait" src={`https://picsum.photos/seed/${patient.id}/100/100`} />

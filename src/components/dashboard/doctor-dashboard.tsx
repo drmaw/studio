@@ -108,7 +108,7 @@ export function DoctorDashboard({ user }: { user: User }) {
       </div>
 
       {/* Patient Search */}
-      <Card className="bg-secondary/50">
+      <Card className="bg-card">
         <CardHeader>
           <CardTitle>Patient Search</CardTitle>
           <CardDescription>Find a patient by their Health ID or mobile number.</CardDescription>
@@ -142,7 +142,7 @@ export function DoctorDashboard({ user }: { user: User }) {
             {Object.entries(appointmentsByChamber).map(([chamber, appointments], index) => {
                 const schedule = chamberSchedules.find(s => s.hospital === chamber);
                 return (
-                <Card key={chamber} className={index % 2 === 0 ? "bg-card" : "bg-accent/30"}>
+                <Card key={chamber} className={index % 2 === 0 ? "bg-background-soft" : "bg-background-softer"}>
                     <CardHeader>
                         <CardTitle className="flex justify-between items-start">
                             <span>{chamber}</span>
@@ -199,7 +199,7 @@ export function DoctorDashboard({ user }: { user: User }) {
       </div>
       
       {/* Chamber Schedules */}
-      <Card className="bg-secondary/50">
+      <Card className="bg-card">
         <CardHeader>
           <CardTitle>Your Chamber Schedules</CardTitle>
         </CardHeader>

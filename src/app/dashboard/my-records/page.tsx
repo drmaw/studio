@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -208,7 +209,7 @@ export default function MyHealthRecordsPage() {
                     <p className="text-muted-foreground">Upload, manage, and view your personal medical documents.</p>
                 </div>
 
-                <Card className="bg-background-soft">
+                <Card className="bg-card">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <UploadCloud className="h-5 w-5 text-primary" />

@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
@@ -163,7 +164,7 @@ function ApplyForRoleCard() {
     }
     
     return (
-         <Card className="mt-6 bg-background-soft">
+         <Card className="mt-6 bg-card">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                     <UserPlus className="h-5 w-5 text-primary" />
@@ -185,13 +186,13 @@ function ApplyForRoleCard() {
   }
 
   return (
-    <Card className="mt-6 bg-background-soft">
+    <Card className="mt-6 bg-card">
       <CardHeader className="p-4">
         <CardTitle className="flex items-center gap-2 text-lg">
           <UserPlus className="h-5 w-5 text-primary" />
           Apply for an Additional Role
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-sm pt-1">
           Upgrade your account to a medical professional or organization owner.
         </CardDescription>
       </CardHeader>
@@ -419,7 +420,7 @@ export default function ProfilePage() {
         <HealthIdCard user={user} />
         <div className="flex justify-center">
             <div className="w-full max-w-2xl space-y-6">
-                <Card className="bg-background-soft">
+                <Card className="bg-card">
                     <CardHeader>
                         <div className="flex justify-between items-center">
                         <div>
