@@ -49,7 +49,7 @@ export function HealthIdCard({ user }: { user: User }) {
     };
 
     return (
-        <Card>
+        <Card className="bg-emerald-50 border-emerald-200">
             <CardContent className="p-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <div className="flex-shrink-0 relative group">
