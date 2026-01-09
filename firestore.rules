@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -36,8 +37,8 @@ service cloud.firestore {
 
     // /users/{userId}
     match /users/{userId} {
-      // Anyone can create their own user document.
-      allow create: if (isOwner(userId) && request.resource.data.email == request.auth.token.email);
+      // Any signed-in user can create their own user document.
+      allow create: if isOwner(userId);
       // Only the owner can update their own profile.
       allow update: if isOwner(userId);
       // Any authenticated user can read any user's profile (for searching/linking).
@@ -48,8 +49,8 @@ service cloud.firestore {
 
     // /patients/{patientId}
     match /patients/{patientId} {
-      // Doctors can create new patient records.
-      allow create: if (isDoctorInOrg(request.resource.data.organizationId));
+      // Doctors can create new patient records OR a user can create their own patient record on signup.
+      allow create: if (isDoctorInOrg(request.resource.data.organizationId) || isOwner(request.resource.data.userId));
       // Doctors in the org and the patient themselves can view the record.
       allow get: if (isDoctorInOrg(resource.data.organizationId) || isPatientUser(patientId));
       // Doctors in the org can list patients.
