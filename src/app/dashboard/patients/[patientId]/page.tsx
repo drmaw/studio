@@ -16,7 +16,8 @@ import { RedBanner } from "@/components/dashboard/red-banner";
 import { vitalsHistory } from "@/lib/data";
 
 
-export default function PatientDetailPage({ params: { patientId } }: { params: { patientId: string } }) {
+export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
+  const { patientId } = params;
   const { user, loading, hasRole, activeRole } = useAuth();
   const router = useRouter();
 
