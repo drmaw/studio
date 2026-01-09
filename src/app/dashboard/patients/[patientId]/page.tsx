@@ -16,7 +16,7 @@ import { RedBanner } from "@/components/dashboard/red-banner";
 import { vitalsHistory } from "@/lib/data";
 
 
-export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
+export default function PatientDetailPage({ params: { patientId } }: { params: { patientId: string } }) {
   const { user, loading, hasRole, activeRole } = useAuth();
   const router = useRouter();
 
@@ -26,8 +26,8 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
     }
   }, [user, loading, router]);
   
-  const patient = patients.find(p => p.id === params.patientId);
-  const records = medicalRecords.filter(r => r.patientId === params.patientId);
+  const patient = patients.find(p => p.id === patientId);
+  const records = medicalRecords.filter(r => r.patientId === patientId);
   
   if (!patient) {
     notFound();
@@ -36,7 +36,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   // Security check: only doctors can see any patient, patients can only see themselves.
   if (!loading && hasRole('patient') && activeRole === 'patient') {
     // For this mock, we assume 'patient@digihealth.com' (user-pat-1) is patient-1
-    if (user?.id !== '3049582012' || params.patientId !== 'patient-1') {
+    if (user?.id !== '3049582012' || patientId !== 'patient-1') {
         notFound();
     }
   }
