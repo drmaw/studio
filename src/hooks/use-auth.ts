@@ -7,7 +7,7 @@ import type { Role, User } from "@/lib/definitions";
 import { doc } from 'firebase/firestore';
 
 export function useAuth() {
-  const { user: firebaseUser, isUserLoading } = useUser();
+  const { user: firebaseUser, isUserLoading: isAuthLoading } = useUser();
   const firestore = useFirestore();
 
   const userDocRef = useMemoFirebase(() => {
@@ -18,17 +18,18 @@ export function useAuth() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<User>(userDocRef);
 
   const loading = useMemo(() => {
-    // We are loading if the initial auth check is happening.
-    if (isUserLoading) return true;
-    // If auth check is done but there's no Firebase user, we are not loading.
-    if (!firebaseUser) return false;
-    // If there is a Firebase user but we are still waiting for their profile, we are loading.
-    if (isProfileLoading) return true;
-    // If we have a firebase user but no profile (and not loading), then they don't have a profile. Not loading.
-    if (firebaseUser && !userProfile) return false;
-    // If all checks pass, we are not loading.
-    return false;
-  }, [isUserLoading, isProfileLoading, firebaseUser, userProfile]);
+    // We are loading if the initial auth check is happening OR if we have an auth'd user but are still fetching their profile.
+    return isAuthLoading || (!!firebaseUser && isProfileLoading);
+  }, [isAuthLoading, isProfileLoading, firebaseUser]);
+
+
+  const user = useMemo(() => {
+    // Only return a complete user object if we are NOT loading and we have both auth and profile data.
+    if (loading || !firebaseUser || !userProfile) {
+      return null;
+    }
+    return { ...firebaseUser, ...userProfile, id: firebaseUser.uid };
+  }, [loading, firebaseUser, userProfile]);
 
   const activeRole = useMemo(() => {
     if (!userProfile) return null;
@@ -54,8 +55,6 @@ export function useAuth() {
     }
     return 'patient';
   }, [userProfile]);
-
-  const user = firebaseUser && userProfile ? { ...firebaseUser, ...userProfile, id: firebaseUser.uid } : null;
 
   return { 
     user,

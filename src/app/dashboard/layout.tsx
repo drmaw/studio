@@ -25,6 +25,7 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
+    // Only redirect if loading is finished and there is no user.
     if (!loading && !user) {
       router.push('/login');
     }
@@ -37,6 +38,8 @@ export default function DashboardLayout({
     router.push('/');
   };
 
+  // While loading, show a full-screen skeleton UI.
+  // This prevents rendering the dashboard prematurely and triggering the redirect.
   if (loading) {
      return (
       <div className="flex h-screen w-full">
@@ -66,8 +69,8 @@ export default function DashboardLayout({
     );
   }
 
-  // If loading is finished and there's still no user, it means the useEffect will handle the redirect.
-  // We can return null or a minimal loader here to avoid rendering the full layout momentarily.
+  // If loading is finished and there's still no user, the useEffect will handle the redirect.
+  // We can return null here to avoid a flash of unstyled content before the redirect happens.
   if (!user) {
     return null;
   }
