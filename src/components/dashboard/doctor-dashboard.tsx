@@ -1,5 +1,7 @@
 
+'use client'
 
+import { useState } from "react";
 import { patients } from "@/lib/data";
 import type { Patient, User } from "@/lib/definitions";
 import {
@@ -13,13 +15,15 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock, ShieldCheck, HeartPulse, Siren } from "lucide-react";
+import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock, ShieldCheck, HeartPulse, Siren, UserX } from "lucide-react";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { ScrollArea } from "../ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Textarea } from "../ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+
 
 const chamberSchedules = [
     { id: 1, hospital: 'Digital Health Clinic', room: '302', days: 'Sat, Mon, Wed', time: '5 PM - 9 PM' },
@@ -100,6 +104,23 @@ function PatientSearchResultCard({ patient }: { patient: Patient }) {
 }
 
 export function DoctorDashboard({ user }: { user: User }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResult, setSearchResult] = useState<Patient | null | 'not_found'>(null);
+  const { toast } = useToast();
+
+  const handleSearch = () => {
+    if (!searchQuery) {
+        toast({
+            variant: "destructive",
+            title: "Search field is empty",
+            description: "Please enter a Health ID or Mobile Number.",
+        });
+        return;
+    }
+    const result = patients.find(p => p.healthId === searchQuery || p.demographics.contact === searchQuery);
+    setSearchResult(result || 'not_found');
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -117,17 +138,31 @@ export function DoctorDashboard({ user }: { user: User }) {
             <div className="flex gap-2">
                 <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Enter Health ID or Mobile Number..." className="pl-8" />
+                    <Input 
+                      placeholder="Enter Health ID or Mobile Number..." 
+                      className="pl-8" 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    />
                 </div>
                 <Button variant="outline" size="icon">
                     <QrCode className="h-5 w-5"/>
                     <span className="sr-only">Scan QR</span>
                 </Button>
-                <Button>Search</Button>
+                <Button onClick={handleSearch}>Search</Button>
             </div>
-            {/* Example Search Result */}
+            
             <div className="mt-6">
-              <PatientSearchResultCard patient={patients[2]} />
+              {searchResult === 'not_found' ? (
+                 <Card className="flex flex-col items-center justify-center p-12 bg-background-soft border-dashed">
+                    <UserX className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold">No Patient Found</h3>
+                    <p className="text-muted-foreground">No patient record matches the provided ID or mobile number.</p>
+                </Card>
+              ) : searchResult ? (
+                <PatientSearchResultCard patient={searchResult} />
+              ) : null}
             </div>
         </CardContent>
       </Card>
