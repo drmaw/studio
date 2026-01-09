@@ -115,7 +115,7 @@ export function DoctorSchedulesTab() {
                 Add New Schedule
             </h3>
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-lg">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-lg bg-background-soft">
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                          <FormField
                             control={form.control}
@@ -221,7 +221,7 @@ export function DoctorSchedulesTab() {
                 <Calendar />
                 Current Schedules
             </h3>
-            <div className="border rounded-lg">
+            <div className="border rounded-lg bg-background-soft">
                  <Table>
                     <TableHeader>
                         <TableRow>
