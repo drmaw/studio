@@ -17,7 +17,7 @@ import { vitalsHistory } from "@/lib/data";
 
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
-  const { patientId } = params;
+  const patientId = params.patientId;
   const { user, loading, hasRole, activeRole } = useAuth();
   const router = useRouter();
 
