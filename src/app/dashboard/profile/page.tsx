@@ -186,13 +186,13 @@ function ApplyForRoleCard() {
 
   return (
     <Card className="mt-6 bg-background-soft">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-xl">
+      <CardHeader className="p-4">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <UserPlus className="h-5 w-5 text-primary" />
           Apply for an Additional Role
         </CardTitle>
         <CardDescription>
-          If you are a medical professional or organization owner, you can apply to upgrade your account.
+          Upgrade your account to a medical professional or organization owner.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleApply}>
