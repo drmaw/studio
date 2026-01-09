@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,11 +17,13 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Calendar, DollarSign, Loader2, PlusCircle, Trash2, UserPlus, Users, X } from "lucide-react";
-import { users as allUsers } from "@/lib/data";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore } from "@/firebase";
+import { getDocs, collection, query, where } from "firebase/firestore";
 
 const weekDays = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
 
@@ -45,8 +48,8 @@ type DoctorSchedule = {
 const initialSchedules: DoctorSchedule[] = [
     {
         id: 'sched-1',
-        doctorName: 'Dr. Anika Rahman',
-        doctorId: 'user-doc-1',
+        doctorName: 'Dr. Dev',
+        doctorId: '1122334455',
         roomNumber: '302',
         fee: 800,
         days: ['Sat', 'Mon', 'Wed']
@@ -57,6 +60,8 @@ export function DoctorSchedulesTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [schedules, setSchedules] = useState<DoctorSchedule[]>(initialSchedules);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -69,12 +74,17 @@ export function DoctorSchedulesTab() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) return;
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, where('id', '==', values.healthId), where('roles', 'array-contains', 'doctor'), where('organizationId', '==', user.organizationId));
 
-    const doctor = allUsers.find(u => u.id === values.healthId && u.roles.includes('doctor'));
+    const querySnapshot = await getDocs(q);
 
-    if (doctor) {
+    if (!querySnapshot.empty) {
+        const doctor = querySnapshot.docs[0].data();
         const newSchedule: DoctorSchedule = {
             id: `sched-${Date.now()}`,
             doctorId: doctor.id,
@@ -92,7 +102,7 @@ export function DoctorSchedulesTab() {
       toast({
         variant: "destructive",
         title: "Doctor Not Found",
-        description: "No doctor found with that Health ID.",
+        description: "No doctor found with that Health ID in your organization.",
       });
     }
 
@@ -102,6 +112,7 @@ export function DoctorSchedulesTab() {
   const handleDelete = (scheduleId: string) => {
     setSchedules(prev => prev.filter(s => s.id !== scheduleId));
     toast({
+      variant: "destructive",
       title: "Schedule Removed",
       description: "The doctor's schedule has been removed.",
     });
@@ -124,7 +135,7 @@ export function DoctorSchedulesTab() {
                                 <FormItem>
                                 <FormLabel>Doctor's Health ID</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="e.g., 8912409021" {...field} />
+                                    <Input placeholder="e.g., 1122334455" {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
@@ -246,7 +257,7 @@ export function DoctorSchedulesTab() {
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(schedule.id)}>
+                                    <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(schedule.id)}>
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 </TableCell>

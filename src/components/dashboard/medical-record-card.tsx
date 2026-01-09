@@ -8,9 +8,10 @@ import { EditNoteDialog } from "./edit-note-dialog";
 type MedicalRecordCardProps = {
   record: MedicalRecord;
   currentUserRole: Role;
+  patientId: string;
 };
 
-export function MedicalRecordCard({ record, currentUserRole }: MedicalRecordCardProps) {
+export function MedicalRecordCard({ record, currentUserRole, patientId }: MedicalRecordCardProps) {
   return (
     <Card className="bg-card hover:bg-muted/50 transition-colors">
       <CardHeader>
@@ -25,7 +26,7 @@ export function MedicalRecordCard({ record, currentUserRole }: MedicalRecordCard
                     <span className="flex items-center gap-1.5"><Stethoscope className="h-4 w-4" /> by {record.doctorName}</span>
                 </CardDescription>
             </div>
-            {currentUserRole === 'doctor' && <EditNoteDialog record={record} />}
+            {currentUserRole === 'doctor' && <EditNoteDialog record={record} patientId={patientId} />}
         </div>
       </CardHeader>
       <CardContent>

@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import type { RecordFile, User, Patient } from "@/lib/definitions";
+import type { RecordFile, User, Patient, Vitals } from "@/lib/definitions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../ui/card";
 import { VitalsTracker } from "./vitals-tracker";
 import { HealthIdCard } from "./health-id-card";
@@ -33,7 +34,7 @@ function LatestRecordCard({ record }: { record: RecordFile }) {
                 <CardHeader>
                     <CardTitle>{record.name}</CardTitle>
                     <CardDescription>
-                       Uploaded by {record.uploaderName} on {format(new Date(record.date), "dd MMM yyyy")}
+                       Uploaded by {record.uploaderName} on {record.createdAt ? format(new Date((record.createdAt as any).toDate()), "dd MMM yyyy") : ''}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -60,7 +61,6 @@ export function PatientDashboard({ user }: { user: User }) {
 
   const patientDocRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // Assuming patient doc ID is the same as the user's UID
     return doc(firestore, 'patients', user.id);
   }, [firestore, user]);
 
@@ -86,7 +86,7 @@ export function PatientDashboard({ user }: { user: User }) {
     );
   }, [firestore, user]);
 
-  const { data: vitalsHistory } = useCollection(vitalsQuery);
+  const { data: vitalsHistory } = useCollection<Vitals>(vitalsQuery);
 
   return (
     <div className="space-y-6">
@@ -104,6 +104,7 @@ export function PatientDashboard({ user }: { user: User }) {
         <VitalsTracker 
             vitalsData={vitalsHistory}
             currentUserRole="patient"
+            patientId={user.id}
         />
       )}
 
@@ -123,5 +124,3 @@ export function PatientDashboard({ user }: { user: User }) {
     </div>
   );
 }
-
-    

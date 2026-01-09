@@ -14,10 +14,14 @@ import { PlusCircle, Loader2, HeartPulse, Droplet, Weight, Activity, Beaker } fr
 import type { Role, Vitals } from '@/lib/definitions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
+import { useFirestore } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 type VitalsTrackerProps = {
   vitalsData: Vitals[];
   currentUserRole: Role;
+  patientId: string;
 };
 
 const chartConfig = {
@@ -43,7 +47,7 @@ const chartConfig = {
   }
 };
 
-function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Vitals>) => void, submitting: boolean }) {
+function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => void, submitting: boolean }) {
   const [bpSystolic, setBpSystolic] = useState('');
   const [bpDiastolic, setBpDiastolic] = useState('');
   const [pulse, setPulse] = useState('');
@@ -98,34 +102,39 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Vitals>) =>
 }
 
 
-export function VitalsTracker({ vitalsData, currentUserRole }: VitalsTrackerProps) {
-  const [vitals, setVitals] = useState<Vitals[]>(vitalsData);
+export function VitalsTracker({ vitalsData, currentUserRole, patientId }: VitalsTrackerProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const firestore = useFirestore();
 
-  const formattedData = vitals.map(v => ({
+  const formattedData = vitalsData.map(v => ({
     ...v,
     name: format(parseISO(v.date), 'dd MMM'),
     bp: v.bpSystolic ? `${v.bpSystolic}/${v.bpDiastolic}`: null,
   }));
 
-  const handleAddVitals = async (newVitalData: Partial<Vitals>) => {
+  const handleAddVitals = async (newVitalData: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => {
+    if (!patientId) return;
+
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
     
-    const newVital: Vitals = {
-      id: `v${Date.now()}`,
-      date: new Date().toISOString(),
-      bpSystolic: newVitalData.bpSystolic ?? null,
-      bpDiastolic: newVitalData.bpDiastolic ?? null,
-      pulse: newVitalData.pulse ?? null,
-      weight: newVitalData.weight ?? null,
-      rbs: newVitalData.rbs ?? null,
-      sCreatinine: newVitalData.sCreatinine ?? null,
+    const vitalsRef = collection(firestore, 'patients', patientId, 'vitals');
+    const newVital = {
+        date: new Date().toISOString(),
+        bpSystolic: newVitalData.bpSystolic ?? null,
+        bpDiastolic: newVitalData.bpDiastolic ?? null,
+        pulse: newVitalData.pulse ?? null,
+        weight: newVitalData.weight ?? null,
+        rbs: newVitalData.rbs ?? null,
+        sCreatinine: newVitalData.sCreatinine ?? null,
+        createdAt: serverTimestamp()
     };
     
-    setVitals(prev => [newVital, ...prev]);
+    addDocumentNonBlocking(vitalsRef, newVital);
     
+    // Simulate a delay for the non-blocking operation to give feedback
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     toast({
       title: "Vitals Logged",
       description: "Your latest health vitals have been recorded.",

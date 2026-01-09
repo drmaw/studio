@@ -23,7 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { QrScannerDialog } from "./qr-scanner-dialog";
-import { collection, getDocs, query, where, limit } from "firebase/firestore";
+import { collection, getDocs, query, where, limit, doc, getDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 
 const chamberSchedules = [
@@ -112,28 +112,29 @@ export function DoctorDashboard({ user }: { user: User }) {
 
     try {
         const patientsRef = collection(firestore, "patients");
-        // Check if it's a Health ID (our mock IDs are strings, real ones will be too) or mobile
+        // Check if it's a Health ID or mobile
         const isHealthId = !/^\+?\d+$/.test(finalQuery); 
         
         let q;
         if(isHealthId) {
-            // In Firestore, the document ID is not a field, so we can't query for it directly this way.
-            // A direct `getDoc` would be better if we are sure it's a Health ID.
-            // For this implementation, let's assume Health ID is a field `healthId` on the patient doc.
-            // But since we used UID as patient ID, we cannot query it this way.
-            // We will search by patient id which is same as user id in our case.
-            q = query(patientsRef, where("userId", "==", finalQuery), limit(1));
+            // It's a Health ID, so we do a direct doc lookup
+            const patientDocRef = doc(firestore, "patients", finalQuery);
+            const patientDoc = await getDoc(patientDocRef);
+             if (patientDoc.exists()) {
+                setSearchResult({ id: patientDoc.id, ...patientDoc.data() } as Patient);
+            } else {
+                setSearchResult('not_found');
+            }
         } else {
+            // It's a mobile number, so we query
             q = query(patientsRef, where("demographics.contact", "==", finalQuery), limit(1));
-        }
-
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            const patientDoc = querySnapshot.docs[0];
-            setSearchResult({ id: patientDoc.id, ...patientDoc.data() } as Patient);
-        } else {
-            setSearchResult('not_found');
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const patientDoc = querySnapshot.docs[0];
+                setSearchResult({ id: patientDoc.id, ...patientDoc.data() } as Patient);
+            } else {
+                setSearchResult('not_found');
+            }
         }
 
     } catch (error) {
@@ -273,5 +274,3 @@ export function DoctorDashboard({ user }: { user: User }) {
     </div>
   );
 }
-
-    

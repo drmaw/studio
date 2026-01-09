@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -20,11 +21,31 @@ export function useAuth() {
 
   const activeRole = useMemo(() => {
     if (!userProfile) return null;
-    // The "active" role is the first non-patient role, or 'patient' if that's all they are.
-    return userProfile.roles.find(r => r !== 'patient') || 'patient';
+    
+    // Define role hierarchy
+    const roleHierarchy: Role[] = [
+      'hospital_owner', 
+      'doctor', 
+      'nurse', 
+      'manager', 
+      'assistant_manager',
+      'lab_technician',
+      'pathologist',
+      'pharmacist',
+      'front_desk',
+      'marketing_rep',
+      'patient'
+    ];
+
+    for (const role of roleHierarchy) {
+      if (userProfile.roles.includes(role)) {
+        return role;
+      }
+    }
+    return 'patient';
   }, [userProfile]);
 
-  const user = firebaseUser && userProfile ? { ...firebaseUser, ...userProfile } : null;
+  const user = firebaseUser && userProfile ? { ...firebaseUser, ...userProfile, id: firebaseUser.uid } : null;
 
   return { 
     user, 

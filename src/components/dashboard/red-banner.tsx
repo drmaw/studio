@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState } from "react";
@@ -18,6 +19,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useFirestore } from "@/firebase";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 type RedBannerProps = {
     patientId: string;
@@ -31,10 +35,13 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
     const [comment, setComment] = useState(initialRedFlag.comment);
     const [isEditing, setIsEditing] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
+    const firestore = useFirestore();
 
     const handleSave = async () => {
-        // Mock API call to save the comment (disease name)
-        console.log(`Saving red flag for patient ${patientId}:`, comment);
+        if (!patientId) return;
+        const patientRef = doc(firestore, 'patients', patientId);
+        updateDocumentNonBlocking(patientRef, { redFlag: { title: redFlag.title, comment: comment } });
+
         await new Promise(resolve => setTimeout(resolve, 500));
         setRedFlag(prev => ({ ...prev, comment }));
         setIsEditing(false);
@@ -45,8 +52,10 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
     };
 
     const handleDelete = async () => {
-        // Mock API call to delete the red flag
-        console.log(`Deleting red flag for patient ${patientId}`);
+        if (!patientId) return;
+        const patientRef = doc(firestore, 'patients', patientId);
+        updateDocumentNonBlocking(patientRef, { redFlag: null });
+
         await new Promise(resolve => setTimeout(resolve, 500));
         setIsVisible(false);
         toast({
@@ -93,12 +102,12 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
                             </>
                         ) : (
                             <>
-                                <Button size="sm" variant="ghost" onClick={() => setIsEditing(true)}>
+                                <Button size="sm" variant="ghost" className="text-destructive-foreground hover:bg-destructive/80 hover:text-destructive-foreground" onClick={() => setIsEditing(true)}>
                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                 </Button>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                        <Button size="sm" variant="destructive">
                                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                                         </Button>
                                     </AlertDialogTrigger>

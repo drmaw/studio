@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,28 +16,35 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, UserPlus, Users } from "lucide-react";
-import { users as allUsers } from "@/lib/data";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { User } from "@/lib/definitions";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where, getDoc, doc } from "firebase/firestore";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const formSchema = z.object({
   healthId: z.string().min(1, { message: "Health ID is required." }),
   role: z.enum(['doctor', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'], { required_error: "You must select a role." }),
 });
 
-// Mock staff list for the hospital
-const initialStaff: User[] = [
-    allUsers.find(u => u.id === '8912409021')!,
-];
 
 export function StaffManagementTab() {
   const [isLoading, setIsLoading] = useState(false);
-  const [staff, setStaff] = useState<User[]>(initialStaff);
   const { toast } = useToast();
+  const { user: hospitalOwner } = useAuth();
+  const firestore = useFirestore();
+
+  const staffQuery = useMemoFirebase(() => {
+    if (!firestore || !hospitalOwner) return null;
+    return query(collection(firestore, 'users'), where('organizationId', '==', hospitalOwner.organizationId));
+  }, [firestore, hospitalOwner]);
+
+  const { data: staff, isLoading: staffLoading } = useCollection<User>(staffQuery);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,29 +54,32 @@ export function StaffManagementTab() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!hospitalOwner) return;
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // For the mock, we'll use health ID
-    const userToAdd = allUsers.find(u => u.id === values.healthId);
+    const userDocRef = doc(firestore, 'users', values.healthId);
+    const userDoc = await getDoc(userDocRef);
 
-    if (userToAdd && !staff.some(s => s.id === userToAdd.id)) {
-      // In a real app, you would change the user's role in the database.
-      // Here, we'll just add them to the local staff list with the assigned role.
-      setStaff(prevStaff => [...prevStaff, { ...userToAdd, roles: [...userToAdd.roles, values.role] }]);
-      toast({
-        title: "Staff Added",
-        description: `${userToAdd.name} has been added as a ${values.role.replace('_', ' ')}.`,
-      });
-      form.reset();
-    } else if (staff.some(s => s.id === userToAdd?.id)) {
-        toast({
-            variant: "destructive",
-            title: "Staff Already Exists",
-            description: `${userToAdd.name} is already part of your staff.`,
+    if (userDoc.exists()) {
+        const userToAdd = userDoc.data() as User;
+        
+        // In a real app, you might have more complex logic here,
+        // like checking if the user has already accepted an invitation.
+        // For now, we'll just assign them.
+        
+        const updatedRoles = Array.from(new Set([...userToAdd.roles, values.role]));
+
+        updateDocumentNonBlocking(userDocRef, { 
+            organizationId: hospitalOwner.organizationId,
+            roles: updatedRoles
         });
-    } 
-    else {
+
+        toast({
+            title: "Staff Added",
+            description: `${userToAdd.name} has been assigned the ${values.role.replace('_', ' ')} role in your organization.`,
+        });
+        form.reset();
+    } else {
       toast({
         variant: "destructive",
         title: "User Not Found",
@@ -95,7 +106,7 @@ export function StaffManagementTab() {
                         <FormItem className="flex-1">
                         <FormLabel>User Health ID</FormLabel>
                         <FormControl>
-                            <Input placeholder="Enter user's Health ID (e.g., 0987654321)" {...field} />
+                            <Input placeholder="Enter user's Health ID" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -147,20 +158,27 @@ export function StaffManagementTab() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Name</TableHead>
-                            <TableHead>Email</TableHead>
+                            <TableHead>Health ID</TableHead>
                             <TableHead>Roles</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {staff.map((member) => (
+                        {staffLoading && (
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-center">
+                                    <Loader2 className="mx-auto h-6 w-6 animate-spin"/>
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {staff && staff.map((member) => (
                             <TableRow key={member.id}>
                                 <TableCell className="font-medium">{member.name}</TableCell>
-                                <TableCell>{member.email}</TableCell>
+                                <TableCell>{member.id}</TableCell>
                                 <TableCell>
                                     <div className="flex flex-wrap gap-1">
                                         {member.roles.map(role => (
                                              <Badge key={role} variant="secondary" className="capitalize">
-                                                {role.replace('_', ' ')}
+                                                {role.replace(/_/g, ' ')}
                                             </Badge>
                                         ))}
                                     </div>
@@ -169,6 +187,7 @@ export function StaffManagementTab() {
                         ))}
                     </TableBody>
                 </Table>
+                 {!staffLoading && staff?.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No staff members found in your organization.</p>}
             </div>
         </div>
     </div>

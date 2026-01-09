@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState } from "react";
@@ -174,6 +175,7 @@ function FeeCategory({
     const handleDeleteItem = (itemId: string) => {
         setItems(prev => prev.filter(item => item.id !== itemId));
         toast({
+            variant: "destructive",
             title: 'Item Removed',
             description: `The item has been removed from ${title}.`,
         });

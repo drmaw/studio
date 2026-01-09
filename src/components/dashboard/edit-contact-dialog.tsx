@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { Button } from "@/components/ui/button"
@@ -13,18 +14,20 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { type EmergencyContact } from "@/lib/definitions"
+import { type EmergencyContact, type User } from "@/lib/definitions"
 import { useToast } from "@/hooks/use-toast"
 import { useState, useEffect } from "react"
 import { Loader2, Pencil } from "lucide-react"
-import { users } from "@/lib/data"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useFirestore } from "@/firebase"
+import { doc, getDoc } from "firebase/firestore"
 
 
 export function EditContactDialog({ contact, onSave }: { contact: EmergencyContact, onSave: (contact: EmergencyContact) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const [name, setName] = useState(contact.name || '');
   const [relation, setRelation] = useState(contact.relation);
@@ -57,11 +60,13 @@ export function EditContactDialog({ contact, onSave }: { contact: EmergencyConta
             toast({ variant: 'destructive', title: 'Incomplete Information', description: 'Health ID and relation are required.'});
             return;
         }
-        const contactUser = users.find(u => u.id === healthId);
-        if (!contactUser) {
+        const userDocRef = doc(firestore, 'users', healthId);
+        const contactUserDoc = await getDoc(userDocRef);
+        if (!contactUserDoc.exists()) {
             toast({ variant: "destructive", title: "User not found", description: "No user exists with that Health ID."});
             return;
         }
+        const contactUser = contactUserDoc.data() as User;
         updatedContact = { ...updatedContact, name: contactUser.name, healthId, relation, contactNumber: undefined };
     }
 
@@ -136,5 +141,3 @@ export function EditContactDialog({ contact, onSave }: { contact: EmergencyConta
     </Dialog>
   )
 }
-
-    

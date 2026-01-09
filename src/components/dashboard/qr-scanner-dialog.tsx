@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -42,30 +43,9 @@ export function QrScannerDialog({ children, onScan }: { children: React.ReactNod
       cleanupCamera();
     }
   };
-
-  const checkCameraPermission = useCallback(async () => {
-    if (!isOpen) return;
-
-    try {
-      // Check for permission without prompting
-      const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName });
-      if (permissionStatus.state === 'granted') {
-        setHasCameraPermission(true);
-      } else {
-        setHasCameraPermission(false);
-      }
-      return permissionStatus.state;
-    } catch (error) {
-      // Permissions API might not be supported
-      console.error("Permissions API not supported, proceeding to getUserMedia", error);
-      setHasCameraPermission(null); // Fallback to let getUserMedia handle it
-      return 'prompt';
-    }
-  }, [isOpen]);
-
-
+  
   const startCamera = useCallback(async () => {
-    if (!isOpen) return;
+    if (!isOpen || !navigator.mediaDevices) return;
     cleanupCamera();
     
     try {
@@ -73,6 +53,7 @@ export function QrScannerDialog({ children, onScan }: { children: React.ReactNod
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play();
       }
       setHasCameraPermission(true);
     } catch (error) {
@@ -105,7 +86,7 @@ export function QrScannerDialog({ children, onScan }: { children: React.ReactNod
       ) {
         const video = videoRef.current;
         const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext('2d', { willReadFrequently: true });
 
         if (context) {
           canvas.height = video.videoHeight;
@@ -152,7 +133,7 @@ export function QrScannerDialog({ children, onScan }: { children: React.ReactNod
         <div className="relative aspect-square w-full bg-muted rounded-md overflow-hidden flex items-center justify-center">
           {hasCameraPermission === true ? (
              <>
-                <video ref={videoRef} className="h-full w-full object-cover" autoPlay playsInline muted />
+                <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
                 <div className="absolute inset-0 border-8 border-white/50 rounded-lg" style={{ clipPath: 'polygon(0% 0%, 0% 100%, 20% 100%, 20% 20%, 80% 20%, 80% 80%, 20% 80%, 20% 100%, 100% 100%, 100% 0%)' }} />
                 <canvas ref={canvasRef} className="hidden" />
              </>

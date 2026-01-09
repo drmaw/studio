@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,8 +22,8 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import type { User } from "@/lib/definitions";
+import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import type { User, Patient } from "@/lib/definitions";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -57,6 +58,9 @@ export function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
+      const batch = writeBatch(firestore);
+
+      const userRef = doc(firestore, "users", firebaseUser.uid);
       const newUser: Omit<User, 'id'> = {
         name: values.name,
         email: firebaseUser.email!,
@@ -64,9 +68,26 @@ export function RegisterForm() {
         organizationId: "org-1", // Default org for new sign-ups
         avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
         createdAt: serverTimestamp(),
+        demographics: {}
       };
+      batch.set(userRef, newUser);
 
-      await setDoc(doc(firestore, "users", firebaseUser.uid), newUser);
+      const patientRef = doc(firestore, "patients", firebaseUser.uid);
+      const newPatient: Omit<Patient, 'id'> = {
+          userId: firebaseUser.uid,
+          name: values.name,
+          organizationId: "org-1",
+          demographics: {
+              dob: '',
+              gender: 'Other',
+              contact: '',
+              address: ''
+          },
+          createdAt: serverTimestamp(),
+      };
+      batch.set(patientRef, newPatient);
+
+      await batch.commit();
 
       toast({
         title: "Registration Successful",

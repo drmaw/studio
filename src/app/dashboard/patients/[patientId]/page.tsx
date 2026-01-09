@@ -3,23 +3,25 @@
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
-import { medicalRecords, patients } from "@/lib/data";
 import { notFound, useRouter } from "next/navigation";
 import { MedicalRecordCard } from "@/components/dashboard/medical-record-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Cake, Home, Phone, User as UserIcon } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, use } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VitalsTracker } from "@/components/dashboard/vitals-tracker";
 import { RedBanner } from "@/components/dashboard/red-banner";
-import { vitalsHistory } from "@/lib/data";
+import { useDoc, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { doc, collection, query, orderBy } from "firebase/firestore";
+import type { Patient, MedicalRecord, Vitals } from "@/lib/definitions";
 
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
   const patientId = params.patientId;
   const { user, loading, hasRole, activeRole } = useAuth();
   const router = useRouter();
+  const firestore = useFirestore();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -27,8 +29,34 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
     }
   }, [user, loading, router]);
   
-  const patient = patients.find(p => p.id === patientId);
-  const records = medicalRecords.filter(r => r.patientId === patientId);
+  const patientDocRef = useMemoFirebase(() => {
+    if (!firestore || !patientId) return null;
+    return doc(firestore, "patients", patientId);
+  }, [firestore, patientId]);
+
+  const { data: patient, isLoading: isPatientLoading } = useDoc<Patient>(patientDocRef);
+
+  const recordsQuery = useMemoFirebase(() => {
+    if (!firestore || !patientId) return null;
+    return query(collection(firestore, "patients", patientId, "medical_records"), orderBy("createdAt", "desc"));
+  }, [firestore, patientId]);
+  
+  const { data: records, isLoading: areRecordsLoading } = useCollection<MedicalRecord>(recordsQuery);
+
+  const vitalsQuery = useMemoFirebase(() => {
+    if (!firestore || !patientId) return null;
+    return query(collection(firestore, "patients", patientId, "vitals"), orderBy("date", "desc"));
+  }, [firestore, patientId]);
+
+  const { data: vitalsHistory, isLoading: areVitalsLoading } = useCollection<Vitals>(vitalsQuery);
+
+  if (isPatientLoading && !patient) {
+     return <div className="space-y-6">
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-12 w-1/4" />
+        <Skeleton className="h-64 w-full" />
+    </div>
+  }
   
   if (!patient) {
     notFound();
@@ -36,13 +64,14 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   
   // Security check: only doctors can see any patient, patients can only see themselves.
   if (!loading && hasRole('patient') && activeRole === 'patient') {
-    // For this mock, we assume 'patient@digihealth.com' (user-pat-1) is patient-1
-    if (user?.id !== '3049582012' || patientId !== 'patient-1') {
+    if (user?.id !== patient.userId) {
         notFound();
     }
   }
 
-  if (loading || !user) {
+  const pageIsLoading = loading || isPatientLoading || areRecordsLoading || areVitalsLoading || !user;
+
+  if (pageIsLoading) {
     return <div className="space-y-6">
         <Skeleton className="h-48 w-full" />
         <Skeleton className="h-12 w-1/4" />
@@ -81,14 +110,14 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
         />
       )}
 
-      <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} />
+      {vitalsHistory && <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} patientId={patient.id} />}
 
       <div>
         <h2 className="text-2xl font-bold mb-4">Medical Records</h2>
         <div className="space-y-4">
-          {records.length > 0 ? (
+          {records && records.length > 0 ? (
             records.map(record => (
-              <MedicalRecordCard key={record.id} record={record} currentUserRole={activeRole!} />
+              <MedicalRecordCard key={record.id} record={record} currentUserRole={activeRole!} patientId={patient.id}/>
             ))
           ) : (
             <Card className="flex items-center justify-center p-8 bg-background-soft">

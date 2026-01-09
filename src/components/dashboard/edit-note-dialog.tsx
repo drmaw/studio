@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Button } from "@/components/ui/button"
@@ -15,20 +16,26 @@ import { type MedicalRecord } from "@/lib/definitions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Loader2, Pencil } from "lucide-react"
+import { useFirestore } from "@/firebase"
+import { doc } from "firebase/firestore"
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 
-export function EditNoteDialog({ record }: { record: MedicalRecord }) {
+export function EditNoteDialog({ record, patientId }: { record: MedicalRecord, patientId: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [note, setNote] = useState(record.notes);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const handleSave = async () => {
+    if (!patientId) return;
     setIsSaving(true);
-    // Mock saving the data
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log(`Saving note for record ${record.id}:`, note);
-    // In a real app, you would update the database here.
-    // The data source `medicalRecords` won't actually update in this mock.
+    
+    const recordRef = doc(firestore, "patients", patientId, "medical_records", record.id);
+    updateDocumentNonBlocking(recordRef, { notes: note });
+
+    await new Promise(resolve => setTimeout(resolve, 500)); // Give feedback
+    
     setIsSaving(false);
     setIsOpen(false);
     toast({
