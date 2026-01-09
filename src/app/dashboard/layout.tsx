@@ -37,7 +37,7 @@ function LogoutButton() {
         router.push('/');
     };
     return (
-        <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-red-500 hover:bg-red-500/10 hover:text-red-500">
+        <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive">
             <LogOut className="mr-2 h-4 w-4" />
             Logout
         </Button>
