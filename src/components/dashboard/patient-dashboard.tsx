@@ -1,7 +1,7 @@
 
+'use client';
 
-import { medicalRecords, vitalsHistory, patients, uploadedRecords } from "@/lib/data";
-import type { RecordFile, User } from "@/lib/definitions";
+import type { RecordFile, User, Patient } from "@/lib/definitions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../ui/card";
 import { VitalsTracker } from "./vitals-tracker";
 import { HealthIdCard } from "./health-id-card";
@@ -12,6 +12,9 @@ import { ArrowRight, FileText } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "../ui/badge";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/use-auth";
+import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc, orderBy, query, limit } from "firebase/firestore";
 
 
 function LatestRecordCard({ record }: { record: RecordFile }) {
@@ -30,7 +33,7 @@ function LatestRecordCard({ record }: { record: RecordFile }) {
                 <CardHeader>
                     <CardTitle>{record.name}</CardTitle>
                     <CardDescription>
-                       Uploaded by {record.uploadedBy} on {format(new Date(record.date), "dd MMM yyyy")}
+                       Uploaded by {record.uploaderName} on {format(new Date(record.date), "dd MMM yyyy")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -53,14 +56,37 @@ function LatestRecordCard({ record }: { record: RecordFile }) {
 
 
 export function PatientDashboard({ user }: { user: User }) {
-  // In a real app, this would be a DB query. Here, we link patient by name.
-  // We'll assume the logged-in patient is 'Karim Ahmed' (patient-1).
-  const patient = patients.find(p => p.id === 'patient-1'); // Matching by ID for robustness
-  
-  const sortedRecords = uploadedRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const lastPrescription = sortedRecords.find(r => r.recordType === 'prescription');
-  const lastReport = sortedRecords.find(r => r.recordType === 'report');
-  const recordToShow = lastPrescription || lastReport;
+  const firestore = useFirestore();
+
+  const patientDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    // Assuming patient doc ID is the same as the user's UID
+    return doc(firestore, 'patients', user.id);
+  }, [firestore, user]);
+
+  const { data: patient } = useDoc<Patient>(patientDocRef);
+
+  const recordsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+        collection(firestore, 'patients', user.id, 'record_files'),
+        orderBy('createdAt', 'desc'),
+        limit(1)
+    );
+  }, [firestore, user]);
+
+  const { data: latestRecords } = useCollection<RecordFile>(recordsQuery);
+  const recordToShow = latestRecords?.[0];
+
+  const vitalsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'patients', user.id, 'vitals'),
+      orderBy('date', 'desc')
+    );
+  }, [firestore, user]);
+
+  const { data: vitalsHistory } = useCollection(vitalsQuery);
 
   return (
     <div className="space-y-6">
@@ -74,10 +100,12 @@ export function PatientDashboard({ user }: { user: User }) {
         />
       )}
       
-      <VitalsTracker 
-        vitalsData={vitalsHistory}
-        currentUserRole="patient"
-      />
+      {vitalsHistory && (
+        <VitalsTracker 
+            vitalsData={vitalsHistory}
+            currentUserRole="patient"
+        />
+      )}
 
       <Card className="bg-card">
         <CardHeader>
@@ -95,3 +123,5 @@ export function PatientDashboard({ user }: { user: User }) {
     </div>
   );
 }
+
+    

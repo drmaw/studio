@@ -2,7 +2,6 @@
 'use client'
 
 import { useState } from "react";
-import { patients } from "@/lib/data";
 import type { Patient, User } from "@/lib/definitions";
 import {
   Table,
@@ -15,7 +14,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock, ShieldCheck, HeartPulse, Siren, UserX } from "lucide-react";
+import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock, ShieldCheck, HeartPulse, Siren, UserX, Loader2 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -24,27 +23,13 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { QrScannerDialog } from "./qr-scanner-dialog";
-
+import { collection, getDocs, query, where, limit } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
 
 const chamberSchedules = [
     { id: 1, hospital: 'Digital Health Clinic', room: '302', days: 'Sat, Mon, Wed', time: '5 PM - 9 PM' },
     { id: 2, hospital: 'City General Hospital', room: '501A', days: 'Sun, Tue', time: '6 PM - 10 PM' },
 ]
-
-const appointmentsByChamber = {
-  'Digital Health Clinic': [
-    { ...patients[0], time: '5:30 PM' },
-    { ...patients[1], time: '6:00 PM' },
-    { ...patients[2], id: 'patient-3-clone', name: 'Rina Chowdhury', time: '6:30 PM' },
-    { ...patients[0], id: 'patient-1-clone-1', name: 'Sohel Rana', time: '7:00 PM' },
-    { ...patients[1], id: 'patient-2-clone-1', name: 'Ayesha Akhter', time: '7:30 PM' },
-    { ...patients[0], id: 'patient-1-clone-2', name: 'Kamal Hasan', time: '8:00 PM' },
-  ],
-  'City General Hospital': [
-    { ...patients[2], time: '6:15 PM' },
-    { ...patients[0], id: 'patient-1-clone-3', name: 'Jamila Khatun', time: '6:45 PM' },
-  ]
-};
 
 function PatientSearchResultCard({ patient }: { patient: Patient }) {
   const patientInitials = patient.name.split(' ').map(n => n[0]).join('');
@@ -58,7 +43,7 @@ function PatientSearchResultCard({ patient }: { patient: Patient }) {
           <div className="flex-1">
             <CardTitle className="text-2xl">{patient.name}</CardTitle>
             <CardDescription className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm mt-2">
-              <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {patient.healthId}</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {patient.id}</span>
               <span className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {patient.demographics.contact}</span>
               <span>DOB: {patient.demographics.dob}</span>
               <span>{patient.demographics.gender}</span>
@@ -106,11 +91,13 @@ function PatientSearchResultCard({ patient }: { patient: Patient }) {
 
 export function DoctorDashboard({ user }: { user: User }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<Patient | null | 'not_found'>(null);
   const { toast } = useToast();
+  const firestore = useFirestore();
 
-  const handleSearch = (query?: string) => {
-    const finalQuery = query || searchQuery;
+  const handleSearch = async (id?: string) => {
+    const finalQuery = id || searchQuery;
     if (!finalQuery) {
         toast({
             variant: "destructive",
@@ -119,15 +106,53 @@ export function DoctorDashboard({ user }: { user: User }) {
         });
         return;
     }
-    const result = patients.find(p => p.healthId === finalQuery || p.demographics.contact === finalQuery);
-    setSearchResult(result || 'not_found');
-    if (result) {
-        setSearchQuery(finalQuery);
+    
+    setIsSearching(true);
+    setSearchResult(null);
+
+    try {
+        const patientsRef = collection(firestore, "patients");
+        // Check if it's a Health ID (our mock IDs are strings, real ones will be too) or mobile
+        const isHealthId = !/^\+?\d+$/.test(finalQuery); 
+        
+        let q;
+        if(isHealthId) {
+            // In Firestore, the document ID is not a field, so we can't query for it directly this way.
+            // A direct `getDoc` would be better if we are sure it's a Health ID.
+            // For this implementation, let's assume Health ID is a field `healthId` on the patient doc.
+            // But since we used UID as patient ID, we cannot query it this way.
+            // We will search by patient id which is same as user id in our case.
+            q = query(patientsRef, where("userId", "==", finalQuery), limit(1));
+        } else {
+            q = query(patientsRef, where("demographics.contact", "==", finalQuery), limit(1));
+        }
+
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const patientDoc = querySnapshot.docs[0];
+            setSearchResult({ id: patientDoc.id, ...patientDoc.data() } as Patient);
+        } else {
+            setSearchResult('not_found');
+        }
+
+    } catch (error) {
+        console.error("Patient search failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Search Failed",
+            description: "An error occurred while searching for the patient.",
+        });
+        setSearchResult('not_found');
+    }
+
+    setIsSearching(false);
+    if (id) {
+        setSearchQuery(id);
     }
   }
   
   const handleQrScan = (decodedId: string) => {
-    setSearchQuery(decodedId);
     handleSearch(decodedId);
   }
 
@@ -162,11 +187,17 @@ export function DoctorDashboard({ user }: { user: User }) {
                         <span className="sr-only">Scan QR</span>
                     </Button>
                 </QrScannerDialog>
-                <Button onClick={() => handleSearch()}>Search</Button>
+                <Button onClick={() => handleSearch()} disabled={isSearching}>
+                    {isSearching ? <Loader2 className="animate-spin" /> : "Search"}
+                </Button>
             </div>
             
             <div className="mt-6">
-              {searchResult === 'not_found' ? (
+              {isSearching ? (
+                 <div className="flex justify-center items-center p-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+                 </div>
+              ) : searchResult === 'not_found' ? (
                  <Card className="flex flex-col items-center justify-center p-12 bg-background-soft border-dashed">
                     <UserX className="h-16 w-16 text-muted-foreground mb-4" />
                     <h3 className="text-xl font-semibold">No Patient Found</h3>
@@ -186,62 +217,25 @@ export function DoctorDashboard({ user }: { user: User }) {
           Upcoming Appointments
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {Object.entries(appointmentsByChamber).map(([chamber, appointments], index) => {
-                const schedule = chamberSchedules.find(s => s.hospital === chamber);
-                return (
-                <Card key={chamber} className="bg-background-softer">
+            {chamberSchedules.map((schedule) => (
+                <Card key={schedule.id} className="bg-background-softer">
                     <CardHeader>
                         <CardTitle className="flex justify-between items-start">
-                            <span>{chamber}</span>
-                            <Badge variant="secondary">{appointments.length} Patients</Badge>
+                            <span>{schedule.hospital}</span>
+                             <Badge variant="secondary">0 Patients</Badge>
                         </CardTitle>
-                        {schedule && (
-                            <CardDescription className="flex items-center gap-2 pt-1">
-                                <Clock className="h-4 w-4"/>
-                                <span>{schedule.days} &bull; {schedule.time}</span>
-                            </CardDescription>
-                        )}
+                         <CardDescription className="flex items-center gap-2 pt-1">
+                            <Clock className="h-4 w-4"/>
+                            <span>{schedule.days} &bull; {schedule.time}</span>
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ScrollArea className="h-48">
-                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                    <TableHead>Patient</TableHead>
-                                    <TableHead>Time</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {appointments.map((patient, index) => (
-                                    <TableRow key={`${patient.id}-${index}`}>
-                                        <TableCell className="font-medium">
-                                        <div className="flex items-center gap-2">
-                                            <Avatar className="h-8 w-8">
-                                            <AvatarImage src={`https://picsum.photos/seed/${patient.id}/32/32`} />
-                                            <AvatarFallback>{patient.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                            </Avatar>
-                                            <span>{patient.name}</span>
-                                        </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline">{patient.time}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                        <Button asChild variant="ghost" size="sm">
-                                            <Link href={`/dashboard/patients/${patient.id}`}>
-                                            View <ArrowRight className="ml-1 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </ScrollArea>
+                        <div className="h-48 flex items-center justify-center text-muted-foreground">
+                            <p>No appointments scheduled yet.</p>
+                        </div>
                     </CardContent>
                 </Card>
-            )})}
+            ))}
         </div>
       </div>
       
