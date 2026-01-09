@@ -2,6 +2,14 @@
 
 export type Role = 'doctor' | 'patient' | 'marketing_rep' | 'nurse' | 'hospital_owner' | 'lab_technician' | 'pathologist' | 'pharmacist' | 'manager' | 'assistant_manager' | 'front_desk';
 
+export type EmergencyContact = {
+    id: string;
+    name?: string;
+    relation: string;
+    contactNumber?: string;
+    healthId?: string;
+};
+
 export type UserDemographics = {
   dob?: string; // ISO 8601 string
   gender?: 'Male' | 'Female' | 'Other';
@@ -15,6 +23,7 @@ export type UserDemographics = {
   mobileNumber?: string;
   chronicConditions?: string[];
   allergies?: string[];
+  emergencyContacts?: EmergencyContact[];
 };
 
 export type User = {

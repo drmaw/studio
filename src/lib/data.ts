@@ -21,6 +21,7 @@ export const users: User[] = [
       permanentAddress: "456 Village Rd, Health District, Country",
       allergies: ['Pollen'],
       chronicConditions: ['Hypertension'],
+      emergencyContacts: [],
     },
     isPremium: true
   },
@@ -43,6 +44,10 @@ export const users: User[] = [
       permanentAddress: "101 Native Town, Home District, Country",
       allergies: [],
       chronicConditions: ['Asthma', 'Diabetes'],
+      emergencyContacts: [
+        { id: 'ec-1', name: 'Mrs. Patient Mother', relation: 'Mother', contactNumber: '+8801712345679' },
+        { id: 'ec-2', healthId: '8912409021', relation: 'Doctor' }
+      ]
     },
     isPremium: false
   },
@@ -52,7 +57,7 @@ export const users: User[] = [
     email: 'rep@digihealth.com', 
     roles: ['marketing_rep', 'patient'], 
     avatarUrl: 'https://picsum.photos/seed/rep1/100/100',
-    demographics: { dob: '1995-02-10T00:00:00.000Z', gender: 'Female', mobileNumber: '+8801987654321', allergies: [], chronicConditions: [] },
+    demographics: { dob: '1995-02-10T00:00:00.000Z', gender: 'Female', mobileNumber: '+8801987654321', allergies: [], chronicConditions: [], emergencyContacts: [] },
     isPremium: false
   },
   { 
@@ -61,7 +66,7 @@ export const users: User[] = [
     email: 'doctor2@digihealth.com', 
     roles: ['doctor', 'patient'], 
     avatarUrl: 'https://picsum.photos/seed/doc2/100/100',
-    demographics: { dob: '1975-11-30T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801654321987', allergies: [], chronicConditions: ['Hypertension'] },
+    demographics: { dob: '1975-11-30T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801654321987', allergies: [], chronicConditions: ['Hypertension'], emergencyContacts: [] },
     isPremium: true
   },
   { 
@@ -70,7 +75,7 @@ export const users: User[] = [
     email: 'owner@digihealth.com', 
     roles: ['hospital_owner', 'patient'], 
     avatarUrl: 'https://picsum.photos/seed/owner1/100/100',
-    demographics: { dob: '1970-01-01T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801512345678', allergies: [], chronicConditions: [] },
+    demographics: { dob: '1970-01-01T00:00:00.000Z', gender: 'Male', mobileNumber: '+8801512345678', allergies: [], chronicConditions: [], emergencyContacts: [] },
     isPremium: true
   }
 ];

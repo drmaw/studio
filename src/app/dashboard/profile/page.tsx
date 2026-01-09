@@ -5,20 +5,33 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Wind, Plus, X, ShieldAlert } from "lucide-react";
+import { LogOut, UserPlus, Cake, User, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Wind, Plus, X, ShieldAlert, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { differenceInYears, parseISO, format, isValid } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import type { UserDemographics } from "@/lib/definitions";
+import type { UserDemographics, EmergencyContact } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthIdCard } from "@/components/health-id-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { users } from "@/lib/data";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 function ApplyForRoleCard() {
@@ -102,6 +115,13 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState<Partial<UserDemographics>>({});
   const [allergyInput, setAllergyInput] = useState('');
   
+  // State for new emergency contact
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactRelation, setNewContactRelation] = useState('');
+  const [newContactNumber, setNewContactNumber] = useState('');
+  const [newContactHealthId, setNewContactHealthId] = useState('');
+  const [newContactMethod, setNewContactMethod] = useState('details');
+
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
@@ -111,6 +131,7 @@ export default function ProfilePage() {
           ...user.demographics,
           chronicConditions: user.demographics?.chronicConditions || [],
           allergies: user.demographics?.allergies || [],
+          emergencyContacts: user.demographics?.emergencyContacts || [],
       };
       setFormData(initialData);
 
@@ -166,6 +187,38 @@ export default function ProfilePage() {
     });
   };
 
+  const handleAddEmergencyContact = () => {
+    let newContact: EmergencyContact | null = null;
+    const common = { id: `ec-${Date.now()}`, relation: newContactRelation };
+
+    if (newContactMethod === 'details' && newContactName && newContactRelation && newContactNumber) {
+        newContact = { ...common, name: newContactName, contactNumber: newContactNumber };
+    } else if (newContactMethod === 'healthId' && newContactHealthId && newContactRelation) {
+        // Optional: validate health ID exists
+        const contactUser = users.find(u => u.id === newContactHealthId);
+        if (!contactUser) {
+            toast({ variant: "destructive", title: "User not found", description: "No user exists with that Health ID."});
+            return;
+        }
+        newContact = { ...common, healthId: newContactHealthId, name: contactUser.name };
+    } else {
+        toast({ variant: "destructive", title: "Incomplete Information", description: "Please fill all required fields for the new contact."});
+        return;
+    }
+
+    if (newContact) {
+        setFormData(prev => ({...prev, emergencyContacts: [...(prev.emergencyContacts || []), newContact!]}));
+        setNewContactName('');
+        setNewContactRelation('');
+        setNewContactNumber('');
+        setNewContactHealthId('');
+    }
+  };
+
+  const handleRemoveEmergencyContact = (id: string) => {
+    setFormData(prev => ({ ...prev, emergencyContacts: prev.emergencyContacts?.filter(c => c.id !== id) }));
+  };
+
   const handleSave = async () => {
      // Mock API call to save user data
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -184,6 +237,7 @@ export default function ProfilePage() {
         ...user.demographics,
         chronicConditions: user.demographics?.chronicConditions || [],
         allergies: user.demographics?.allergies || [],
+        emergencyContacts: user.demographics?.emergencyContacts || [],
       });
     }
     setIsEditing(false);
@@ -300,6 +354,40 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                 </div>
+                                <Separator />
+                                <div className="space-y-4">
+                                  <h3 className="text-lg font-semibold border-b pb-2">Emergency Contacts</h3>
+                                   {formData.emergencyContacts?.map((contact) => (
+                                    <div key={contact.id} className="flex items-center justify-between p-2 rounded-md border">
+                                        <div>
+                                            <p className="font-semibold">{contact.name || 'N/A'}</p>
+                                            <p className="text-sm text-muted-foreground">{contact.relation}</p>
+                                            <p className="text-sm text-muted-foreground">{contact.contactNumber || `Health ID: ${contact.healthId}`}</p>
+                                        </div>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleRemoveEmergencyContact(contact.id)}>
+                                            <Trash2 className="h-4 w-4"/>
+                                        </Button>
+                                    </div>
+                                   ))}
+                                   <div className="p-4 border-2 border-dashed rounded-lg">
+                                       <Tabs value={newContactMethod} onValueChange={setNewContactMethod}>
+                                           <TabsList className="grid w-full grid-cols-2">
+                                               <TabsTrigger value="details">Add by Details</TabsTrigger>
+                                               <TabsTrigger value="healthId">Add by Health ID</TabsTrigger>
+                                           </TabsList>
+                                           <TabsContent value="details" className="pt-4 space-y-2">
+                                                <Input placeholder="Full Name" value={newContactName} onChange={(e) => setNewContactName(e.target.value)} />
+                                                <Input placeholder="Relation (e.g., Mother)" value={newContactRelation} onChange={(e) => setNewContactRelation(e.target.value)} />
+                                                <Input placeholder="Contact Number" value={newContactNumber} onChange={(e) => setNewContactNumber(e.target.value)} />
+                                           </TabsContent>
+                                           <TabsContent value="healthId" className="pt-4 space-y-2">
+                                                <Input placeholder="Health ID" value={newContactHealthId} onChange={(e) => setNewContactHealthId(e.target.value)} />
+                                                <Input placeholder="Relation (e.g., Doctor)" value={newContactRelation} onChange={(e) => setNewContactRelation(e.target.value)} />
+                                           </TabsContent>
+                                       </Tabs>
+                                       <Button className="mt-2 w-full" type="button" onClick={handleAddEmergencyContact}><Plus className="mr-2 h-4 w-4" />Add Contact</Button>
+                                   </div>
+                                </div>
                             </>
                         ) : (
                         <>
@@ -354,6 +442,28 @@ export default function ProfilePage() {
                                         </div>
                                     ) : <p className="font-medium text-muted-foreground/80">None reported</p>}
                                 </ProfileInfoRow>
+                            </div>
+                            <Separator />
+                            <h3 className="text-lg font-semibold border-b pb-2">Emergency Contacts</h3>
+                            <div className="space-y-2">
+                                {formData.emergencyContacts && formData.emergencyContacts.length > 0 ? (
+                                    formData.emergencyContacts.map(contact => (
+                                        <div key={contact.id} className="flex items-center p-3 rounded-md bg-secondary">
+                                            <div className="flex-1">
+                                                <p className="font-semibold">{contact.name} <span className="font-normal text-muted-foreground">({contact.relation})</span></p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {contact.contactNumber ? (
+                                                        <span className="flex items-center gap-2"><Phone className="h-3 w-3" />{contact.contactNumber}</span>
+                                                    ) : (
+                                                        <span className="flex items-center gap-2"><Fingerprint className="h-3 w-3" />Health ID: {contact.healthId}</span>
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No emergency contacts added.</p>
+                                )}
                             </div>
                         </>
                         )}
