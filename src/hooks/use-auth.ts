@@ -17,12 +17,22 @@ export function useAuth() {
   
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<User>(userDocRef);
 
-  const loading = isUserLoading || (firebaseUser && isProfileLoading);
+  const loading = useMemo(() => {
+    // We are loading if the initial auth check is happening.
+    if (isUserLoading) return true;
+    // If auth check is done but there's no Firebase user, we are not loading.
+    if (!firebaseUser) return false;
+    // If there is a Firebase user but we are still waiting for their profile, we are loading.
+    if (isProfileLoading) return true;
+    // If we have a firebase user but no profile (and not loading), then they don't have a profile. Not loading.
+    if (firebaseUser && !userProfile) return false;
+    // If all checks pass, we are not loading.
+    return false;
+  }, [isUserLoading, isProfileLoading, firebaseUser, userProfile]);
 
   const activeRole = useMemo(() => {
     if (!userProfile) return null;
     
-    // Define role hierarchy
     const roleHierarchy: Role[] = [
       'hospital_owner', 
       'doctor', 

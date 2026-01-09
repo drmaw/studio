@@ -37,7 +37,7 @@ export default function DashboardLayout({
     router.push('/');
   };
 
-  if (loading || !user) {
+  if (loading) {
      return (
       <div className="flex h-screen w-full">
         <div className="hidden md:flex flex-col w-64 border-r">
@@ -64,6 +64,12 @@ export default function DashboardLayout({
         </div>
       </div>
     );
+  }
+
+  // If loading is finished and there's still no user, it means the useEffect will handle the redirect.
+  // We can return null or a minimal loader here to avoid rendering the full layout momentarily.
+  if (!user) {
+    return null;
   }
 
   return (
