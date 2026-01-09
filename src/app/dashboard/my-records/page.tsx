@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
-import { RecordViewer } from '@/components/record-viewer';
+import { RecordViewer } from '@/components/dashboard/record-viewer';
 import type { RecordFile } from '@/lib/definitions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
