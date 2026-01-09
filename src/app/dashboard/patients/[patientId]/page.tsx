@@ -5,14 +5,14 @@
 import { useAuth } from "@/hooks/use-auth";
 import { medicalRecords, patients } from "@/lib/data";
 import { notFound, useRouter } from "next/navigation";
-import { MedicalRecordCard } from "@/components/medical-record-card";
+import { MedicalRecordCard } from "@/components/dashboard/medical-record-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Cake, Home, Phone, User as UserIcon } from "lucide-react";
 import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { VitalsTracker } from "@/components/vitals-tracker";
-import { RedBanner } from "@/components/red-banner";
+import { VitalsTracker } from "@/components/dashboard/vitals-tracker";
+import { RedBanner } from "@/components/dashboard/red-banner";
 import { vitalsHistory } from "@/lib/data";
 
 

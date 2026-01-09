@@ -1,14 +1,14 @@
 'use client'
 
-import { DoctorDashboard } from "@/components/doctor-dashboard";
-import { HospitalOwnerDashboard } from "@/components/hospital-owner-dashboard";
-import { PatientDashboard } from "@/components/patient-dashboard";
-import { RepDashboard } from "@/components/rep-dashboard";
+import { DoctorDashboard } from "@/components/dashboard/doctor-dashboard";
+import { PatientDashboard } from "@/components/dashboard/patient-dashboard";
+import { RepDashboard } from "@/components/dashboard/rep-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HospitalOwnerDashboard } from "@/components/dashboard/hospital-owner-dashboard";
 
 function GenericDashboard({ name }: { name: string }) {
     return (
