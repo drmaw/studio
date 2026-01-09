@@ -377,7 +377,7 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!user) return;
     
     const userRef = doc(firestore, "users", user.id);
@@ -652,3 +652,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

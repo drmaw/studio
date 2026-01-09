@@ -36,19 +36,22 @@ import { RecordViewer } from '@/components/dashboard/record-viewer';
 import type { RecordFile } from '@/lib/definitions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { uploadedRecords as initialRecords } from '@/lib/data';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, serverTimestamp, query, orderBy, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 // Client-side only component to format date and avoid hydration mismatch
-const FormattedDate = ({ date }: { date: string }) => {
+const FormattedDate = ({ date }: { date: string | Date }) => {
     const [formattedDate, setFormattedDate] = useState('');
 
     useEffect(() => {
-        setFormattedDate(format(new Date(date), "dd MMM yyyy, hh:mm a"));
+        const d = typeof date === 'string' ? new Date(date) : date;
+        setFormattedDate(format(d, "dd MMM yyyy, hh:mm a"));
     }, [date]);
 
     if (!formattedDate) {
-        // You can return a placeholder here if you want
         return null;
     }
 
@@ -57,8 +60,9 @@ const FormattedDate = ({ date }: { date: string }) => {
 
 
 export default function MyHealthRecordsPage() {
-    const { user } = useAuth();
-    const [records, setRecords] = useState<RecordFile[]>(initialRecords);
+    const { user, loading } = useAuth();
+    const firestore = useFirestore();
+
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [recordType, setRecordType] = useState<'prescription' | 'report' | ''>('');
     const [isUploading, setIsUploading] = useState(false);
@@ -66,6 +70,13 @@ export default function MyHealthRecordsPage() {
     const [viewerOpen, setViewerOpen] = useState(false);
     const [viewerStartIndex, setViewerStartIndex] = useState(0);
     const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
+    
+    const recordsQuery = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return query(collection(firestore, 'patients', user.id, 'record_files'), orderBy('createdAt', 'desc'));
+    }, [firestore, user]);
+
+    const { data: records, isLoading: recordsLoading } = useCollection<RecordFile>(recordsQuery);
 
     const MAX_RECORDS_STANDARD = 10;
     const MAX_RECORDS_PREMIUM = 40;
@@ -86,67 +97,53 @@ export default function MyHealthRecordsPage() {
     };
 
     const handleUpload = async () => {
-        if (!selectedFile) {
-            toast({
-                variant: 'destructive',
-                title: 'No file selected',
-                description: 'Please select a file to upload.',
-            });
-            return;
-        }
-
-        if (!recordType) {
-            toast({
-                variant: 'destructive',
-                title: 'No record type selected',
-                description: 'Please select a record type (e.g., Prescription).',
-            });
-            return;
-        }
+        if (!selectedFile || !recordType || !user) return;
 
         setIsUploading(true);
-        // Mock upload
-        await new Promise(resolve => setTimeout(resolve, 1500));
         
-        const newRecord: RecordFile = {
-            id: `rec-${Date.now()}`,
-            name: selectedFile.name,
-            fileType: selectedFile.type.startsWith('image/') ? 'image' : 'pdf',
-            recordType: recordType,
-            url: selectedFile.type.startsWith('image/') ? URL.createObjectURL(selectedFile) : '#',
-            date: new Date().toISOString(),
-            size: `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`,
-            uploadedBy: 'Self',
-        };
-        
-        setRecords(prev => {
-            let updatedRecords = [newRecord, ...prev];
-            if (updatedRecords.length > maxRecords) {
-                // Remove the oldest record
-                const oldestRecord = updatedRecords.reduce((oldest, current) => 
-                    new Date(current.date) < new Date(oldest.date) ? current : oldest
-                );
-                updatedRecords = updatedRecords.filter(r => r.id !== oldestRecord.id);
-                toast({
-                    variant: "destructive",
-                    title: "Storage Limit Reached",
-                    description: `The oldest record "${oldestRecord.name}" was deleted to make space.`,
-                });
-            }
-            return updatedRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        });
-        
-        setSelectedFile(null);
-        setRecordType('');
-        setIsUploading(false);
-        toast({
-            title: 'Upload successful',
-            description: `Your file "${selectedFile.name}" has been uploaded.`,
-        });
+        try {
+            const storage = getStorage();
+            const filePath = `record_files/${user.id}/${Date.now()}-${selectedFile.name}`;
+            const storageRef = ref(storage, filePath);
+            const uploadResult = await uploadBytes(storageRef, selectedFile);
+            const downloadURL = await getDownloadURL(uploadResult.ref);
+
+            const recordFilesRef = collection(firestore, 'patients', user.id, 'record_files');
+
+            const newRecord = {
+                name: selectedFile.name,
+                fileType: selectedFile.type.startsWith('image/') ? 'image' : 'pdf',
+                recordType: recordType,
+                url: downloadURL,
+                size: `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`,
+                uploadedBy: user.id,
+                uploaderName: user.name,
+                patientId: user.id,
+                organizationId: user.organizationId,
+                createdAt: serverTimestamp(),
+            };
+
+            addDocumentNonBlocking(recordFilesRef, newRecord);
+
+            toast({
+                title: 'Upload successful',
+                description: `Your file "${selectedFile.name}" has been uploaded.`,
+            });
+            
+        } catch (error) {
+            console.error("Upload failed: ", error);
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload your file.'});
+        } finally {
+            setSelectedFile(null);
+            setRecordType('');
+            setIsUploading(false);
+        }
     };
 
     const handleDelete = (id: string) => {
-        setRecords(prev => prev.filter(r => r.id !== id));
+        if(!user) return;
+        const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
+        deleteDocumentNonBlocking(docRef);
         setSelectedRecords(prev => prev.filter(selectedId => selectedId !== id));
         toast({
             title: 'Record deleted',
@@ -154,13 +151,26 @@ export default function MyHealthRecordsPage() {
         })
     }
 
-    const handleDeleteSelected = () => {
-        setRecords(prev => prev.filter(r => !selectedRecords.includes(r.id)));
-        toast({
-            title: `${selectedRecords.length} records deleted`,
-            description: 'The selected health records have been removed.',
+    const handleDeleteSelected = async () => {
+        if (!user || selectedRecords.length === 0) return;
+        
+        const batch = writeBatch(firestore);
+        selectedRecords.forEach(id => {
+            const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
+            batch.delete(docRef);
         });
-        setSelectedRecords([]);
+
+        try {
+            await batch.commit();
+            toast({
+                title: `${selectedRecords.length} records deleted`,
+                description: 'The selected health records have been removed.',
+            });
+            setSelectedRecords([]);
+        } catch (error) {
+             console.error("Batch delete failed: ", error);
+             toast({ variant: 'destructive', title: 'Deletion Failed', description: 'Could not delete selected records.'});
+        }
     };
 
     const handleDownloadSelected = () => {
@@ -179,6 +189,7 @@ export default function MyHealthRecordsPage() {
     };
     
     const toggleSelectAll = () => {
+        if (!records) return;
         if (selectedRecords.length === records.length) {
             setSelectedRecords([]);
         } else {
@@ -191,14 +202,14 @@ export default function MyHealthRecordsPage() {
         setViewerStartIndex(index);
         setViewerOpen(true);
     }
-
-    const recordsSorted = records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const storagePercentage = (records.length / maxRecords) * 100;
+    
+    const currentRecords = records || [];
+    const storagePercentage = (currentRecords.length / maxRecords) * 100;
 
     return (
         <>
             <RecordViewer 
-                records={recordsSorted}
+                records={currentRecords}
                 open={viewerOpen}
                 onOpenChange={setViewerOpen}
                 startIndex={viewerStartIndex}
@@ -241,7 +252,7 @@ export default function MyHealthRecordsPage() {
                     <CardFooter className="flex flex-col gap-2 pt-4 border-t">
                         <div className="w-full flex justify-between text-sm text-muted-foreground">
                             <span>Storage Usage</span>
-                            <span>{records.length} / {maxRecords} reports</span>
+                            <span>{currentRecords.length} / {maxRecords} reports</span>
                         </div>
                         <Progress value={storagePercentage} />
                         {!user?.isPremium && (
@@ -304,7 +315,7 @@ export default function MyHealthRecordsPage() {
                      <div className="flex items-center space-x-2 pb-2">
                         <Checkbox 
                             id="select-all"
-                            checked={selectedRecords.length === records.length && records.length > 0}
+                            checked={currentRecords.length > 0 && selectedRecords.length === currentRecords.length}
                             onCheckedChange={toggleSelectAll}
                             aria-label="Select all"
                         />
@@ -313,9 +324,11 @@ export default function MyHealthRecordsPage() {
                         </label>
                     </div>
 
-                    {records.length > 0 ? (
+                    {recordsLoading && <div className="text-center p-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>}
+
+                    {!recordsLoading && currentRecords.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {recordsSorted.map((record, index) => (
+                            {currentRecords.map((record, index) => (
                                 <Card key={record.id} className={cn("group overflow-hidden flex flex-col relative bg-card", selectedRecords.includes(record.id) && "ring-2 ring-primary")}>
                                      <div className="absolute top-2 left-2 z-10">
                                         <Checkbox 
@@ -365,12 +378,12 @@ export default function MyHealthRecordsPage() {
                                         <div className="mt-4 space-y-2 text-xs text-muted-foreground pt-4 border-t border-dashed">
                                             <div className="flex items-center gap-2">
                                                 <Clock className="h-3 w-3"/>
-                                                <FormattedDate date={record.date} />
+                                                {record.createdAt && <FormattedDate date={(record.createdAt as any).toDate()} />}
                                                 <span className="font-semibold text-foreground/80">&bull; {record.size}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <User className="h-3 w-3" />
-                                                <span>Uploaded by: <span className="font-semibold text-foreground/80">{record.uploadedBy}</span></span>
+                                                <span>Uploaded by: <span className="font-semibold text-foreground/80">{record.uploaderName}</span></span>
                                             </div>
                                         </div>
                                     </div>
@@ -378,6 +391,7 @@ export default function MyHealthRecordsPage() {
                             ))}
                         </div>
                     ) : (
+                        !recordsLoading && 
                         <Card className="flex items-center justify-center p-12 bg-background-soft">
                             <div className="text-center text-muted-foreground">
                                 <ImageIcon className="h-12 w-12 mx-auto mb-2" />
