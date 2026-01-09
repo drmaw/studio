@@ -110,10 +110,6 @@ export function AccountSettingsTab() {
         
         <Card className="border-destructive/50">
             <CardHeader>
-                <CardTitle className="text-destructive flex items-center gap-2">
-                     <Trash2 className="h-5 w-5" />
-                    Danger Zone
-                </CardTitle>
             </CardHeader>
             <CardContent>
                  <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg bg-destructive/5">
@@ -134,7 +130,7 @@ export function AccountSettingsTab() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                <AlertDialogAction onClick={() => {}} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
