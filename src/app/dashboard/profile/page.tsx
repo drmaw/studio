@@ -32,6 +32,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
 
 
 function ApplyForRoleCard() {
@@ -63,7 +64,7 @@ function ApplyForRoleCard() {
   };
 
   return (
-    <Card className="mt-6">
+    <Card className="mt-6 bg-background-soft">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl">
           <UserPlus className="h-5 w-5 text-primary" />
@@ -219,6 +220,13 @@ export default function ProfilePage() {
     setFormData(prev => ({ ...prev, emergencyContacts: prev.emergencyContacts?.filter(c => c.id !== id) }));
   };
 
+  const handleUpdateEmergencyContact = (updatedContact: EmergencyContact) => {
+    setFormData(prev => ({
+        ...prev,
+        emergencyContacts: prev.emergencyContacts?.map(c => c.id === updatedContact.id ? updatedContact : c)
+    }));
+  };
+
   const handleSave = async () => {
      // Mock API call to save user data
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -259,7 +267,7 @@ export default function ProfilePage() {
         <HealthIdCard user={user} />
         <div className="flex justify-center">
             <div className="w-full max-w-2xl space-y-6">
-                <Card>
+                <Card className="bg-background-soft">
                     <CardHeader>
                         <div className="flex justify-between items-center">
                         <div>
@@ -364,9 +372,12 @@ export default function ProfilePage() {
                                             <p className="text-sm text-muted-foreground">{contact.relation}</p>
                                             <p className="text-sm text-muted-foreground">{contact.contactNumber || `Health ID: ${contact.healthId}`}</p>
                                         </div>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleRemoveEmergencyContact(contact.id)}>
-                                            <Trash2 className="h-4 w-4"/>
-                                        </Button>
+                                        <div className="flex items-center">
+                                            <EditContactDialog contact={contact} onSave={handleUpdateEmergencyContact} />
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleRemoveEmergencyContact(contact.id)}>
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
+                                        </div>
                                     </div>
                                    ))}
                                    <div className="p-4 border-2 border-dashed rounded-lg">
@@ -490,3 +501,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
