@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,7 +23,12 @@ import { Loader2 } from "lucide-react";
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
+  mobile: z.string().min(1, { message: "Mobile number is required."}),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"]
 });
 
 // Function to generate a unique 10-digit alphanumeric ID
@@ -45,7 +51,9 @@ export function RegisterForm() {
     defaultValues: {
       name: "",
       email: "",
+      mobile: "",
       password: "",
+      confirmPassword: ""
     },
   });
 
@@ -59,7 +67,11 @@ export function RegisterForm() {
     // We are just logging it here.
     const newUser = {
         id: generateHealthId(),
-        ...values,
+        name: values.name,
+        email: values.email,
+        demographics: {
+            mobileNumber: values.mobile
+        },
         roles: ['patient'], // All new users are patients by default
         avatarUrl: `https://picsum.photos/seed/${values.email}/100/100`
     }
@@ -104,10 +116,36 @@ export function RegisterForm() {
         />
         <FormField
           control={form.control}
+          name="mobile"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Mobile Number</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g. 01712345678" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="password"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="••••••••" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="••••••••" {...field} />
               </FormControl>
