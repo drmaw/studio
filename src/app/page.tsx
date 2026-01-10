@@ -16,7 +16,7 @@ export default function AppRootPage() {
         if (user) {
             router.replace('/dashboard');
         } else {
-            router.replace('/home');
+            router.replace('/');
         }
     }, [user, loading, router]);
 
@@ -26,4 +26,3 @@ export default function AppRootPage() {
       </div>
     );
 }
-

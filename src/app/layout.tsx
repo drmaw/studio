@@ -14,8 +14,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const publicRoutes = ['/login', '/register'];
-  const isPublicRoute = publicRoutes.includes(pathname) || pathname === '/';
+  const publicRoutes = ['/login', '/register', '/'];
+  const isPublicRoute = publicRoutes.includes(pathname);
   const isDashboardRoute = pathname.startsWith('/dashboard');
 
   useEffect(() => {
@@ -28,7 +28,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     }
   }, [user, isUserLoading, isPublicRoute, isDashboardRoute, pathname, router]);
 
-  if (isUserLoading && !isPublicRoute) {
+  if (isUserLoading && isDashboardRoute) {
     return (
        <div className="flex h-screen w-full items-center justify-center">
         <Skeleton className="h-full w-full" />
