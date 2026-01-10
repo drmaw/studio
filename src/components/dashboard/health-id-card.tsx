@@ -80,7 +80,7 @@ export function HealthIdCard({ user }: { user: User }) {
                             {age !== null && <div className="flex items-center gap-1.5"><Cake className="h-4 w-4" /> Age: {age}</div>}
                         </div>
                          <div className="flex flex-wrap gap-2 pt-3">
-                            {user.roles.map(role => (
+                            {user.roles && user.roles.map(role => (
                                 <Badge key={role} variant="secondary" className="capitalize">
                                     {role.replace(/_/g, ' ')}
                                 </Badge>
