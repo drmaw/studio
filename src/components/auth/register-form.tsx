@@ -28,6 +28,7 @@ import type { User, Patient } from "@/lib/definitions";
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
+  mobileNumber: z.string().min(10, { message: "Please enter a valid mobile number." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
   confirmPassword: z.string()
 }).refine(data => data.password === data.confirmPassword, {
@@ -49,6 +50,7 @@ export function RegisterForm() {
     defaultValues: {
       name: "",
       email: "",
+      mobileNumber: "",
       password: "",
       confirmPassword: ""
     },
@@ -86,12 +88,12 @@ export function RegisterForm() {
           organizationId: orgId,
           avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
           createdAt: serverTimestamp(),
-          demographics: isDevUser ? {
-              dob: '01-01-1985',
-              gender: 'Male',
-              contact: '01234567890',
-              mobileNumber: '01234567890',
-          } : {}
+          demographics: {
+              dob: isDevUser ? '01-01-1985' : '',
+              gender: isDevUser ? 'Male' : 'Other',
+              contact: values.mobileNumber,
+              mobileNumber: values.mobileNumber,
+          }
       };
 
       const newPatient: Omit<Patient, 'id'> = {
@@ -102,7 +104,7 @@ export function RegisterForm() {
           demographics: {
               dob: isDevUser ? '01-01-1985' : '',
               gender: isDevUser ? 'Male' : 'Other',
-              contact: '',
+              contact: values.mobileNumber,
               address: isDevUser ? '123 Dev Lane' : ''
           },
           createdAt: serverTimestamp(),
@@ -161,6 +163,19 @@ export function RegisterForm() {
         />
         <FormField
           control={form.control}
+          name="mobileNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Mobile Number</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g. 01712345678" {...field} autoComplete="tel" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="password"
           render={({ field }) => (
             <FormItem>
@@ -201,5 +216,7 @@ export function RegisterForm() {
     </Form>
   );
 }
+
+    
 
     
