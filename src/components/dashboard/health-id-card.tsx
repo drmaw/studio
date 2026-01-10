@@ -10,7 +10,7 @@ import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "../ui/badge";
-import { differenceInYears, parseISO, isValid } from 'date-fns';
+import { differenceInYears, parse, isValid } from 'date-fns';
 
 export function HealthIdCard({ user }: { user: User }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -20,7 +20,7 @@ export function HealthIdCard({ user }: { user: User }) {
     useEffect(() => {
         if (user?.demographics?.dob) {
             try {
-                const birthDate = parseISO(user.demographics.dob);
+                const birthDate = parse(user.demographics.dob, "dd-MM-yyyy", new Date());
                 if(isValid(birthDate)) {
                     setAge(differenceInYears(new Date(), birthDate));
                 }
@@ -134,3 +134,5 @@ export function HealthIdCard({ user }: { user: User }) {
         </Card>
     );
 }
+
+    

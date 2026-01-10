@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc, orderBy, query, limit } from "firebase/firestore";
+import { Skeleton } from "../ui/skeleton";
 
 
 function LatestRecordCard({ record }: { record: RecordFile }) {
@@ -34,7 +35,7 @@ function LatestRecordCard({ record }: { record: RecordFile }) {
                 <CardHeader>
                     <CardTitle>{record.name}</CardTitle>
                     <CardDescription>
-                       Uploaded by {record.uploaderName} on {record.createdAt ? format(new Date((record.createdAt as any).toDate()), "dd MMM yyyy") : ''}
+                       Uploaded by {record.uploaderName} on {record.createdAt ? format(new Date((record.createdAt as any).toDate()), "dd-MM-yyyy") : ''}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -57,40 +58,53 @@ function LatestRecordCard({ record }: { record: RecordFile }) {
 
 
 export function PatientDashboard({ user }: { user: User }) {
+  const { loading } = useAuth();
   const firestore = useFirestore();
 
   const patientDocRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.id) return null;
     return doc(firestore, 'patients', user.id);
-  }, [firestore, user]);
+  }, [firestore, user?.id]);
 
-  const { data: patient } = useDoc<Patient>(patientDocRef);
+  const { data: patient, isLoading: isPatientLoading } = useDoc<Patient>(patientDocRef);
 
   const recordsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.id) return null;
     return query(
         collection(firestore, 'patients', user.id, 'record_files'),
         orderBy('createdAt', 'desc'),
         limit(1)
     );
-  }, [firestore, user]);
+  }, [firestore, user?.id]);
 
-  const { data: latestRecords } = useCollection<RecordFile>(recordsQuery);
+  const { data: latestRecords, isLoading: areRecordsLoading } = useCollection<RecordFile>(recordsQuery);
   const recordToShow = latestRecords?.[0];
 
   const vitalsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.id) return null;
     return query(
       collection(firestore, 'patients', user.id, 'vitals'),
       orderBy('date', 'desc')
     );
-  }, [firestore, user]);
+  }, [firestore, user?.id]);
 
-  const { data: vitalsHistory } = useCollection<Vitals>(vitalsQuery);
+  const { data: vitalsHistory, isLoading: areVitalsLoading } = useCollection<Vitals>(vitalsQuery);
+
+  const pageIsLoading = loading || isPatientLoading || areRecordsLoading || areVitalsLoading;
+
+  if (pageIsLoading) {
+      return (
+        <div className="space-y-6">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-96 w-full" />
+            <Skeleton className="h-64 w-full" />
+        </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <HealthIdCard user={user} />
+      {user && <HealthIdCard user={user} />}
       
       {patient?.redFlag && (
         <RedBanner
@@ -124,3 +138,5 @@ export function PatientDashboard({ user }: { user: User }) {
     </div>
   );
 }
+
+    

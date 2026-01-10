@@ -74,7 +74,7 @@ export function RecordViewer({ records, startIndex, open, onOpenChange }: Record
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="truncate">{currentRecord.name}</DialogTitle>
           <DialogDescription className="flex items-center gap-4 text-xs">
-             {recordDate && <span className='flex items-center gap-1'><Clock className="h-3 w-3" /> {format(recordDate, "dd MMM yyyy, hh:mm a")}</span>}
+             {recordDate && <span className='flex items-center gap-1'><Clock className="h-3 w-3" /> {format(recordDate, "dd-MM-yyyy, hh:mm a")}</span>}
             <span className='flex items-center gap-1'><User className="h-3 w-3" /> Uploaded by {currentRecord.uploaderName}</span>
           </DialogDescription>
         </DialogHeader>
@@ -144,3 +144,5 @@ export function RecordViewer({ records, startIndex, open, onOpenChange }: Record
     </Dialog>
   );
 }
+
+    

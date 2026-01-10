@@ -48,7 +48,7 @@ const FormattedDate = ({ date }: { date: string | Date }) => {
 
     useEffect(() => {
         const d = typeof date === 'string' ? new Date(date) : date;
-        setFormattedDate(format(d, "dd MMM yyyy, hh:mm a"));
+        setFormattedDate(format(d, "dd-MM-yyyy"));
     }, [date]);
 
     if (!formattedDate) {
@@ -201,6 +201,16 @@ export default function MyHealthRecordsPage() {
     
     const currentRecords = records || [];
     const storagePercentage = (currentRecords.length / maxRecords) * 100;
+
+    if (loading) {
+        return (
+            <div className="space-y-6">
+                <Skeleton className="h-10 w-1/2" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-96 w-full" />
+            </div>
+        )
+    }
 
     return (
         <>
@@ -400,3 +410,5 @@ export default function MyHealthRecordsPage() {
         </>
     );
 }
+
+    

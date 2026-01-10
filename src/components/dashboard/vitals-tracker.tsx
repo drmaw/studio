@@ -109,7 +109,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
 
   const formattedData = vitalsData.map(v => ({
     ...v,
-    name: format(parseISO(v.date), 'dd MMM'),
+    name: format(parseISO(v.date), 'dd-MM'),
     bp: v.bpSystolic ? `${v.bpSystolic}/${v.bpDiastolic}`: null,
   }));
 
@@ -222,7 +222,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
                     <TableBody>
                         {formattedData.map(v => (
                             <TableRow key={v.id}>
-                                <TableCell className="font-medium">{format(parseISO(v.date), 'dd MMM yyyy, hh:mm a')}</TableCell>
+                                <TableCell className="font-medium">{format(parseISO(v.date), 'dd-MM-yyyy, hh:mm a')}</TableCell>
                                 <TableCell>{v.bp ?? 'N/A'}</TableCell>
                                 <TableCell>{v.pulse ?? 'N/A'}</TableCell>
                                 <TableCell>{v.weight ?? 'N/A'}</TableCell>
@@ -238,3 +238,5 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
     </Card>
   )
 }
+
+    

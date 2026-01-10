@@ -27,7 +27,7 @@ function LogEntry({ log }: { log: PrivacyLogEntry }) {
                 <p className="text-xs text-muted-foreground">Health ID: {log.actorId}</p>
             </div>
             <div className="text-right text-xs text-muted-foreground">
-                <p>{log.timestamp ? format(new Date((log.timestamp as any).toDate()), "dd MMM yyyy") : ''}</p>
+                <p>{log.timestamp ? format(new Date((log.timestamp as any).toDate()), "dd-MM-yyyy") : ''}</p>
                 <p>{log.timestamp ? format(new Date((log.timestamp as any).toDate()), "hh:mm a") : ''}</p>
             </div>
         </div>
@@ -117,3 +117,5 @@ export default function PrivacyLogPage() {
         </div>
     )
 }
+
+    

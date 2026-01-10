@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { differenceInYears, parseISO, format, isValid } from 'date-fns';
+import { differenceInYears, parse, isValid, format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import type { UserDemographics, EmergencyContact, User } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
@@ -293,7 +293,7 @@ export default function ProfilePage() {
 
     if (user.demographics?.dob) {
       try {
-        const birthDate = parseISO(user.demographics.dob);
+        const birthDate = parse(user.demographics.dob, "dd-MM-yyyy", new Date());
         if(isValid(birthDate)) {
           const calculatedAge = differenceInYears(new Date(), birthDate);
           setAge(calculatedAge);
@@ -415,8 +415,8 @@ export default function ProfilePage() {
   
   const isOnlyPatient = user.roles?.length === 1 && user.roles[0] === 'patient';
   
-  const dobDate = formData.dob ? parseISO(formData.dob) : null;
-  const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd MMMM, yyyy') : 'N/A';
+  const dobDate = formData.dob ? parse(formData.dob, "dd-MM-yyyy", new Date()) : null;
+  const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd-MM-yyyy') : 'N/A';
 
   return (
     <div className="space-y-6">
@@ -447,7 +447,7 @@ export default function ProfilePage() {
                                 <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <ProfileEditRow label="Mobile Number" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} />
-                                    <ProfileEditRow label="Date of Birth (YYYY-MM-DD)" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="YYYY-MM-DD" />
+                                    <ProfileEditRow label="Date of Birth (DD-MM-YYYY)" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="DD-MM-YYYY" />
                                     <ProfileEditRow label="Gender" name="gender" value={formData.gender} onChange={handleInputChange} />
                                     <ProfileEditRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleInputChange} />
                                     <ProfileEditRow label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleInputChange} />
@@ -657,3 +657,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
