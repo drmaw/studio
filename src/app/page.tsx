@@ -77,11 +77,11 @@ export default function Home() {
                 src={heroImage.imageUrl}
                 alt={heroImage.description}
                 fill
-                className="object-cover -z-20"
+                className="object-cover -z-20 brightness-50"
                 data-ai-hint={heroImage.imageHint}
                 priority
               />
-              <div className="absolute inset-0 bg-green-800/70 -z-10"></div>
+              <div className="absolute inset-0 bg-green-900/60 -z-10"></div>
             </>
           )}
           <div className="relative px-4 sm:px-6 lg:px-8 max-w-4xl">
