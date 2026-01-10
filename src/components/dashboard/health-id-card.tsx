@@ -5,17 +5,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { type User } from "@/lib/definitions";
-import { Camera, QrCode, ShieldCheck, Phone, Cake, HeartPulse, Siren } from "lucide-react";
+import { Camera, QrCode, ShieldCheck, Phone, Cake, HeartPulse, Siren, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "../ui/badge";
 import { differenceInYears, parse, isValid } from 'date-fns';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { doc } from "firebase/firestore";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore } from "@/firebase";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export function HealthIdCard({ user }: { user: User }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
     const [age, setAge] = useState<number | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const { user: authUser } = useAuth();
+    const firestore = useFirestore();
+
 
     useEffect(() => {
         if (user?.demographics?.dob) {
@@ -39,13 +48,46 @@ export function HealthIdCard({ user }: { user: User }) {
         fileInputRef.current?.click();
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (file) {
+        if (!file || !authUser) return;
+
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit
             toast({
-                title: 'Profile Picture Selected',
-                description: `${file.name} is ready to be uploaded.`,
+                variant: 'destructive',
+                title: 'File Too Large',
+                description: 'Please select an image smaller than 2MB.',
             });
+            return;
+        }
+
+        setIsUploading(true);
+
+        try {
+            const storage = getStorage();
+            const filePath = `profile_pictures/${authUser.id}`;
+            const storageRef = ref(storage, filePath);
+            
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            const userDocRef = doc(firestore, 'users', authUser.id);
+            updateDocumentNonBlocking(userDocRef, { avatarUrl: downloadURL });
+            
+            toast({
+                title: 'Profile Picture Updated',
+                description: 'Your new picture has been saved.',
+            });
+
+        } catch (error) {
+            console.error("Profile picture upload failed:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Upload Failed',
+                description: 'Could not upload your new profile picture.',
+            });
+        } finally {
+            setIsUploading(false);
         }
     };
     
@@ -66,7 +108,7 @@ export function HealthIdCard({ user }: { user: User }) {
                             className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                             onClick={handleAvatarClick}
                         >
-                            <Camera className="h-8 w-8 text-white" />
+                            {isUploading ? <Loader2 className="h-8 w-8 text-white animate-spin" /> : <Camera className="h-8 w-8 text-white" />}
                         </div>
                         <input
                             type="file"
@@ -74,6 +116,7 @@ export function HealthIdCard({ user }: { user: User }) {
                             onChange={handleFileChange}
                             className="hidden"
                             accept="image/png, image/jpeg"
+                            disabled={isUploading}
                         />
                     </div>
                     
@@ -85,7 +128,7 @@ export function HealthIdCard({ user }: { user: User }) {
                             {age !== null && <div className="flex items-center gap-1.5"><Cake className="h-4 w-4" /> Age: {age}</div>}
                         </div>
                          <div className="flex flex-wrap gap-2 pt-3">
-                            {user.roles?.map(role => (
+                            {user.roles && user.roles.map(role => (
                                 <Badge key={role} variant="secondary" className="capitalize">
                                     {role.replace(/_/g, ' ')}
                                 </Badge>
@@ -134,5 +177,3 @@ export function HealthIdCard({ user }: { user: User }) {
         </Card>
     );
 }
-
-    
