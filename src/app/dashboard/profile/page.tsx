@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
@@ -256,6 +257,7 @@ const ProfileEditRow = ({ label, name, value, onChange, placeholder }: { label: 
 
 const availableConditions = ['Asthma', 'Diabetes', 'Hypertension', 'CKD'];
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const genders = ['Male', 'Female'];
 
 
 export default function ProfilePage() {
@@ -448,7 +450,19 @@ export default function ProfilePage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <ProfileEditRow label="Mobile Number" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} />
                                     <ProfileEditRow label="Date of Birth (DD-MM-YYYY)" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="DD-MM-YYYY" />
-                                    <ProfileEditRow label="Gender" name="gender" value={formData.gender} onChange={handleInputChange} />
+                                    <div className="space-y-1">
+                                        <Label className="text-sm text-muted-foreground">Gender</Label>
+                                        <Select value={formData.gender} onValueChange={handleSelectChange('gender')}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select gender..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {genders.map(gender => (
+                                                    <SelectItem key={gender} value={gender}>{gender}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     <ProfileEditRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleInputChange} />
                                     <ProfileEditRow label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleInputChange} />
                                     <ProfileEditRow label="NID" name="nid" value={formData.nid} onChange={handleInputChange} />
