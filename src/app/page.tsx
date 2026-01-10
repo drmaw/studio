@@ -51,10 +51,10 @@ export default function Home() {
                 <span>Digi Health</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-                <Link href="/" className="text-foreground/80 hover:text-foreground">Home</Link>
                 <Link href="#" className="text-foreground/80 hover:text-foreground">Find Care</Link>
                 <Link href="#" className="text-foreground/80 hover:text-foreground">What We Treat</Link>
                 <Link href="#" className="text-foreground/80 hover:text-foreground">For Employers</Link>
+                 <Link href="#" className="text-foreground/80 hover:text-foreground">About Us</Link>
             </nav>
             <div className="flex items-center gap-2">
                 <Button variant="ghost" asChild>
@@ -81,10 +81,10 @@ export default function Home() {
           )}
           <div className="relative px-4 sm:px-6 lg:px-8 max-w-4xl">
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
-              Exceptional Primary Care for All of You
+              Exceptional primary care for all of you
             </h1>
             <p className="mt-4 md:mt-6 text-lg md:text-xl max-w-2xl mx-auto">
-              Digi Health is a membership-based primary care practice on a mission to make getting quality care more affordable, accessible, and enjoyable for all.
+              One Medical is a membership-based primary care practice on a mission to make getting quality care more affordable, accessible, and enjoyable for all.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
               <Button size="lg" className="w-full sm:w-auto text-base font-semibold">
@@ -103,7 +103,7 @@ export default function Home() {
         <section className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-2xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold">Care For Your Whole Life</h2>
+              <h2 className="text-3xl md:text-4xl font-bold">Care for your whole life</h2>
               <p className="mt-4 text-lg text-muted-foreground">
                 From everyday needs to specialized services, we're here to support your health journey at every step.
               </p>
