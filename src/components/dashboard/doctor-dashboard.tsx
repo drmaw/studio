@@ -23,7 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { QrScannerDialog } from "./qr-scanner-dialog";
-import { collection, getDocs, query, where, limit, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, limit } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 
 const chamberSchedules = [
@@ -43,7 +43,7 @@ function PatientSearchResultCard({ patient }: { patient: Patient }) {
           <div className="flex-1">
             <CardTitle className="text-2xl">{patient.name}</CardTitle>
             <CardDescription className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm mt-2">
-              <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {patient.id}</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {patient.healthId}</span>
               <span className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {patient.demographics.contact}</span>
               <span>DOB: {patient.demographics.dob}</span>
               <span>{patient.demographics.gender}</span>
@@ -112,29 +112,24 @@ export function DoctorDashboard({ user }: { user: User }) {
 
     try {
         const patientsRef = collection(firestore, "patients");
-        // Check if it's a Health ID (non-numeric or not a typical phone number format)
-        const isHealthId = !/^\+?\d{10,}$/.test(finalQuery); 
+        // Check if it's a 10-digit Health ID or a mobile number
+        const isHealthId = /^\d{10}$/.test(finalQuery); 
         
         let q;
         if(isHealthId) {
-            // It's a Health ID, so we do a direct doc lookup
-            const patientDocRef = doc(firestore, "patients", finalQuery);
-            const patientDoc = await getDoc(patientDocRef);
-             if (patientDoc.exists()) {
-                setSearchResult({ id: patientDoc.id, ...patientDoc.data() } as Patient);
-            } else {
-                setSearchResult('not_found');
-            }
+            // It's a Health ID, so we query by the healthId field
+            q = query(patientsRef, where("healthId", "==", finalQuery), limit(1));
         } else {
-            // It's a mobile number, so we query
+            // It's a mobile number, so we query by the contact field
             q = query(patientsRef, where("demographics.contact", "==", finalQuery), limit(1));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const patientDoc = querySnapshot.docs[0];
-                setSearchResult({ id: patientDoc.id, ...patientDoc.data() } as Patient);
-            } else {
-                setSearchResult('not_found');
-            }
+        }
+
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const patientDoc = querySnapshot.docs[0];
+            setSearchResult({ id: patientDoc.id, ...patientDoc.data() } as Patient);
+        } else {
+            setSearchResult('not_found');
         }
 
     } catch (error) {

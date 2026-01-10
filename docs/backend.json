@@ -5,6 +5,7 @@
       "description": "Represents a user profile in Digi Health.",
       "type": "object",
       "properties": {
+        "healthId": { "type": "string", "description": "A unique 10-digit user-facing identifier." },
         "name": { "type": "string", "description": "User's full name." },
         "email": { "type": "string", "format": "email" },
         "roles": { "type": "array", "items": { "type": "string" } },
@@ -14,14 +15,15 @@
         "isPremium": { "type": "boolean" },
         "createdAt": { "type": "object" }
       },
-      "required": ["name", "email", "roles", "organizationId", "createdAt"]
+      "required": ["healthId", "name", "email", "roles", "organizationId", "createdAt"]
     },
     "Patient": {
       "title": "Patient",
       "description": "Represents a patient's core record, linked to a user.",
       "type": "object",
       "properties": {
-        "userId": { "type": "string", "description": "Links to the User document ID." },
+        "healthId": { "type": "string", "description": "A unique 10-digit user-facing identifier." },
+        "userId": { "type": "string", "description": "Links to the User document ID (Firebase UID)." },
         "name": { "type": "string" },
         "organizationId": { "type": "string" },
         "demographics": { "type": "object" },
@@ -30,7 +32,7 @@
         "redFlag": { "type": "object" },
         "createdAt": { "type": "object" }
       },
-      "required": ["userId", "name", "organizationId", "createdAt"]
+      "required": ["healthId", "userId", "name", "organizationId", "createdAt"]
     },
     "MedicalRecord": {
       "title": "MedicalRecord",
@@ -107,11 +109,11 @@
     "structure": [
       {
         "path": "/users/{userId}",
-        "definition": { "schema": { "$ref": "#/entities/User" }, "description": "Top-level collection for all user profiles." }
+        "definition": { "schema": { "$ref": "#/entities/User" }, "description": "Top-level collection for all user profiles, where {userId} is the Firebase Auth UID." }
       },
       {
         "path": "/patients/{patientId}",
-        "definition": { "schema": { "$ref": "#/entities/Patient" }, "description": "Top-level collection for all patient records." }
+        "definition": { "schema": { "$ref": "#/entities/Patient" }, "description": "Top-level collection for all patient records, where {patientId} is the Firebase Auth UID." }
       },
       {
         "path": "/patients/{patientId}/medical_records/{recordId}",

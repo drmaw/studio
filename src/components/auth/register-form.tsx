@@ -35,6 +35,9 @@ const formSchema = z.object({
     path: ["confirmPassword"]
 });
 
+// Function to generate a random 10-digit number as a string
+const generateHealthId = () => Math.floor(1000000000 + Math.random() * 9000000000).toString();
+
 export function RegisterForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -58,19 +61,19 @@ export function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
-      const isDevUser = values.email === 'dev@digihealth.com';
-      const userId = isDevUser ? '1122334455' : firebaseUser.uid;
-      const userName = isDevUser ? 'Dr. Dev' : values.name;
+      const userDocRef = doc(firestore, "users", firebaseUser.uid);
+      const patientDocRef = doc(firestore, "patients", firebaseUser.uid);
       
-      const userRef = doc(firestore, "users", userId);
-      const patientRef = doc(firestore, "patients", userId);
+      const isDevUser = values.email === 'dev@digihealth.com';
+      const healthId = isDevUser ? '1122334455' : generateHealthId();
       
       const newUser: Omit<User, 'id'> = {
-          name: userName,
+          healthId: healthId,
+          name: isDevUser ? 'Dr. Dev' : values.name,
           email: firebaseUser.email!,
           roles: isDevUser ? ['doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'] : ['patient'],
           organizationId: 'org-1',
-          avatarUrl: `https://picsum.photos/seed/${userId}/100/100`,
+          avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
           createdAt: serverTimestamp(),
           demographics: isDevUser ? {
               dob: '1985-01-01',
@@ -81,8 +84,9 @@ export function RegisterForm() {
       };
 
       const newPatient: Omit<Patient, 'id'> = {
-          userId: userId,
-          name: userName,
+          healthId: healthId,
+          userId: firebaseUser.uid,
+          name: isDevUser ? 'Dr. Dev' : values.name,
           organizationId: 'org-1',
           demographics: isDevUser ? {
               dob: '1985-01-01',
@@ -99,8 +103,8 @@ export function RegisterForm() {
       };
       
       // Use individual setDoc calls instead of a batch to simplify security rules
-      await setDoc(userRef, newUser);
-      await setDoc(patientRef, newPatient);
+      await setDoc(userDocRef, newUser);
+      await setDoc(patientDocRef, newPatient);
 
       toast({
         title: "Registration Successful",

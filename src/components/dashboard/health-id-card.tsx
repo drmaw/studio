@@ -18,7 +18,7 @@ export function HealthIdCard({ user }: { user: User }) {
     const [age, setAge] = useState<number | null>(null);
 
     useEffect(() => {
-        if (user.demographics?.dob) {
+        if (user?.demographics?.dob) {
             try {
                 const birthDate = parseISO(user.demographics.dob);
                 if(isValid(birthDate)) {
@@ -28,11 +28,12 @@ export function HealthIdCard({ user }: { user: User }) {
                 setAge(null);
             }
         }
-    }, [user.demographics?.dob]);
+    }, [user?.demographics?.dob]);
 
-    const userInitials = (user.name || '').split(' ').map(n => n[0]).join('');
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.id}`;
-    const largeQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${user.id}`;
+    const userInitials = (user?.name || '').split(' ').map(n => n[0]).join('');
+    // Use the 10-digit healthId for the QR code
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user?.healthId}`;
+    const largeQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${user?.healthId}`;
 
     const handleAvatarClick = () => {
         fileInputRef.current?.click();
@@ -47,6 +48,10 @@ export function HealthIdCard({ user }: { user: User }) {
             });
         }
     };
+    
+    if (!user) {
+        return null;
+    }
 
     return (
         <Card className="bg-emerald-50 border-emerald-200">
@@ -75,7 +80,7 @@ export function HealthIdCard({ user }: { user: User }) {
                     <div className="overflow-hidden">
                         <h2 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">{user.name || 'Loading...'}</h2>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
-                            <div className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {user.id}</div>
+                            <div className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {user.healthId}</div>
                             {user.demographics?.mobileNumber && <div className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {user.demographics.mobileNumber}</div>}
                             {age !== null && <div className="flex items-center gap-1.5"><Cake className="h-4 w-4" /> Age: {age}</div>}
                         </div>
@@ -113,12 +118,12 @@ export function HealthIdCard({ user }: { user: User }) {
                             <DialogTrigger asChild>
                                 <div className="cursor-pointer p-2 border rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col items-center gap-2">
                                      <Image src={qrCodeUrl} alt="Health ID QR Code" width={80} height={80} />
-                                     <p className="text-xs font-mono tracking-widest bg-muted px-2 py-1 rounded-md">{user.id}</p>
+                                     <p className="text-xs font-mono tracking-widest bg-muted px-2 py-1 rounded-md">{user.healthId}</p>
                                 </div>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-md items-center flex flex-col">
                                 <DialogHeader>
-                                    <DialogTitle className="text-center">Health ID: {user.id}</DialogTitle>
+                                    <DialogTitle className="text-center">Health ID: {user.healthId}</DialogTitle>
                                 </DialogHeader>
                                 <Image src={largeQrCodeUrl} alt="Enlarged QR Code" width={400} height={400} />
                             </DialogContent>
