@@ -15,7 +15,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore } from "@/firebase";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export function HealthIdCard({ user }: { user: User }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,7 +41,7 @@ export function HealthIdCard({ user }: { user: User }) {
 
     const userInitials = (user?.name || '').split(' ').map(n => n[0]).join('');
     // Use the 10-digit healthId for the QR code
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user?.healthId}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${user?.healthId}`;
     const largeQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${user?.healthId}`;
 
     const handleAvatarClick = () => {
@@ -72,7 +72,7 @@ export function HealthIdCard({ user }: { user: User }) {
             const downloadURL = await getDownloadURL(storageRef);
 
             const userDocRef = doc(firestore, 'users', authUser.id);
-            updateDocumentNonBlocking(userDocRef, { avatarUrl: downloadURL });
+            setDocumentNonBlocking(userDocRef, { avatarUrl: downloadURL }, { merge: true });
             
             toast({
                 title: 'Profile Picture Updated',
