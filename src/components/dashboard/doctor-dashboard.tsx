@@ -23,8 +23,9 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { QrScannerDialog } from "./qr-scanner-dialog";
-import { collection, getDocs, query, where, limit } from "firebase/firestore";
+import { collection, getDocs, query, where, limit, addDoc, serverTimestamp } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const chamberSchedules = [
     { id: 1, hospital: 'Digital Health Clinic', room: '302', days: 'Sat, Mon, Wed', time: '5 PM - 9 PM' },
@@ -98,7 +99,7 @@ export function DoctorDashboard({ user }: { user: User }) {
 
   const handleSearch = async (id?: string) => {
     const finalQuery = id || searchQuery;
-    if (!finalQuery) {
+    if (!finalQuery || !user) {
         toast({
             variant: "destructive",
             title: "Search field is empty",
@@ -112,22 +113,34 @@ export function DoctorDashboard({ user }: { user: User }) {
 
     try {
         const patientsRef = collection(firestore, "patients");
-        // Check if it's a 10-digit Health ID or a mobile number
         const isHealthId = /^\d{10}$/.test(finalQuery); 
         
         let q;
         if(isHealthId) {
-            // It's a Health ID, so we query by the healthId field
             q = query(patientsRef, where("healthId", "==", finalQuery), limit(1));
         } else {
-            // It's a mobile number, so we query by the contact field
             q = query(patientsRef, where("demographics.contact", "==", finalQuery), limit(1));
         }
 
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             const patientDoc = querySnapshot.docs[0];
-            setSearchResult({ id: patientDoc.id, ...patientDoc.data() } as Patient);
+            const patientData = { id: patientDoc.id, ...patientDoc.data() } as Patient;
+            setSearchResult(patientData);
+
+            // Log the search action
+            const logRef = collection(firestore, 'patients', patientData.id, 'privacy_log');
+            const logEntry = {
+                actorId: user.healthId,
+                actorName: user.name,
+                actorAvatarUrl: user.avatarUrl,
+                patientId: patientData.id,
+                organizationId: user.organizationId,
+                action: 'search' as const,
+                timestamp: serverTimestamp(),
+            };
+            addDocumentNonBlocking(logRef, logEntry);
+
         } else {
             setSearchResult('not_found');
         }
@@ -150,6 +163,10 @@ export function DoctorDashboard({ user }: { user: User }) {
   
   const handleQrScan = (decodedId: string) => {
     handleSearch(decodedId);
+  }
+
+  if (!user) {
+      return null;
   }
 
   return (

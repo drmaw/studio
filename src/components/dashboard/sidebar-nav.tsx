@@ -23,6 +23,10 @@ export function SidebarNav() {
     }
   }
 
+  if (!user) {
+    return null;
+  }
+
   const isProfessional = user?.roles?.some(r => r !== 'patient');
   const isHospitalOwner = hasRole('hospital_owner');
 
