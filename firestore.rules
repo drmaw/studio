@@ -99,7 +99,7 @@ service cloud.firestore {
         // System/backend function would create these. Allow create for doctors for now.
         allow create: if isDoctorInOrg(request.resource.data.organizationId);
         // Only the patient can view their own privacy log.
-        allow get, list: if isPatientUser(patientId);
+        allow get, list: if request.auth.uid == patientId;
         allow update, delete: if false;
       }
     }
