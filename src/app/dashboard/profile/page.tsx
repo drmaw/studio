@@ -277,31 +277,32 @@ export default function ProfilePage() {
   const [newContactMethod, setNewContactMethod] = useState('details');
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading) return;
+    if (!user) {
       router.push('/login');
+      return;
     }
-    if (user) {
-      const initialData = {
-          ...user.demographics,
-          chronicConditions: user.demographics?.chronicConditions || [],
-          allergies: user.demographics?.allergies || [],
-          emergencyContacts: user.demographics?.emergencyContacts || [],
-      };
-      setFormData(initialData);
+    
+    const initialData = {
+        ...user.demographics,
+        chronicConditions: user.demographics?.chronicConditions || [],
+        allergies: user.demographics?.allergies || [],
+        emergencyContacts: user.demographics?.emergencyContacts || [],
+    };
+    setFormData(initialData);
 
-      if (user.demographics?.dob) {
-        try {
-          const birthDate = parseISO(user.demographics.dob);
-          if(isValid(birthDate)) {
-            const calculatedAge = differenceInYears(new Date(), birthDate);
-            setAge(calculatedAge);
-          } else {
-             setAge(null);
-          }
-        } catch (error) {
-          console.error("Invalid date format for DOB:", user.demographics.dob);
-          setAge(null);
+    if (user.demographics?.dob) {
+      try {
+        const birthDate = parseISO(user.demographics.dob);
+        if(isValid(birthDate)) {
+          const calculatedAge = differenceInYears(new Date(), birthDate);
+          setAge(calculatedAge);
+        } else {
+            setAge(null);
         }
+      } catch (error) {
+        console.error("Invalid date format for DOB:", user.demographics.dob);
+        setAge(null);
       }
     }
   }, [user, loading, router]);
@@ -402,12 +403,17 @@ export default function ProfilePage() {
   }
 
   if (loading || !user) {
-    return <div className="flex justify-center">
-        <Skeleton className="h-96 w-full max-w-2xl" />
-    </div>;
+    return (
+      <div className="space-y-6">
+          <Skeleton className="h-40 w-full" />
+          <div className="flex justify-center">
+              <Skeleton className="h-96 w-full max-w-2xl" />
+          </div>
+      </div>
+    );
   }
   
-  const isOnlyPatient = user.roles && user.roles.length === 1 && user.roles[0] === 'patient';
+  const isOnlyPatient = user.roles?.length === 1 && user.roles[0] === 'patient';
   
   const dobDate = formData.dob ? parseISO(formData.dob) : null;
   const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd MMMM, yyyy') : 'N/A';
@@ -651,7 +657,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-
-
-    

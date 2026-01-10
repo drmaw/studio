@@ -50,7 +50,9 @@ export default function ProfessionalDashboardPage() {
     case 'hospital_owner':
       return <HospitalOwnerDashboard user={user} />;
     case 'patient': // If user is only a patient, redirect them or show a message
-        router.push('/dashboard');
+        if (user?.roles?.length === 1 && user.roles[0] === 'patient') {
+            router.push('/dashboard');
+        }
         return null;
     default:
       return <GenericDashboard name={user.name} />;

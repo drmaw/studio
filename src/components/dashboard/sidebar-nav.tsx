@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -22,7 +23,7 @@ export function SidebarNav() {
     }
   }
 
-  const isProfessional = user?.roles && user.roles.some(r => r !== 'patient');
+  const isProfessional = user?.roles?.some(r => r !== 'patient');
   const isHospitalOwner = hasRole('hospital_owner');
 
   const menuItems = [
@@ -73,7 +74,7 @@ export function SidebarNav() {
   ];
 
   const availableMenuItems = menuItems.filter(item => 
-    (item.condition !== false) && item.roles.some(role => hasRole(role as any))
+    (item.condition !== false) && user?.roles && item.roles.some(role => hasRole(role as any))
   );
 
   return (
@@ -81,7 +82,7 @@ export function SidebarNav() {
       {availableMenuItems.map((item) => (
         <SidebarMenuItem key={item.label}>
           <Link href={item.href} passHref>
-            <SidebarMenuButton asChild isActive={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')} onClick={handleLinkClick}>
+            <SidebarMenuButton asChild isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/dashboard')} onClick={handleLinkClick}>
               <span>
                 <item.icon />
                 <span>{item.label}</span>
