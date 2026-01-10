@@ -11,16 +11,21 @@ export function useAuth() {
   const firestore = useFirestore();
 
   const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !firebaseUser) return null;
+    if (!firestore || !firebaseUser?.uid) return null;
     return doc(firestore, "users", firebaseUser.uid);
-  }, [firestore, firebaseUser]);
+  }, [firestore, firebaseUser?.uid]);
   
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<User>(userDocRef);
 
+  // This is the key change: `loading` is true until both auth and profile are resolved.
   const loading = useMemo(() => {
-    // We are loading if the initial auth check is happening OR if we have an auth'd user but are still fetching their profile.
-    return isAuthLoading || (!!firebaseUser && isProfileLoading);
-  }, [isAuthLoading, isProfileLoading, firebaseUser]);
+    // If auth is loading, we are definitely loading.
+    if (isAuthLoading) return true;
+    // If auth is done but there's no firebaseUser, we are not loading.
+    if (!firebaseUser) return false;
+    // If auth is done and there IS a firebaseUser, we are loading until their profile is also loaded.
+    return isProfileLoading;
+  }, [isAuthLoading, firebaseUser, isProfileLoading]);
 
 
   const user = useMemo(() => {
