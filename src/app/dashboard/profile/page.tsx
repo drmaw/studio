@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { differenceInYears, parse, isValid, format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import type { UserDemographics, EmergencyContact, User } from "@/lib/definitions";
+import type { Role, UserDemographics, EmergencyContact, User } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthIdCard } from "@/components/dashboard/health-id-card";
@@ -33,20 +33,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { doc, getDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { updateDocumentNonBlocking, commitBatchNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 function ApplyForRoleCard() {
+  const { user } = useAuth();
+  const firestore = useFirestore();
   const [selectedRole, setSelectedRole] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const [applicationStatus, setApplicationStatus] = useState<'submitted' | 'waiting_for_approval' | 'approved' | null>(null);
   const [appliedRole, setAppliedRole] = useState<string | null>(null);
 
+  const [orgDetails, setOrgDetails] = useState({ name: '', reg: '', tin: '', address: '' });
+
   const handleApply = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedRole) {
+    if (!selectedRole || !user) {
       toast({
         variant: "destructive",
         title: "No Role Selected",
@@ -56,27 +60,54 @@ function ApplyForRoleCard() {
     }
 
     setIsSubmitting(true);
-    // Mock API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    setAppliedRole(selectedRole);
-    setApplicationStatus('submitted');
-    
-    toast({
-      title: "Application Submitted",
-      description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is being processed.`,
-    });
-    
-    setIsSubmitting(false);
-    setSelectedRole('');
+    try {
+        const batch = writeBatch(firestore);
+        const userRef = doc(firestore, "users", user.id);
+        const patientRef = doc(firestore, "patients", user.id);
 
-    // Mock status progression
-    setTimeout(() => {
-        setApplicationStatus('waiting_for_approval');
-    }, 2000);
-     setTimeout(() => {
-        setApplicationStatus('approved');
-    }, 5000);
+        const updatedRoles = Array.from(new Set([...user.roles, selectedRole as Role]));
+        
+        let updateData: Partial<User> = { roles: updatedRoles };
+        
+        // For organization owners, we create a mock organization ID for now
+        if (selectedRole === 'organization_owner') {
+             const organizationId = `org-${Date.now()}`;
+             updateData.organizationId = organizationId;
+             batch.update(patientRef, { organizationId: organizationId });
+        }
+        
+        batch.update(userRef, updateData);
+
+        commitBatchNonBlocking(batch, { operation: 'update', path: `users/${user.id}` });
+        
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing
+
+        setAppliedRole(selectedRole);
+        setApplicationStatus('submitted');
+        
+        toast({
+          title: "Application Submitted",
+          description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is being processed.`,
+        });
+        
+        // Mock status progression
+        setTimeout(() => setApplicationStatus('waiting_for_approval'), 2000);
+        setTimeout(() => {
+            setApplicationStatus('approved');
+             toast({
+                title: "Application Approved!",
+                description: `You now have the ${selectedRole.replace(/_/g, ' ')} role. Refresh to see changes.`,
+            });
+        }, 5000);
+
+    } catch (error) {
+        console.error("Application submission failed:", error);
+        toast({ variant: "destructive", title: "Submission Failed", description: "Could not submit your application." });
+    } finally {
+        setIsSubmitting(false);
+        setSelectedRole('');
+    }
   };
   
   const renderRoleForm = () => {
@@ -112,19 +143,19 @@ function ApplyForRoleCard() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="org-name" className="flex items-center gap-2"><Building className="h-4 w-4" /> Name of the Organization</Label>
-              <Input id="org-name" placeholder="Enter organization name" />
+              <Input id="org-name" placeholder="Enter organization name" value={orgDetails.name} onChange={e => setOrgDetails({...orgDetails, name: e.target.value})} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="org-reg" className="flex items-center gap-2"><IdCard className="h-4 w-4" /> Registration Number</Label>
-              <Input id="org-reg" placeholder="Enter organization registration number" />
+              <Input id="org-reg" placeholder="Enter organization registration number" value={orgDetails.reg} onChange={e => setOrgDetails({...orgDetails, reg: e.target.value})} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="org-tin" className="flex items-center gap-2"><Hash className="h-4 w-4" /> TIN Number</Label>
-              <Input id="org-tin" placeholder="Enter TIN number" />
+              <Input id="org-tin" placeholder="Enter TIN number" value={orgDetails.tin} onChange={e => setOrgDetails({...orgDetails, tin: e.target.value})}/>
             </div>
              <div className="space-y-2">
               <Label htmlFor="org-address" className="flex items-center gap-2"><MapPin className="h-4 w-4" /> Address</Label>
-              <Textarea id="org-address" placeholder="Enter organization address" />
+              <Textarea id="org-address" placeholder="Enter organization address" value={orgDetails.address} onChange={e => setOrgDetails({...orgDetails, address: e.target.value})} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="org-cert" className="flex items-center gap-2"><File className="h-4 w-4" /> Photo of Registration Certificate</Label>
@@ -346,13 +377,19 @@ export default function ProfilePage() {
     if (newContactMethod === 'details' && newContactName && newContactRelation && newContactNumber) {
         newContact = { ...common, name: newContactName, contactNumber: newContactNumber };
     } else if (newContactMethod === 'healthId' && newContactHealthId && newContactRelation) {
-        const userDocRef = doc(firestore, 'users', newContactHealthId);
-        const contactUserDoc = await getDoc(userDocRef);
-        if (!contactUserDoc.exists()) {
+        if (!firestore) {
+            toast({ variant: "destructive", title: "Database not available", description: "Cannot verify Health ID right now."});
+            return;
+        }
+        const usersRef = collection(firestore, 'users');
+        const userQuery = query(usersRef, where('healthId', '==', newContactHealthId), limit(1));
+        const contactUserSnapshot = await getDocs(userQuery);
+
+        if (contactUserSnapshot.empty) {
             toast({ variant: "destructive", title: "User not found", description: "No user exists with that Health ID."});
             return;
         }
-        const contactUser = contactUserDoc.data() as User;
+        const contactUser = contactUserSnapshot.docs[0].data() as User;
         newContact = { ...common, healthId: newContactHealthId, name: contactUser.name };
     } else {
         toast({ variant: "destructive", title: "Incomplete Information", description: "Please fill all required fields for the new contact."});
@@ -380,10 +417,22 @@ export default function ProfilePage() {
   };
 
   const handleSave = () => {
-    if (!user) return;
+    if (!user || !firestore) return;
     
     const userRef = doc(firestore, "users", user.id);
     updateDocumentNonBlocking(userRef, { demographics: formData });
+    
+    // Also update the patient document with relevant info
+    const patientRef = doc(firestore, "patients", user.id);
+    const patientUpdateData = {
+        'demographics.dob': formData.dob,
+        'demographics.gender': formData.gender,
+        'demographics.contact': formData.mobileNumber,
+        chronicConditions: formData.chronicConditions,
+        allergies: formData.allergies,
+    };
+    updateDocumentNonBlocking(patientRef, patientUpdateData);
+
 
     toast({
         title: "Profile Updated",
@@ -671,5 +720,6 @@ export default function ProfilePage() {
     </div>
   );
 }
+
 
     

@@ -20,21 +20,18 @@ export function useAuth() {
   const loading = isAuthLoading || (!!firebaseUser && isProfileLoading);
 
   const user = useMemo(() => {
-    if (isAuthLoading || !firebaseUser) {
-      return null;
-    }
+    if (!firebaseUser) return null;
     
-    const baseUser = { ...firebaseUser, id: firebaseUser.uid };
-
-    if (userProfile) {
-      return { ...baseUser, ...userProfile };
-    }
-
-    return baseUser as User;
-  }, [isAuthLoading, firebaseUser, userProfile]);
+    // Combine the base user from Auth with the profile from Firestore
+    return { 
+      ...firebaseUser, 
+      ...(userProfile || {}),
+      id: firebaseUser.uid 
+    } as User;
+  }, [firebaseUser, userProfile]);
 
   const activeRole = useMemo(() => {
-    if (!userProfile?.roles) return 'patient'; 
+    if (!user?.roles) return 'patient'; 
     
     const roleHierarchy: Role[] = [
       'hospital_owner', 
@@ -51,17 +48,19 @@ export function useAuth() {
     ];
 
     for (const role of roleHierarchy) {
-      if (userProfile.roles.includes(role)) {
+      if (user.roles.includes(role)) {
         return role;
       }
     }
     return 'patient';
-  }, [userProfile]);
+  }, [user?.roles]);
 
   return { 
     user,
     loading, 
     activeRole, 
-    hasRole: (role: Role) => userProfile?.roles?.includes(role) ?? false 
+    hasRole: (role: Role) => user?.roles?.includes(role) ?? false 
   };
 }
+
+    

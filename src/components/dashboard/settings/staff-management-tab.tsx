@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Loader2, UserPlus, Users } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import type { User } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, getDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const formSchema = z.object({
@@ -41,8 +41,12 @@ export function StaffManagementTab() {
 
   const staffQuery = useMemoFirebase(() => {
     if (!firestore || !hospitalOwner?.organizationId) return null;
-    return query(collection(firestore, 'users'), where('organizationId', '==', hospitalOwner.organizationId));
-  }, [firestore, hospitalOwner]);
+    // Query for users that are NOT patients and belong to the owner's organization
+    return query(collection(firestore, 'users'), 
+      where('organizationId', '==', hospitalOwner.organizationId),
+      where('roles', 'array-contains-any', ['doctor', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk', 'hospital_owner'])
+    );
+  }, [firestore, hospitalOwner?.organizationId]);
 
   const { data: staff, isLoading: staffLoading } = useCollection<User>(staffQuery);
 
@@ -54,37 +58,46 @@ export function StaffManagementTab() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!hospitalOwner) return;
+    if (!hospitalOwner?.organizationId) return;
     setIsLoading(true);
 
-    const userDocRef = doc(firestore, 'users', values.healthId);
-    const userDoc = await getDoc(userDocRef);
+    try {
+      const usersRef = collection(firestore, 'users');
+      // We search by healthId, but Firestore document ID is the UID.
+      // So first find the user by healthId
+      const userSearchQuery = query(usersRef, where('healthId', '==', values.healthId), limit(1));
+      const userSnapshot = await getDocs(userSearchQuery);
 
-    if (userDoc.exists()) {
-        const userToAdd = userDoc.data() as User;
-        
-        // In a real app, you might have more complex logic here,
-        // like checking if the user has already accepted an invitation.
-        // For now, we'll just assign them.
-        
-        const updatedRoles = Array.from(new Set([...userToAdd.roles, values.role]));
+      if (!userSnapshot.empty) {
+          const userDoc = userSnapshot.docs[0];
+          const userToAdd = userDoc.data() as User;
+          const userDocRef = doc(firestore, 'users', userDoc.id);
+          
+          const updatedRoles = Array.from(new Set([...userToAdd.roles, values.role]));
 
-        updateDocumentNonBlocking(userDocRef, { 
-            organizationId: hospitalOwner.organizationId,
-            roles: updatedRoles
-        });
+          updateDocumentNonBlocking(userDocRef, { 
+              organizationId: hospitalOwner.organizationId,
+              roles: updatedRoles
+          });
 
+          toast({
+              title: "Staff Added",
+              description: `${userToAdd.name} has been assigned the ${values.role.replace(/_/g, ' ')} role in your organization.`,
+          });
+          form.reset();
+      } else {
         toast({
-            title: "Staff Added",
-            description: `${userToAdd.name} has been assigned the ${values.role.replace('_', ' ')} role in your organization.`,
+          variant: "destructive",
+          title: "User Not Found",
+          description: "No user found with that Health ID.",
         });
-        form.reset();
-    } else {
-      toast({
-        variant: "destructive",
-        title: "User Not Found",
-        description: "No user found with that Health ID.",
-      });
+      }
+    } catch(e) {
+         toast({
+            variant: "destructive",
+            title: "Error",
+            description: "An error occurred while adding staff.",
+        });
     }
 
     setIsLoading(false);
@@ -106,7 +119,7 @@ export function StaffManagementTab() {
                         <FormItem className="flex-1">
                         <FormLabel>User Health ID</FormLabel>
                         <FormControl>
-                            <Input placeholder="Enter user's Health ID" {...field} />
+                            <Input placeholder="Enter user's 10-digit Health ID" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -173,10 +186,10 @@ export function StaffManagementTab() {
                         {staff && staff.map((member) => (
                             <TableRow key={member.id}>
                                 <TableCell className="font-medium">{member.name}</TableCell>
-                                <TableCell>{member.id}</TableCell>
+                                <TableCell>{member.healthId}</TableCell>
                                 <TableCell>
                                     <div className="flex flex-wrap gap-1">
-                                        {member.roles.map(role => (
+                                        {member.roles.filter(r => r !== 'patient').map(role => (
                                              <Badge key={role} variant="secondary" className="capitalize">
                                                 {role.replace(/_/g, ' ')}
                                             </Badge>
@@ -193,3 +206,5 @@ export function StaffManagementTab() {
     </div>
   );
 }
+
+    

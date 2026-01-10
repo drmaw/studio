@@ -57,6 +57,16 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     
+    if (!auth || !firestore) {
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: "Firebase services are not available. Please try again later.",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
@@ -66,20 +76,21 @@ export function RegisterForm() {
       
       const isDevUser = values.email === 'dev@digihealth.com';
       const healthId = isDevUser ? '1122334455' : generateHealthId();
+      const orgId = isDevUser ? 'org-1' : `org-ind-${firebaseUser.uid}`;
       
       const newUser: Omit<User, 'id'> = {
           healthId: healthId,
           name: isDevUser ? 'Dr. Dev' : values.name,
           email: firebaseUser.email!,
           roles: isDevUser ? ['doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'] : ['patient'],
-          organizationId: 'org-1',
+          organizationId: orgId,
           avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
           createdAt: serverTimestamp(),
           demographics: isDevUser ? {
-              dob: '1985-01-01',
+              dob: '01-01-1985',
               gender: 'Male',
-              contact: '+1234567890',
-              mobileNumber: '+1234567890',
+              contact: '01234567890',
+              mobileNumber: '01234567890',
           } : {}
       };
 
@@ -87,17 +98,12 @@ export function RegisterForm() {
           healthId: healthId,
           userId: firebaseUser.uid,
           name: isDevUser ? 'Dr. Dev' : values.name,
-          organizationId: 'org-1',
-          demographics: isDevUser ? {
-              dob: '1985-01-01',
-              gender: 'Male',
-              contact: '+1234567890',
-              address: '123 Dev Lane'
-          } : {
-              dob: '',
-              gender: 'Other',
+          organizationId: orgId,
+          demographics: {
+              dob: isDevUser ? '01-01-1985' : '',
+              gender: isDevUser ? 'Male' : 'Other',
               contact: '',
-              address: ''
+              address: isDevUser ? '123 Dev Lane' : ''
           },
           createdAt: serverTimestamp(),
       };
@@ -195,3 +201,5 @@ export function RegisterForm() {
     </Form>
   );
 }
+
+    

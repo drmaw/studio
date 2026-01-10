@@ -117,9 +117,11 @@ export function DoctorDashboard({ user }: { user: User }) {
         
         let q;
         if(isHealthId) {
-            q = query(patientsRef, where("healthId", "==", finalQuery), limit(1));
+            // Doctors can only search for patients within their own organization.
+            q = query(patientsRef, where("healthId", "==", finalQuery), where("organizationId", "==", user.organizationId), limit(1));
         } else {
-            q = query(patientsRef, where("demographics.contact", "==", finalQuery), limit(1));
+            // Search by contact number also restricted to organization.
+            q = query(patientsRef, where("demographics.contact", "==", finalQuery), where("organizationId", "==", user.organizationId), limit(1));
         }
 
         const querySnapshot = await getDocs(q);
@@ -214,7 +216,7 @@ export function DoctorDashboard({ user }: { user: User }) {
                  <Card className="flex flex-col items-center justify-center p-12 bg-background-soft border-dashed">
                     <UserX className="h-16 w-16 text-muted-foreground mb-4" />
                     <h3 className="text-xl font-semibold">No Patient Found</h3>
-                    <p className="text-muted-foreground">No patient record matches the provided ID or mobile number.</p>
+                    <p className="text-muted-foreground">No patient record matches the provided ID or mobile number in your organization.</p>
                 </Card>
               ) : searchResult ? (
                 <PatientSearchResultCard patient={searchResult} />
@@ -286,3 +288,5 @@ export function DoctorDashboard({ user }: { user: User }) {
     </div>
   );
 }
+
+    
