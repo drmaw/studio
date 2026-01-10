@@ -5,6 +5,7 @@ import { Stethoscope, HeartPulse, Brain, Zap, Baby, ShieldCheck, Search, Buildin
 import Link from "next/link";
 import Image from 'next/image';
 import { placeholderImages } from "@/lib/placeholder-images";
+import { cn } from "@/lib/utils";
 
 const featureCards = [
   {
@@ -40,7 +41,7 @@ const featureCards = [
 ];
 
 export default function Home() {
-  const heroImage = placeholderImages.find(p => p.id === 'hero-background');
+  const heroImage = placeholderImages.find(p => p.id === 'hero-background-bangladesh');
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -51,7 +52,7 @@ export default function Home() {
                 <span>Digi Health</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-                <Link href="/" className="text-foreground/80 hover:text-foreground">Home</Link>
+                <Link href="/" className="text-foreground font-semibold">Home</Link>
                 <Link href="#" className="text-foreground/80 hover:text-foreground">Find Care</Link>
                 <Link href="#" className="text-foreground/80 hover:text-foreground">What We Treat</Link>
                 <Link href="#" className="text-foreground/80 hover:text-foreground">For Employers</Link>
@@ -71,14 +72,17 @@ export default function Home() {
         {/* Hero Section */}
         <section className="relative w-full h-[60vh] md:h-[75vh] flex items-center justify-center text-center text-white">
           {heroImage && (
-            <Image
-              src={heroImage.imageUrl}
-              alt={heroImage.description}
-              fill
-              className="object-cover -z-10 brightness-[.6] contrast-125"
-              data-ai-hint={heroImage.imageHint}
-              priority
-            />
+            <>
+              <Image
+                src={heroImage.imageUrl}
+                alt={heroImage.description}
+                fill
+                className="object-cover -z-20"
+                data-ai-hint={heroImage.imageHint}
+                priority
+              />
+              <div className="absolute inset-0 bg-green-800/70 -z-10"></div>
+            </>
           )}
           <div className="relative px-4 sm:px-6 lg:px-8 max-w-4xl">
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
