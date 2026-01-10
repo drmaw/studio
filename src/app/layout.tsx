@@ -1,12 +1,44 @@
-import type { Metadata } from "next";
+
+'use client';
+
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { FirebaseClientProvider } from "@/firebase";
+import { FirebaseClientProvider, useUser } from "@/firebase";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export const metadata: Metadata = {
-  title: "Digi Health",
-  description: "Digital health record management & Hospital Information Systems",
-};
+
+function AppContent({ children }: { children: React.ReactNode }) {
+  const { user, isUserLoading } = useUser();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const publicRoutes = ['/login', '/register'];
+  const isPublicRoute = publicRoutes.includes(pathname) || pathname === '/';
+  const isDashboardRoute = pathname.startsWith('/dashboard');
+
+  useEffect(() => {
+    if (!isUserLoading) {
+      if (user && isPublicRoute && pathname !== '/') {
+        router.replace('/dashboard');
+      } else if (!user && isDashboardRoute) {
+        router.replace('/login');
+      }
+    }
+  }, [user, isUserLoading, isPublicRoute, isDashboardRoute, pathname, router]);
+
+  if (isUserLoading && !isPublicRoute) {
+    return (
+       <div className="flex h-screen w-full items-center justify-center">
+        <Skeleton className="h-full w-full" />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 
 export default function RootLayout({
   children,
@@ -16,6 +48,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <title>Digi Health</title>
+        <meta name="description" content="Digital health record management & Hospital Information Systems" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -25,7 +59,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          {children}
+          <AppContent>
+            {children}
+          </AppContent>
         </FirebaseClientProvider>
         <Toaster />
       </body>

@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-background",
-      "description": "A compassionate female doctor with a stethoscope, representing healthcare in Bangladesh.",
-      "imageUrl": "https://images.unsplash.com/photo-1624724112567-704b4674125b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmZW1hbGUlMjBkb2N0b3IlMjBiYW5nbGFkZXNofGVufDB8fHx8MTc3MDI0MTQ5Nnww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "female doctor"
+      "description": "A compassionate female doctor with a stethoscope, representing healthcare in Bangladesh, with a green tint.",
+      "imageUrl": "https://images.unsplash.com/photo-1550831107-1553da8c8464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmZW1hbGUlMjBkb2N0b3J8ZW58MHx8fHwxNzcwMjQzMjU3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "female doctor healthcare"
     }
   ]
 }
