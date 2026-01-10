@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
@@ -408,7 +407,7 @@ export default function ProfilePage() {
     </div>;
   }
   
-  const isOnlyPatient = user.roles.length === 1 && user.roles[0] === 'patient';
+  const isOnlyPatient = user.roles && user.roles.length === 1 && user.roles[0] === 'patient';
   
   const dobDate = formData.dob ? parseISO(formData.dob) : null;
   const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd MMMM, yyyy') : 'N/A';
@@ -538,7 +537,7 @@ export default function ProfilePage() {
                                                <TabsTrigger value="healthId">Add by Health ID</TabsTrigger>
                                            </TabsList>
                                            <TabsContent value="details" className="pt-4 space-y-2">
-                                                <Input placeholder="Full Name" value={newContactName} onChange={(e) => setNewContactName(e.target.value)} />
+                                                <Input placeholder="Full Name" value={newContactName} onChange={(e) => setNewContactName(e.target.value)} autoComplete="name"/>
                                                 <Input placeholder="Relation (e.g., Mother)" value={newContactRelation} onChange={(e) => setNewContactRelation(e.target.value)} />
                                                 <Input placeholder="Contact Number" value={newContactNumber} onChange={(e) => setNewContactNumber(e.target.value)} />
                                            </TabsContent>
@@ -653,3 +652,6 @@ export default function ProfilePage() {
   );
 }
 
+
+
+    
