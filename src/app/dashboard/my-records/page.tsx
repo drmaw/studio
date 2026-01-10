@@ -40,6 +40,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, serverTimestamp, query, orderBy, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, commitBatchNonBlocking } from '@/firebase/non-blocking-updates';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 // Client-side only component to format date and avoid hydration mismatch
@@ -410,5 +411,3 @@ export default function MyHealthRecordsPage() {
         </>
     );
 }
-
-    
