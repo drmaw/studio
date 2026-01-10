@@ -30,7 +30,7 @@ export function HealthIdCard({ user }: { user: User }) {
         }
     }, [user.demographics?.dob]);
 
-    const userInitials = user.name.split(' ').map(n => n[0]).join('');
+    const userInitials = (user.name || '').split(' ').map(n => n[0]).join('');
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.id}`;
     const largeQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${user.id}`;
 
@@ -73,7 +73,7 @@ export function HealthIdCard({ user }: { user: User }) {
                     </div>
                     
                     <div className="overflow-hidden">
-                        <h2 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">{user.name}</h2>
+                        <h2 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">{user.name || 'Loading...'}</h2>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
                             <div className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {user.id}</div>
                             {user.demographics?.mobileNumber && <div className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {user.demographics.mobileNumber}</div>}
