@@ -17,27 +17,30 @@ export function useAuth() {
   
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<User>(userDocRef);
 
-  // This is the key change: `loading` is true until both auth and profile are resolved.
-  const loading = useMemo(() => {
-    // If auth is loading, we are definitely loading.
-    if (isAuthLoading) return true;
-    // If auth is done but there's no firebaseUser, we are not loading.
-    if (!firebaseUser) return false;
-    // If auth is done and there IS a firebaseUser, we are loading until their profile is also loaded.
-    return isProfileLoading;
-  }, [isAuthLoading, firebaseUser, isProfileLoading]);
-
+  // The 'loading' state is now primarily tied to the initial Firebase Authentication check.
+  const loading = isAuthLoading;
 
   const user = useMemo(() => {
-    // Only return a complete user object if we are NOT loading and we have both auth and profile data.
-    if (loading || !firebaseUser || !userProfile) {
+    // If auth is loading, there is no user yet.
+    if (isAuthLoading || !firebaseUser) {
       return null;
     }
-    return { ...firebaseUser, ...userProfile, id: firebaseUser.uid };
-  }, [loading, firebaseUser, userProfile]);
+    
+    // As soon as Firebase Auth has a user, create a base user object.
+    const baseUser = { ...firebaseUser, id: firebaseUser.uid };
+
+    // If the profile from Firestore has loaded, merge it.
+    // Otherwise, the dashboard will gracefully handle the partial user object.
+    if (userProfile) {
+      return { ...baseUser, ...userProfile };
+    }
+
+    // Return the user from auth even if the profile is not yet available.
+    return baseUser as User;
+  }, [isAuthLoading, firebaseUser, userProfile]);
 
   const activeRole = useMemo(() => {
-    if (!userProfile) return null;
+    if (!userProfile) return 'patient'; // Default to 'patient' if profile is not loaded
     
     const roleHierarchy: Role[] = [
       'hospital_owner', 

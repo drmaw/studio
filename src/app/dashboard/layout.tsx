@@ -40,7 +40,7 @@ export default function DashboardLayout({
 
   // While loading, show a full-screen skeleton UI.
   // This prevents rendering the dashboard prematurely and triggering the redirect.
-  if (loading) {
+  if (loading || !user) {
      return (
       <div className="flex h-screen w-full">
         <div className="hidden md:flex flex-col w-64 border-r">
@@ -67,12 +67,6 @@ export default function DashboardLayout({
         </div>
       </div>
     );
-  }
-
-  // If loading is finished and there's still no user, the useEffect will handle the redirect.
-  // We can return null here to avoid a flash of unstyled content before the redirect happens.
-  if (!user) {
-    return null;
   }
 
   return (
