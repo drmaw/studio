@@ -51,6 +51,7 @@ export default function Home() {
                 <span>Digi Health</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+                <Link href="/" className="text-foreground/80 hover:text-foreground">Home</Link>
                 <Link href="#" className="text-foreground/80 hover:text-foreground">Find Care</Link>
                 <Link href="#" className="text-foreground/80 hover:text-foreground">What We Treat</Link>
                 <Link href="#" className="text-foreground/80 hover:text-foreground">For Employers</Link>
