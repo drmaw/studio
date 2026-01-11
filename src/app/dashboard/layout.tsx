@@ -20,17 +20,17 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAppAuth();
+  const { user, isAuthLoading } = useAppAuth();
   const auth = useFirebaseAuth();
   const router = useRouter();
 
   useEffect(() => {
     // This is a safeguard. If, for any reason, the auth state is lost while on a dashboard page,
     // this will redirect the user back to the login page.
-    if (!loading && !user) {
+    if (!isAuthLoading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, isAuthLoading, router]);
 
 
   const handleLogout = async () => {
@@ -39,8 +39,9 @@ export default function DashboardLayout({
     router.push('/');
   };
 
-  // While the combined user profile (auth + firestore) is loading, show a skeleton UI.
-  if (loading || !user) {
+  // While only the initial auth check is loading, show a full skeleton UI.
+  // This is now much faster.
+  if (isAuthLoading) {
      return (
       <div className="flex h-screen w-full">
         <div className="hidden md:flex flex-col w-64 border-r">
@@ -69,6 +70,8 @@ export default function DashboardLayout({
     );
   }
 
+  // Once authenticated, render the layout shell immediately.
+  // The child component will handle its own loading state for profile data.
   return (
     <SidebarProvider>
       <div className={cn("min-h-screen w-full flex")}>
