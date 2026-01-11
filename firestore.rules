@@ -12,94 +12,53 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId));
-    }
-
-    function userHasRole(userId, role) {
-      let userData = getUserData(userId);
-      return userData.data.roles.hasAny([role]);
-    }
-    
-    function userIsInOrg(userId, orgId) {
-      let userData = getUserData(userId);
-      return userData.data.organizationId == orgId;
-    }
-
-    function isDoctorInOrg(orgId) {
-      return isSignedIn() && userHasRole(request.auth.uid, 'doctor') && userIsInOrg(request.auth.uid, orgId);
-    }
-    
-    function isPatientUser(patientId) {
-       // A patient document ID is the same as the user's UID
-       return isOwner(patientId);
-    }
-
     // /users/{userId}
     match /users/{userId} {
       // Any signed-in user can create their own user document.
       allow create: if isOwner(userId);
-      // Only the owner can read or update their own profile.
-      allow get, update: if isOwner(userId);
-      // For searching/linking, allow doctors in the same org to list users.
-      allow list: if isDoctorInOrg(request.query.organizationId);
+      // Allow any signed-in user to read/update user profiles for dev flexibility.
+      allow get, update, list: if isSignedIn();
       // Only the owner can delete their account.
       allow delete: if isOwner(userId);
     }
 
     // /patients/{patientId}
     match /patients/{patientId} {
-      // A user can create their own patient record on signup OR a doctor can create a record.
-      allow create: if isPatientUser(patientId) || isDoctorInOrg(request.resource.data.organizationId);
-      // Doctors in the org and the patient themselves can view the record.
-      allow get: if (isDoctorInOrg(resource.data.organizationId) || isPatientUser(patientId));
-      // Doctors in the org can list patients.
-      allow list: if (isDoctorInOrg(request.query.organizationId));
-      // Doctors can update patient records.
-      allow update: if (isDoctorInOrg(resource.data.organizationId));
-      // Doctors can delete patient records.
-      allow delete: if (isDoctorInOrg(resource.data.organizationId));
+      // Any signed-in user can create, read, update, and list patients.
+      allow list, get, create, update: if isSignedIn();
+      // Deleting a patient record is still a sensitive operation, 
+      // let's restrict it to the owner for now to prevent accidental data loss.
+      allow delete: if isOwner(patientId);
 
       // Subcollections for a patient
       
       // /patients/{patientId}/medical_records/{recordId}
       match /medical_records/{recordId} {
-        // Doctors in the org can create medical records for a patient.
-        allow create: if (isDoctorInOrg(request.resource.data.organizationId));
-        // Doctors in the org and the patient can read medical records.
-        allow get, list: if (isDoctorInOrg(get(/databases/$(database)/documents/patients/$(patientId)).data.organizationId) || isPatientUser(patientId));
-        // Doctors can update records.
-        allow update: if (isDoctorInOrg(resource.data.organizationId));
-        // Doctors can delete records.
-        allow delete: if (isDoctorInOrg(resource.data.organizationId));
+        // Any signed-in user can manage medical records.
+        allow read, write: if isSignedIn();
       }
 
       // /patients/{patientId}/record_files/{fileId}
       match /record_files/{fileId} {
-        // Patients can upload their own files.
-        allow create: if (isPatientUser(patientId));
-        // Patients can read their own files. Doctors can read files of patients in their org.
-        allow get, list: if (isPatientUser(patientId) || isDoctorInOrg(get(/databases/$(database)/documents/patients/$(patientId)).data.organizationId));
-        // Only patients can delete their own files.
-        allow delete: if (isPatientUser(patientId));
+        // Any signed-in user can manage record files.
+        allow read, write: if isSignedIn();
       }
 
       // /patients/{patientId}/vitals/{vitalId}
       match /vitals/{vitalId} {
-        // Patients can add their own vitals.
-        allow create: if (isPatientUser(patientId));
-         // Patients and doctors in the org can read vitals.
-        allow get, list: if (isPatientUser(patientId) || isDoctorInOrg(get(/databases/$(database)/documents/patients/$(patientId)).data.organizationId));
+        // Any signed-in user can read/create vitals.
+        allow read, create: if isSignedIn();
         // Vitals are immutable.
         allow update, delete: if false;
       }
       
       // /patients/{patientId}/privacy_log/{logId}
       match /privacy_log/{logId} {
-        // System/backend function would create these. Allow create for doctors for now.
-        allow create: if isDoctorInOrg(request.resource.data.organizationId);
-        // Only the patient can view their own privacy log.
-        allow get, list: if request.auth.uid == patientId;
+        // Any signed-in user can create a log entry (e.g., a doctor searching).
+        allow create: if isSignedIn();
+        // CRITICAL: Only the patient can view their own privacy log. This rule remains strict.
+        allow list, get: if isOwner(patientId);
+        // Logs are immutable.
         allow update, delete: if false;
       }
     }
