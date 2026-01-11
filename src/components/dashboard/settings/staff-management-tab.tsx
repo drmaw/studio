@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import type { User } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, getDocs, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, limit } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const formSchema = z.object({
@@ -206,5 +206,3 @@ export function StaffManagementTab() {
     </div>
   );
 }
-
-    

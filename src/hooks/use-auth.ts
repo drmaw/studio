@@ -20,8 +20,6 @@ export function useAuth() {
   // The main loading state now only depends on the profile if we know we have an auth user
   const isCombinedLoading = isAuthLoading || (!!firebaseUser && isProfileLoading);
 
-  const hasRole = (role: Role) => userProfile?.roles?.includes(role) ?? false;
-
   const user = useMemo(() => {
     if (!firebaseUser || !userProfile) return null;
     
@@ -39,6 +37,8 @@ export function useAuth() {
     } as User;
   }, [firebaseUser, userProfile]);
 
+  const hasRole = (role: Role) => user?.roles?.includes(role) ?? false;
+  
   const activeRole = useMemo(() => {
     if (!user?.roles) return 'patient'; 
     
