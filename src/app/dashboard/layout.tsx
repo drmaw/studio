@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Stethoscope } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "firebase/auth";
-import { useEffect } from "react";
 
 export default function DashboardLayout({
   children,
@@ -24,14 +23,9 @@ export default function DashboardLayout({
   const auth = useFirebaseAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    // This is a safeguard. If, for any reason, the auth state is lost while on a dashboard page,
-    // this will redirect the user back to the login page.
-    if (!isAuthLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isAuthLoading, router]);
-
+  // The root layout now handles the primary redirection logic.
+  // This layout will only render when a user is authenticated.
+  // We keep the skeleton UI for the initial auth check for a smoother transition.
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -68,6 +62,12 @@ export default function DashboardLayout({
         </div>
       </div>
     );
+  }
+
+  // If there's no user *after* loading, the root layout will have already redirected.
+  // So, if we reach here, we can assume 'user' exists.
+  if (!user) {
+    return null; // Or a fallback skeleton, though it should not be seen.
   }
 
   // Once authenticated, render the layout shell immediately.

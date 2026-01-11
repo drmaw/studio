@@ -14,26 +14,30 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const authRoutes = ['/login', '/register'];
-  const isAuthRoute = authRoutes.includes(pathname);
-  const isDashboardRoute = pathname.startsWith('/dashboard');
-
   useEffect(() => {
-    // Wait until the user's auth status is confirmed.
-    if (!isUserLoading) {
-      // If the user is logged in and tries to access login/register, redirect to dashboard.
-      if (user && isAuthRoute) {
-        router.replace('/dashboard');
-      } 
-      // If the user is not logged in and tries to access a protected dashboard route, redirect to login.
-      else if (!user && isDashboardRoute) {
-        router.replace('/login');
-      }
+    // Wait until the user's auth status is fully resolved.
+    if (isUserLoading) {
+      return; // Do nothing while loading.
     }
-  }, [user, isUserLoading, isAuthRoute, isDashboardRoute, pathname, router]);
 
-  // Show a full-page loader only for dashboard routes while auth state is loading.
-  if (isUserLoading && isDashboardRoute) {
+    const isAuthRoute = pathname === '/login' || pathname === '/register';
+    const isDashboardRoute = pathname.startsWith('/dashboard');
+
+    // If we have a user and they are on an auth route, redirect to dashboard.
+    if (user && isAuthRoute) {
+      router.replace('/dashboard');
+    }
+    // If we have no user and they are on a protected dashboard route, redirect to login.
+    else if (!user && isDashboardRoute) {
+      router.replace('/login');
+    }
+    // No other redirection is needed. The user is either in the correct place,
+    // or on a public route which is always allowed.
+
+  }, [user, isUserLoading, pathname, router]);
+
+  // Show a full-page loader only for dashboard routes while the initial auth check is running.
+  if (isUserLoading && pathname.startsWith('/dashboard')) {
     return (
        <div className="flex h-screen w-full items-center justify-center">
         <Skeleton className="h-full w-full" />
@@ -41,7 +45,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // For public routes or once auth is resolved, show the content.
+  // Render the actual content. If a redirect is needed, it will happen,
+  // but we still render the children to avoid a flash of incorrect content.
   return <>{children}</>;
 }
 
