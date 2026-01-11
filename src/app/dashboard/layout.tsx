@@ -25,6 +25,8 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
+    // This is a safeguard. If, for any reason, the auth state is lost while on a dashboard page,
+    // this will redirect the user back to the login page.
     if (!loading && !user) {
       router.push('/login');
     }
@@ -37,7 +39,8 @@ export default function DashboardLayout({
     router.push('/');
   };
 
-  if (loading) {
+  // While the combined user profile (auth + firestore) is loading, show a skeleton UI.
+  if (loading || !user) {
      return (
       <div className="flex h-screen w-full">
         <div className="hidden md:flex flex-col w-64 border-r">
@@ -64,10 +67,6 @@ export default function DashboardLayout({
         </div>
       </div>
     );
-  }
-  
-  if (!user) {
-    return null;
   }
 
   return (

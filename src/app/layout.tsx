@@ -14,20 +14,25 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const publicRoutes = ['/login', '/register', '/'];
-  const isPublicRoute = publicRoutes.includes(pathname);
+  const authRoutes = ['/login', '/register'];
+  const isAuthRoute = authRoutes.includes(pathname);
   const isDashboardRoute = pathname.startsWith('/dashboard');
 
   useEffect(() => {
+    // Wait until the user's auth status is confirmed.
     if (!isUserLoading) {
-      if (user && isPublicRoute && pathname !== '/') {
+      // If the user is logged in and tries to access login/register, redirect to dashboard.
+      if (user && isAuthRoute) {
         router.replace('/dashboard');
-      } else if (!user && isDashboardRoute) {
+      } 
+      // If the user is not logged in and tries to access a protected dashboard route, redirect to login.
+      else if (!user && isDashboardRoute) {
         router.replace('/login');
       }
     }
-  }, [user, isUserLoading, isPublicRoute, isDashboardRoute, pathname, router]);
+  }, [user, isUserLoading, isAuthRoute, isDashboardRoute, pathname, router]);
 
+  // Show a full-page loader only for dashboard routes while auth state is loading.
   if (isUserLoading && isDashboardRoute) {
     return (
        <div className="flex h-screen w-full items-center justify-center">
@@ -36,6 +41,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // For public routes or once auth is resolved, show the content.
   return <>{children}</>;
 }
 
