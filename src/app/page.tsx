@@ -69,36 +69,16 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative w-full h-[60vh] md:h-[75vh] flex items-center justify-center text-center text-white">
-          {heroImage && (
-            <>
-              <Image
-                src={heroImage.imageUrl}
-                alt={heroImage.description}
-                fill
-                className="object-cover -z-20 brightness-50"
-                data-ai-hint={heroImage.imageHint}
-                priority
-              />
-              <div className="absolute inset-0 bg-green-900/60 -z-10"></div>
-            </>
-          )}
-          <div className="relative px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight text-primary">
-              Exceptional primary care for all of you
-            </h1>
-            <p className="mt-4 md:mt-6 text-lg md:text-xl max-w-2xl mx-auto">
-              One Medical is a membership-based primary care practice on a mission to make getting quality care more affordable, accessible, and enjoyable for all.
+        {/* Call to Action Section */}
+        <section className="py-16 md:py-24 bg-background-soft">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold">Ready to Get Started?</h2>
+            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
+              Join Digi Health today and experience a new standard of healthcare.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
-              <Button size="lg" className="w-full sm:w-auto text-base font-semibold">
-                <Search className="mr-2"/>
-                Find Care Near You
-              </Button>
-              <Button size="lg" variant="secondary" className="w-full sm:w-auto text-base font-semibold">
-                <Building className="mr-2"/>
-                Explore Employer Plans
+            <div className="mt-8">
+              <Button asChild size="lg" className="text-base font-semibold">
+                <Link href="/register">Create an Account</Link>
               </Button>
             </div>
           </div>
@@ -129,16 +109,36 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Call to Action Section */}
-        <section className="py-16 md:py-24 bg-background-soft">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold">Ready to Get Started?</h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
-              Join Digi Health today and experience a new standard of healthcare.
+        {/* Hero Section */}
+        <section className="relative w-full h-[60vh] md:h-[75vh] flex items-center justify-center text-center text-white">
+          {heroImage && (
+            <>
+              <Image
+                src={heroImage.imageUrl}
+                alt={heroImage.description}
+                fill
+                className="object-cover -z-20 brightness-50"
+                data-ai-hint={heroImage.imageHint}
+                priority
+              />
+              <div className="absolute inset-0 bg-green-900/60 -z-10"></div>
+            </>
+          )}
+          <div className="relative px-4 sm:px-6 lg:px-8 max-w-4xl">
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight text-primary">
+              Exceptional primary care for all of you
+            </h1>
+            <p className="mt-4 md:mt-6 text-lg md:text-xl max-w-2xl mx-auto">
+              One Medical is a membership-based primary care practice on a mission to make getting quality care more affordable, accessible, and enjoyable for all.
             </p>
-            <div className="mt-8">
-              <Button asChild size="lg" className="text-base font-semibold">
-                <Link href="/register">Create an Account</Link>
+            <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+              <Button size="lg" className="w-full sm:w-auto text-base font-semibold">
+                <Search className="mr-2"/>
+                Find Care Near You
+              </Button>
+              <Button size="lg" variant="secondary" className="w-full sm:w-auto text-base font-semibold">
+                <Building className="mr-2"/>
+                Explore Employer Plans
               </Button>
             </div>
           </div>
