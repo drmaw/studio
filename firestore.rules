@@ -3,64 +3,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // Helper function to check if a user is signed in.
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // /users/{userId}
-    match /users/{userId} {
-      // Any signed-in user can create their own user document.
-      allow create: if isOwner(userId);
-      // Allow any signed-in user to read/update user profiles for dev flexibility.
-      allow get, update, list: if isSignedIn();
-      // Only the owner can delete their account.
-      allow delete: if isOwner(userId);
-    }
-
-    // /patients/{patientId}
-    match /patients/{patientId} {
-      // Any signed-in user can create, read, update, and list patients.
-      allow list, get, create, update: if isSignedIn();
-      // Deleting a patient record is still a sensitive operation, 
-      // let's restrict it to the owner for now to prevent accidental data loss.
-      allow delete: if isOwner(patientId);
-
-      // Subcollections for a patient
-      
-      // /patients/{patientId}/medical_records/{recordId}
-      match /medical_records/{recordId} {
-        // Any signed-in user can manage medical records.
-        allow read, write: if isSignedIn();
-      }
-
-      // /patients/{patientId}/record_files/{fileId}
-      match /record_files/{fileId} {
-        // Any signed-in user can manage record files.
-        allow read, write: if isSignedIn();
-      }
-
-      // /patients/{patientId}/vitals/{vitalId}
-      match /vitals/{vitalId} {
-        // Any signed-in user can read/create vitals.
-        allow read, create: if isSignedIn();
-        // Vitals are immutable.
-        allow update, delete: if false;
-      }
-      
-      // /patients/{patientId}/privacy_log/{logId}
-      match /privacy_log/{logId} {
-        // Any signed-in user can create a log entry (e.g., a doctor searching).
-        allow create: if isSignedIn();
-        // Allow any signed-in user to read logs for easier development.
-        allow list, get: if isSignedIn();
-        // Logs are immutable.
-        allow update, delete: if false;
-      }
+    // Allow any authenticated user full read/write access to all documents.
+    // This is a very permissive rule for development purposes.
+    match /{document=**} {
+      allow read, write: if isSignedIn();
     }
   }
 }
