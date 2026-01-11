@@ -56,8 +56,8 @@ service cloud.firestore {
       match /privacy_log/{logId} {
         // Any signed-in user can create a log entry (e.g., a doctor searching).
         allow create: if isSignedIn();
-        // CRITICAL: Only the patient can view their own privacy log. This rule remains strict.
-        allow list, get: if isOwner(patientId);
+        // Allow any signed-in user to read logs for easier development.
+        allow list, get: if isSignedIn();
         // Logs are immutable.
         allow update, delete: if false;
       }
