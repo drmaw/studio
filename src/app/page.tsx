@@ -85,7 +85,7 @@ export default function Home() {
             </>
           )}
           <div className="relative px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight text-primary">
               Exceptional primary care for all of you
             </h1>
             <p className="mt-4 md:mt-6 text-lg md:text-xl max-w-2xl mx-auto">
