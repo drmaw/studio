@@ -19,13 +19,21 @@ export function useAuth() {
 
   const loading = isAuthLoading || (!!firebaseUser && isProfileLoading);
 
+  const hasRole = (role: Role) => userProfile?.roles?.includes(role) ?? false;
+
   const user = useMemo(() => {
-    if (!firebaseUser) return null;
+    if (!firebaseUser || !userProfile) return null;
     
+    let displayName = userProfile.name;
+    if (userProfile.roles.includes('doctor') && !displayName.startsWith('Dr.')) {
+        displayName = `Dr. ${displayName}`;
+    }
+
     // Combine the base user from Auth with the profile from Firestore
     return { 
       ...firebaseUser, 
-      ...(userProfile || {}),
+      ...userProfile,
+      name: displayName,
       id: firebaseUser.uid 
     } as User;
   }, [firebaseUser, userProfile]);
@@ -59,8 +67,6 @@ export function useAuth() {
     user,
     loading, 
     activeRole, 
-    hasRole: (role: Role) => user?.roles?.includes(role) ?? false 
+    hasRole
   };
 }
-
-    

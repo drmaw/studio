@@ -82,7 +82,7 @@ export function RegisterForm() {
       
       const newUser: Omit<User, 'id'> = {
           healthId: healthId,
-          name: isDevUser ? 'Dr. Dev' : values.name,
+          name: isDevUser ? 'Dev' : values.name,
           email: firebaseUser.email!,
           roles: isDevUser ? ['doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'] : ['patient'],
           organizationId: orgId,
@@ -99,7 +99,7 @@ export function RegisterForm() {
       const newPatient: Omit<Patient, 'id'> = {
           healthId: healthId,
           userId: firebaseUser.uid,
-          name: isDevUser ? 'Dr. Dev' : values.name,
+          name: isDevUser ? 'Dev' : values.name,
           organizationId: orgId,
           demographics: {
               dob: isDevUser ? '01-01-1985' : '',
