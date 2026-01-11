@@ -44,9 +44,20 @@ function AppContent({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+  
+  // If we are on an auth route, but the user is already logged in, we render null
+  // because a redirect is in progress. This prevents a flash of the login/register page.
+  if (user && (pathname === '/login' || pathname === '/register')) {
+    return null;
+  }
+  
+  // If we are on a dashboard route, but the user is not logged in, we render null
+  // because a redirect to /login is in progress.
+  if (!user && pathname.startsWith('/dashboard')) {
+    return null;
+  }
 
-  // Render the actual content. If a redirect is needed, it will happen,
-  // but we still render the children to avoid a flash of incorrect content.
+  // Render the actual content.
   return <>{children}</>;
 }
 

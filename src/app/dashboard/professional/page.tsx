@@ -24,14 +24,17 @@ function GenericDashboard({ name }: { name: string }) {
 }
 
 export default function ProfessionalDashboardPage() {
-  const { user, loading, activeRole } = useAuth();
+  const { user, loading, activeRole, hasRole } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
+    // This effect ensures that if a user lands here who only has a 'patient' role,
+    // they are redirected to their main dashboard. This should only run *after* loading is complete.
+    if (!loading && user && user.roles?.length === 1 && hasRole('patient')) {
+        router.replace('/dashboard');
     }
-  }, [user, loading, router]);
+  }, [user, loading, hasRole, router]);
+
 
   if (loading || !user) {
     return (
@@ -41,6 +44,11 @@ export default function ProfessionalDashboardPage() {
         </div>
     );
   }
+  
+  // If the user only has a patient role, render nothing while the redirect happens.
+  if (user.roles?.length === 1 && hasRole('patient')) {
+    return null;
+  }
 
   switch (activeRole) {
     case 'doctor':
@@ -49,11 +57,8 @@ export default function ProfessionalDashboardPage() {
       return <RepDashboard user={user} />;
     case 'hospital_owner':
       return <HospitalOwnerDashboard user={user} />;
-    case 'patient': // If user is only a patient, redirect them or show a message
-        if (user?.roles?.length === 1 && user.roles[0] === 'patient') {
-            router.push('/dashboard');
-        }
-        return null;
+    // The 'patient' case is handled by the redirect logic above.
+    // It's safe to have a default for other professional roles.
     default:
       return <GenericDashboard name={user.name} />;
   }
