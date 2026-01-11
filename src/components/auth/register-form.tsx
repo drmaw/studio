@@ -21,7 +21,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import type { User, Patient } from "@/lib/definitions";
 
 const formSchema = z.object({
@@ -109,11 +109,8 @@ export function RegisterForm() {
           createdAt: serverTimestamp(),
       };
       
-      // Use a batch to write both documents atomically
-      const batch = writeBatch(firestore);
-      batch.set(userDocRef, newUser);
-      batch.set(patientDocRef, newPatient);
-      await batch.commit();
+      await setDoc(userDocRef, newUser);
+      await setDoc(patientDocRef, newPatient);
 
       toast({
         title: "Registration Successful",

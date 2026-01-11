@@ -3,8 +3,8 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default-allow all reads and writes for any signed-in user.
-    // This is a soft rule for development.
+    // Allow all authenticated users to read and write to all documents.
+    // This is a permissive rule for development.
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
