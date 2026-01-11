@@ -23,18 +23,14 @@ export default function DashboardLayout({
   const auth = useFirebaseAuth();
   const router = useRouter();
 
-  // The root layout now handles the primary redirection logic.
-  // This layout will only render when a user is authenticated.
-  // We keep the skeleton UI for the initial auth check for a smoother transition.
-
   const handleLogout = async () => {
     if (!auth) return;
     await signOut(auth);
     router.push('/');
   };
 
-  // While only the initial auth check is loading, show a full skeleton UI.
-  // This is now much faster.
+  // The root layout handles redirection, so this layout only needs to show a loading
+  // state while waiting for the initial authentication check to complete.
   if (isAuthLoading) {
      return (
       <div className="flex h-screen w-full">
@@ -64,14 +60,13 @@ export default function DashboardLayout({
     );
   }
 
-  // If there's no user *after* loading, the root layout will have already redirected.
-  // So, if we reach here, we can assume 'user' exists.
+  // If we reach this point after the loading is done, the root layout ensures 'user' exists.
+  // If not, it would have already redirected to /login.
   if (!user) {
-    return null; // Or a fallback skeleton, though it should not be seen.
+    return null; // Render nothing, as a redirect is in progress.
   }
 
-  // Once authenticated, render the layout shell immediately.
-  // The child component will handle its own loading state for profile data.
+  // Render the full dashboard layout once authentication is confirmed.
   return (
     <SidebarProvider>
       <div className={cn("min-h-screen w-full flex")}>
