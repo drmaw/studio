@@ -17,7 +17,6 @@ export function useAuth() {
   
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<User>(userDocRef);
 
-  // The main loading state now only depends on the profile if we know we have an auth user
   const isCombinedLoading = isAuthLoading || (!!firebaseUser && isProfileLoading);
 
   const user = useMemo(() => {
@@ -66,11 +65,8 @@ export function useAuth() {
 
   return { 
     user,
-    // The combined loading state for when you need the full user object
     loading: isCombinedLoading, 
-    // The specific loading state for just the Firebase Auth check
     isAuthLoading,
-    // The specific loading state for the Firestore profile fetch
     isProfileLoading,
     activeRole, 
     hasRole
