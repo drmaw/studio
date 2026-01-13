@@ -14,7 +14,7 @@ import Link from "next/link";
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, activeRole } = useAuth();
   const { setOpenMobile, isMobile } = useSidebar();
 
   const handleLinkClick = () => {
@@ -30,6 +30,10 @@ export function SidebarNav() {
   const isProfessional = user?.roles?.some(r => r !== 'patient');
   const isHospitalOwner = hasRole('hospital_owner');
 
+  const professionalDashboardLabel = activeRole 
+    ? `${activeRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Dashboard`
+    : 'Professional Dashboard';
+
   const menuItems = [
     {
       href: "/dashboard",
@@ -39,16 +43,16 @@ export function SidebarNav() {
     },
     {
       href: "/dashboard/professional",
-      label: "Professional Dashboard",
+      label: professionalDashboardLabel,
       icon: Briefcase,
-      roles: ['doctor', 'hospital_owner', 'marketing_rep'],
+      roles: ['doctor', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'],
       condition: isProfessional
     },
     {
       href: "/dashboard/profile",
       label: "Profile",
       icon: UserIcon,
-      roles: ['doctor', 'patient', 'hospital_owner', 'marketing_rep'],
+      roles: ['doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'],
     },
     {
       href: "/dashboard/my-records",

@@ -50,6 +50,9 @@ export default function ProfessionalDashboardPage() {
     return null;
   }
 
+  // Fallback for roles without a specific dashboard component yet
+  const professionalTitle = activeRole ? `${activeRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}` : 'Professional';
+
   switch (activeRole) {
     case 'doctor':
       return <DoctorDashboard user={user} />;
