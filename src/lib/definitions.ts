@@ -13,6 +13,7 @@ export type EmergencyContact = {
 export type UserDemographics = {
   dob?: string; // ISO 8601 string
   gender?: 'Male' | 'Female' | 'Other';
+  maritalStatus?: 'Single' | 'Married' | 'Divorced' | 'Widowed';
   contact?: string;
   fatherName?: string;
   motherName?: string;

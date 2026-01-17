@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserPlus, Cake, User as UserIcon, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Plus, X, File, Building, Hash, IdCard, CheckCircle2, Clock, Hourglass, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { differenceInYears, parse, isValid, format } from 'date-fns';
@@ -288,10 +288,11 @@ const ProfileEditRow = ({ label, name, value, onChange, placeholder }: { label: 
 const availableConditions = ['Asthma', 'Diabetes', 'Hypertension', 'CKD'];
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const genders = ['Male', 'Female'];
+const maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed'];
 
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole } = useAuth();
   const { toast } = useToast();
   const firestore = useFirestore();
   
@@ -306,6 +307,8 @@ export default function ProfilePage() {
   const [newContactNumber, setNewContactNumber] = useState('');
   const [newContactHealthId, setNewContactHealthId] = useState('');
   const [newContactMethod, setNewContactMethod] = useState('details');
+
+  const stableHasRole = useCallback(hasRole, [user]);
 
   useEffect(() => {
     if (user) {
@@ -460,7 +463,7 @@ export default function ProfilePage() {
     );
   }
   
-  const isOnlyPatient = user.roles?.length === 1 && user.roles[0] === 'patient';
+  const isOnlyPatient = user.roles?.length === 1 && stableHasRole('patient');
   
   const dobDate = formData.dob ? parse(formData.dob, "dd-MM-yyyy", new Date()) : null;
   const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd-MM-yyyy') : 'N/A';
@@ -504,6 +507,19 @@ export default function ProfilePage() {
                                             <SelectContent>
                                                 {genders.map(gender => (
                                                     <SelectItem key={gender} value={gender}>{gender}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-sm text-muted-foreground">Marital Status</Label>
+                                        <Select value={formData.maritalStatus} onValueChange={handleSelectChange('maritalStatus')}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select marital status..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {maritalStatuses.map(status => (
+                                                    <SelectItem key={status} value={status}>{status}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -631,6 +647,7 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
                                 <ProfileInfoRow icon={Users} label="Gender" value={formData.gender} />
+                                <ProfileInfoRow icon={Users} label="Marital Status" value={formData.maritalStatus} />
                                 <ProfileInfoRow icon={UserIcon} label="Father's Name" value={formData.fatherName} />
                                 <ProfileInfoRow icon={UserIcon} label="Mother's Name" value={formData.motherName} />
                                 <ProfileInfoRow icon={Fingerprint} label="NID" value={formData.nid} />
