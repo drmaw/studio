@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserPlus, Cake, User as UserIcon, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Plus, X, File, Building, Hash, IdCard, CheckCircle2, Clock, Hourglass, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -33,7 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore } from "@/firebase";
-import { doc, getDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { doc, getDocs, collection, query, where, limit, serverTimestamp, writeBatch } from "firebase/firestore";
 import { updateDocumentNonBlocking, commitBatchNonBlocking } from "@/firebase/non-blocking-updates";
 
 
@@ -293,7 +292,6 @@ const genders = ['Male', 'Female'];
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
   
@@ -310,35 +308,33 @@ export default function ProfilePage() {
   const [newContactMethod, setNewContactMethod] = useState('details');
 
   useEffect(() => {
-    if (loading) return;
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-    
-    const initialData = {
-        ...user.demographics,
-        chronicConditions: user.demographics?.chronicConditions || [],
-        allergies: user.demographics?.allergies || [],
-        emergencyContacts: user.demographics?.emergencyContacts || [],
-    };
-    setFormData(initialData);
+    if (user) {
+        const initialData = {
+            ...user.demographics,
+            chronicConditions: user.demographics?.chronicConditions || [],
+            allergies: user.demographics?.allergies || [],
+            emergencyContacts: user.demographics?.emergencyContacts || [],
+        };
+        setFormData(initialData);
 
-    if (user.demographics?.dob) {
-      try {
-        const birthDate = parse(user.demographics.dob, "dd-MM-yyyy", new Date());
-        if(isValid(birthDate)) {
-          const calculatedAge = differenceInYears(new Date(), birthDate);
-          setAge(calculatedAge);
+        if (user.demographics?.dob) {
+            try {
+                const birthDate = parse(user.demographics.dob, "dd-MM-yyyy", new Date());
+                if(isValid(birthDate)) {
+                    const calculatedAge = differenceInYears(new Date(), birthDate);
+                    setAge(calculatedAge);
+                } else {
+                    setAge(null);
+                }
+            } catch (error) {
+                console.error("Invalid date format for DOB:", user.demographics.dob);
+                setAge(null);
+            }
         } else {
             setAge(null);
         }
-      } catch (error) {
-        console.error("Invalid date format for DOB:", user.demographics.dob);
-        setAge(null);
-      }
     }
-  }, [user, loading, router]);
+  }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -720,6 +716,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-
-    

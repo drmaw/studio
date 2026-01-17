@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import type { Role, User } from "@/lib/definitions";
 import { doc } from 'firebase/firestore';
@@ -36,7 +36,9 @@ export function useAuth() {
     } as User;
   }, [firebaseUser, userProfile]);
 
-  const hasRole = (role: Role) => user?.roles?.includes(role) ?? false;
+  const hasRole = useCallback((role: Role) => {
+    return user?.roles?.includes(role) ?? false;
+  }, [user]);
   
   const activeRole = useMemo(() => {
     if (!user?.roles) return 'patient'; 
