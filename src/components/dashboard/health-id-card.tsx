@@ -99,12 +99,12 @@ export function HealthIdCard({ user }: { user: User }) {
             <CardContent className="p-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <div className="flex-shrink-0 relative group">
-                        <Avatar className="h-24 w-24 border-2 border-primary/20 rounded-full">
+                        <Avatar className="h-24 w-24 border-2 border-primary/20">
                             <AvatarImage src={user.avatarUrl} alt={user.name} />
-                            <AvatarFallback className="text-3xl rounded-full">{userInitials}</AvatarFallback>
+                            <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
                         </Avatar>
                         <div
-                            className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                             onClick={handleAvatarClick}
                         >
                             {isUploading ? <Loader2 className="h-8 w-8 text-white animate-spin" /> : <Camera className="h-8 w-8 text-white" />}
@@ -176,3 +176,4 @@ export function HealthIdCard({ user }: { user: User }) {
         </Card>
     );
 }
+    
