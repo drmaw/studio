@@ -122,7 +122,7 @@ export function BookAppointmentCalendar({ schedule }: { schedule: DoctorSchedule
             schedule.doctorId,
             'New Appointment Request',
             `${user.name} has requested an appointment on ${format(date, 'dd-MM-yyyy')} at ${selectedTime}.`,
-            `/dashboard/appointments/${schedule.id}`
+            `/dashboard/appointments/${schedule.organizationId}/${schedule.id}`
         );
 
         setIsBooking(false);

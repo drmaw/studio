@@ -270,7 +270,7 @@ export function DoctorDashboard({ user }: { user: User }) {
                         </CardContent>
                         <CardFooter>
                            <Button asChild variant="outline" className="w-full">
-                                <Link href={`/dashboard/appointments/${schedule.id}`}>View Appointments</Link>
+                                <Link href={`/dashboard/appointments/${schedule.organizationId}/${schedule.id}`}>View Appointments</Link>
                            </Button>
                         </CardFooter>
                     </Card>
