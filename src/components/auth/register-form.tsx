@@ -91,7 +91,6 @@ export function RegisterForm() {
           demographics: {
               dob: isDevUser ? '01-01-1985' : '',
               gender: isDevUser ? 'Male' : 'Other',
-              contact: values.mobileNumber,
               mobileNumber: values.mobileNumber,
           }
       };
