@@ -21,9 +21,13 @@ export function useAuth() {
 
   const user = useMemo(() => {
     if (!firebaseUser || !userProfile) return null;
+
+    // Ensure roles is always an array, defaulting to ['patient'] if not present or empty.
+    // This makes the app more resilient to inconsistent data in Firestore.
+    const roles = (userProfile.roles && userProfile.roles.length > 0) ? userProfile.roles : ['patient'];
     
     let displayName = userProfile.name;
-    if (userProfile.roles.includes('doctor') && !displayName.startsWith('Dr.')) {
+    if (roles.includes('doctor') && !displayName.startsWith('Dr.')) {
         displayName = `Dr. ${displayName}`;
     }
 
@@ -31,6 +35,7 @@ export function useAuth() {
     return { 
       ...firebaseUser, 
       ...userProfile,
+      roles,
       name: displayName,
       id: firebaseUser.uid 
     } as User;
