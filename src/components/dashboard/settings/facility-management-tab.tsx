@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,20 +40,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
-type Facility = {
-    id: string;
-    type: 'ward' | 'cabin';
-    name: string;
-    beds: number;
-    cost: number;
-};
-
-const initialFacilities: Facility[] = [
-    { id: 'fac-1', type: 'ward', name: 'General Ward', beds: 10, cost: 1500 },
-    { id: 'fac-2', type: 'cabin', name: 'Deluxe Cabin #101', beds: 1, cost: 5000 },
-    { id: 'fac-3', type: 'cabin', name: 'VIP Cabin #201', beds: 2, cost: 8000 },
-];
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import type { Facility } from "@/lib/definitions";
+import { collection, addDoc, updateDoc, deleteDoc, serverTimestamp, doc } from "firebase/firestore";
 
 const formSchema = z.object({
   type: z.enum(['ward', 'cabin'], { required_error: "Facility type is required." }),
@@ -62,9 +53,17 @@ const formSchema = z.object({
 });
 
 export function FacilityManagementTab() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [facilities, setFacilities] = useState<Facility[]>(initialFacilities);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { user: hospitalOwner } = useAuth();
+  const firestore = useFirestore();
+
+  const facilitiesQuery = useMemoFirebase(() => {
+    if (!firestore || !hospitalOwner) return null;
+    return collection(firestore, 'organizations', hospitalOwner.organizationId, 'facilities');
+  }, [firestore, hospitalOwner]);
+
+  const { data: facilities, isLoading: facilitiesLoading } = useCollection<Facility>(facilitiesQuery);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,34 +75,40 @@ export function FacilityManagementTab() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const newFacility: Facility = {
-        id: `fac-${Date.now()}`,
+    if (!hospitalOwner || !firestore) return;
+    setIsSubmitting(true);
+    
+    const facilitiesRef = collection(firestore, 'organizations', hospitalOwner.organizationId, 'facilities');
+    await addDoc(facilitiesRef, {
+        organizationId: hospitalOwner.organizationId,
         ...values,
-    };
+        createdAt: serverTimestamp()
+    });
 
-    setFacilities(prev => [...prev, newFacility]);
     toast({
         title: "Facility Added",
         description: `The ${values.type} "${values.name}" has been added.`,
     });
     
     form.reset({ name: "", beds: 1, cost: 1000, type: values.type });
-    setIsLoading(false);
+    setIsSubmitting(false);
   }
 
-  const handleDelete = (facilityId: string) => {
-    setFacilities(prev => prev.filter(f => f.id !== facilityId));
+  const handleDelete = async (facilityId: string) => {
+    if (!hospitalOwner || !firestore) return;
+    const facilityRef = doc(firestore, 'organizations', hospitalOwner.organizationId, 'facilities', facilityId);
+    await deleteDoc(facilityRef);
     toast({
       title: "Facility Removed",
       description: "The facility has been removed from the list.",
     });
   };
   
-  const handleUpdate = (updatedFacility: Facility) => {
-    setFacilities(prev => prev.map(f => f.id === updatedFacility.id ? updatedFacility : f));
+  const handleUpdate = async (updatedFacility: Facility) => {
+    if (!hospitalOwner || !firestore) return;
+    const facilityRef = doc(firestore, 'organizations', hospitalOwner.organizationId, 'facilities', updatedFacility.id);
+    const { id, organizationId, createdAt, ...updateData } = updatedFacility;
+    await updateDoc(facilityRef, updateData);
      toast({
         title: 'Facility Updated',
         description: 'The facility details have been updated successfully.',
@@ -184,8 +189,8 @@ export function FacilityManagementTab() {
                     )}
                 />
             </div>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? <Loader2 className="animate-spin" /> : "Add Facility"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="animate-spin" /> : "Add Facility"}
             </Button>
           </form>
         </Form>
@@ -210,39 +215,52 @@ export function FacilityManagementTab() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {facilities.map((facility) => (
-                <TableRow key={facility.id}>
-                  <TableCell className="font-medium">{facility.name}</TableCell>
-                  <TableCell className="capitalize">{facility.type}</TableCell>
-                  <TableCell>{facility.beds}</TableCell>
-                  <TableCell className="font-mono">{facility.cost.toFixed(2)}</TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <EditFacilityDialog item={facility} onSave={handleUpdate} />
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the facility.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(facility.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
+              {facilitiesLoading ? (
+                  <TableRow>
+                      <TableCell colSpan={5} className="text-center h-24">
+                          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                      </TableCell>
+                  </TableRow>
+              ) : facilities && facilities.length > 0 ? (
+                facilities.map((facility) => (
+                  <TableRow key={facility.id}>
+                    <TableCell className="font-medium">{facility.name}</TableCell>
+                    <TableCell className="capitalize">{facility.type}</TableCell>
+                    <TableCell>{facility.beds}</TableCell>
+                    <TableCell className="font-mono">{facility.cost.toFixed(2)}</TableCell>
+                    <TableCell className="text-right space-x-1">
+                      <EditFacilityDialog item={facility} onSave={handleUpdate} />
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete the facility.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(facility.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                    <TableCell colSpan={5} className="text-center p-4 text-sm text-muted-foreground">
+                        No facilities have been added yet.
+                    </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
-          {facilities.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No facilities have been added yet.</p>}
         </div>
       </div>
     </div>
@@ -255,23 +273,24 @@ function EditFacilityDialog({
     onSave,
 }: { 
     item: Facility;
-    onSave: (updatedItem: Facility) => void;
+    onSave: (updatedItem: Facility) => Promise<void>;
 }) {
-    const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
-        defaultValues: item,
+        defaultValues: {
+            name: item.name,
+            type: item.type,
+            beds: item.beds,
+            cost: item.cost,
+        },
     });
 
     async function handleSave(values: z.infer<typeof formSchema>) {
         setIsSaving(true);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Mock API call
-        
-        onSave({ ...item, ...values });
-
+        await onSave({ ...item, ...values });
         setIsSaving(false);
         setIsOpen(false);
     };
@@ -291,7 +310,7 @@ function EditFacilityDialog({
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4 py-4">
                         <FormField
                             control={form.control}
                             name="name"
@@ -334,8 +353,8 @@ function EditFacilityDialog({
                                 </FormItem>
                             )}
                         />
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+                        <DialogFooter className="pt-4">
+                            <Button variant="outline" type="button" onClick={() => setIsOpen(false)}>Cancel</Button>
                             <Button type="submit" disabled={isSaving}>
                                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Save Changes

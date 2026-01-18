@@ -175,3 +175,13 @@ export type FeeItem = {
   cost: number;
   createdAt: FieldValue;
 };
+
+export type Facility = {
+  id: string;
+  organizationId: string;
+  type: 'ward' | 'cabin';
+  name: string;
+  beds: number;
+  cost: number;
+  createdAt: FieldValue;
+};

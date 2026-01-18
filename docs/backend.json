@@ -179,6 +179,20 @@
         "createdAt": { "type": "object" }
       },
       "required": ["organizationId", "category", "name", "cost", "createdAt"]
+    },
+    "Facility": {
+      "title": "Facility",
+      "description": "Represents a single facility like a ward or cabin in an organization.",
+      "type": "object",
+      "properties": {
+        "organizationId": { "type": "string" },
+        "type": { "type": "string", "enum": ["ward", "cabin"] },
+        "name": { "type": "string" },
+        "beds": { "type": "number" },
+        "cost": { "type": "number" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["organizationId", "type", "name", "beds", "cost", "createdAt"]
     }
   },
   "auth": {
@@ -225,6 +239,10 @@
       {
         "path": "/organizations/{organizationId}/fee_items/{feeItemId}",
         "definition": { "schema": { "$ref": "#/entities/FeeItem" }, "description": "Subcollection for an organization's price chart items." }
+      },
+      {
+        "path": "/organizations/{organizationId}/facilities/{facilityId}",
+        "definition": { "schema": { "$ref": "#/entities/Facility" }, "description": "Subcollection for an organization's facilities like wards and cabins." }
       },
       {
         "path": "/appointments/{appointmentId}",
