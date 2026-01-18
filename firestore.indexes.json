@@ -25,11 +25,25 @@
         { "fieldPath": "name", "order": "ASCENDING" }
       ]
     },
+     {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "organizationId", "order": "ASCENDING" }
+      ]
+    },
     {
       "collectionGroup": "privacy_log",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         { "fieldPath": "action", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "privacy_log",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
         { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
     },

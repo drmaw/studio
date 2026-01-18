@@ -36,85 +36,66 @@ service cloud.firestore {
     // User Profiles
     match /users/{userId} {
       allow create: if isSignedIn();
-      // A user can get their own profile. Doctors and Admins can also get any user profile.
       allow get: if isOwner(userId) || isRole('doctor') || isAdmin();
-      // Any signed-in user can perform list queries (e.g. for Health ID search, finding doctors).
       allow list: if isSignedIn();
-      // User can update own profile. Admin can update anyone's profile.
       allow update: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
     }
 
     // Patient Records
     match /patients/{patientId} {
-      // A patient can read their own record.
-      allow get: if isOwner(patientId);
-      // A doctor in the same organization can read/update a patient's record. Admin can read/update any.
-      allow get, update: if (isRole('doctor') && isInOrg(resource.data.organizationId)) || isAdmin();
-       // Allow creation during registration
+      allow get: if isOwner(patientId) || (isRole('doctor') && isInOrg(resource.data.organizationId)) || isAdmin();
+      allow update: if (isRole('doctor') && isInOrg(resource.data.organizationId)) || isAdmin();
       allow create: if isOwner(patientId);
     }
     
     // Patient Subcollections
     match /patients/{patientId}/medical_records/{recordId} {
-        // Patient can read their own records.
-        allow get, list: if isOwner(patientId);
-        // Doctor in the patient's org can read, create, and update records.
-        allow get, list, create, update: if isRole('doctor') && isInOrg(getPatientOrgId(patientId));
+        allow get, list: if isOwner(patientId) || (isRole('doctor') && isInOrg(getPatientOrgId(patientId))) || isAdmin();
+        allow create, update: if isRole('doctor') && isInOrg(getPatientOrgId(patientId));
     }
 
     match /patients/{patientId}/record_files/{fileId} {
-        // Patient can do anything with their own files.
         allow read, write: if isOwner(patientId);
-        // Doctor in patient's org can read them.
         allow get, list: if isRole('doctor') && isInOrg(getPatientOrgId(patientId));
     }
 
     match /patients/{patientId}/vitals/{vitalId} {
-        // Patient can create and read their own vitals.
         allow create, get, list: if isOwner(patientId);
-        // Doctors in patient's org can read vitals.
         allow get, list: if isRole('doctor') && isInOrg(getPatientOrgId(patientId));
-        // Vitals are immutable.
         allow update, delete: if false;
     }
 
     match /patients/{patientId}/privacy_log/{logId} {
-        // ONLY the patient can read their log.
         allow get, list: if isOwner(patientId);
-        // Any doctor can create a log entry.
         allow create: if isRole('doctor');
     }
     
     // Organization Data
+    match /organizations/{orgId} {
+        allow read, write: if isAdmin();
+    }
+    
     match /organizations/{orgId}/{collection}/{docId} {
-        // Only a hospital owner or manager of that specific org can manage its subcollections.
         allow read, write: if (isInOrg(orgId) && (isRole('hospital_owner') || isRole('manager'))) || isAdmin();
-        // Any signed-in user can read schedules (for booking appointments)
         allow get, list: if collection == 'schedules' && isSignedIn();
     }
     
     // Appointments
     match /appointments/{appointmentId} {
-        // Patient can create their own appointment.
         allow create: if isOwner(request.resource.data.patientId);
-        // Patient can read/update their own appointments. Doctor can read/update their appointments.
         allow read, update: if isOwner(resource.data.patientId) || (isRole('doctor') && request.auth.uid == resource.data.doctorId) || isAdmin();
-        // Authenticated users can list appointments (queries must be secured on client).
         allow list: if isSignedIn();
     }
     
     // Role Management
     match /users/{userId}/role_applications/{applicationId} {
-        // A user can create and read their own applications.
         allow read, create: if isOwner(userId);
-        // Admin can update any application.
         allow update: if isAdmin(); 
     }
     
     match /users/{userId}/role_removal_requests/{requestId} {
-        // A user can create and read their own requests.
         allow read, create: if isOwner(userId);
-        // Admin can update any request.
         allow update: if isAdmin();
     }
 
@@ -126,6 +107,14 @@ service cloud.firestore {
      match /{path=**}/role_removal_requests/{requestId} {
       allow list: if isAdmin();
     }
+     
+     match /{path=**}/appointments/{appointmentId} {
+      allow list: if isAdmin();
+    }
+     
+     match /{path=**}/privacy_log/{logId} {
+       allow list: if isAdmin();
+     }
     
     // Notifications
     match /users/{userId}/notifications/{notificationId} {

@@ -87,6 +87,7 @@ export function RegisterForm() {
           organizationId: orgId,
           avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
           createdAt: serverTimestamp(),
+          status: 'active',
           demographics: {
               dob: isDevUser ? '01-01-1985' : '',
               gender: isDevUser ? 'Male' : 'Other',

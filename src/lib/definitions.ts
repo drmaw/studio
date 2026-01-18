@@ -37,6 +37,7 @@ export type User = {
   avatarUrl: string;
   demographics?: UserDemographics;
   isPremium?: boolean;
+  status?: 'active' | 'suspended';
   createdAt: FieldValue;
   deletionScheduledAt?: FieldValue | null;
 };
@@ -59,6 +60,15 @@ export type Patient = {
     title: string;
     comment: string;
   };
+  createdAt: FieldValue;
+};
+
+export type Organization = {
+  id: string;
+  name: string;
+  address?: string;
+  ownerId: string;
+  status: 'active' | 'suspended' | 'deleted';
   createdAt: FieldValue;
 };
 

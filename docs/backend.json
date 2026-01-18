@@ -13,9 +13,10 @@
         "avatarUrl": { "type": "string", "format": "uri" },
         "demographics": { "type": "object" },
         "isPremium": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["active", "suspended"], "description": "The current status of the user account." },
         "createdAt": { "type": "object" }
       },
-      "required": ["healthId", "name", "email", "roles", "organizationId", "createdAt"]
+      "required": ["healthId", "name", "email", "roles", "organizationId", "createdAt", "status"]
     },
     "Patient": {
       "title": "Patient",
@@ -33,6 +34,21 @@
         "createdAt": { "type": "object" }
       },
       "required": ["healthId", "userId", "name", "organizationId", "createdAt"]
+    },
+     "Organization": {
+      "title": "Organization",
+      "description": "Represents a healthcare organization like a hospital or clinic.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "registrationNumber": { "type": "string" },
+        "tin": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "suspended", "deleted"] },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["name", "ownerId", "status", "createdAt"]
     },
     "MedicalRecord": {
       "title": "MedicalRecord",
@@ -250,6 +266,10 @@
       {
         "path": "/patients/{patientId}/privacy_log/{logId}",
         "definition": { "schema": { "$ref": "#/entities/PrivacyLog" }, "description": "Subcollection for a patient's privacy audit trail." }
+      },
+      {
+        "path": "/organizations/{organizationId}",
+        "definition": { "schema": { "$ref": "#/entities/Organization" }, "description": "Top-level collection for all healthcare organizations." }
       },
       {
         "path": "/organizations/{organizationId}/schedules/{scheduleId}",
