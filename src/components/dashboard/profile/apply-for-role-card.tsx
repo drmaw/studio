@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from '@/lib/utils';
-import { UserPlus, IdCard, File, Building, Hash, MapPin, Clock, Hourglass, CheckCircle2 } from "lucide-react";
+import { UserPlus, IdCard, File, Building, Hash, MapPin, Loader2 } from "lucide-react";
 
 
 export function ApplyForRoleCard() {
@@ -24,12 +24,10 @@ export function ApplyForRoleCard() {
   const [selectedRole, setSelectedRole] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const [applicationStatus, setApplicationStatus] = useState<'submitted' | 'waiting_for_approval' | 'approved' | null>(null);
-  const [appliedRole, setAppliedRole] = useState<string | null>(null);
 
   const [orgDetails, setOrgDetails] = useState({ name: '', reg: '', tin: '', address: '' });
 
-  const handleApply = (event: React.FormEvent) => {
+  const handleApply = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedRole || !user || !firestore) {
       toast({
@@ -41,20 +39,20 @@ export function ApplyForRoleCard() {
     }
 
     setIsSubmitting(true);
-    setAppliedRole(selectedRole);
-    setApplicationStatus('submitted');
-
-    // Mock status progression
-    setTimeout(() => setApplicationStatus('waiting_for_approval'), 2000);
     
-    setTimeout(() => {
-        setApplicationStatus('approved');
-        
-        if (!user || !firestore) return;
-
+    try {
         const batch = writeBatch(firestore);
         const userRef = doc(firestore, "users", user.id);
         const patientRef = doc(firestore, "patients", user.id);
+
+        if (user.roles.includes(selectedRole as Role)) {
+            toast({
+                title: "Already Applied",
+                description: `You already have the ${selectedRole.replace(/_/g, ' ')} role.`,
+            });
+            setIsSubmitting(false);
+            return;
+        }
 
         const updatedRoles = Array.from(new Set([...user.roles, selectedRole as Role]));
         
@@ -73,20 +71,18 @@ export function ApplyForRoleCard() {
         
         batch.update(userRef, updateData);
         
-        batch.commit().then(() => {
-             toast({
-                title: "Application Approved!",
-                description: `You now have the ${selectedRole.replace(/_/g, ' ')} role. Please refresh to see changes.`,
-            });
-             // Don't reset state here, so the "Approved" message persists
-        }).catch(error => {
-            console.error("Application submission failed:", error);
-            toast({ variant: "destructive", title: "Submission Failed", description: "Could not submit your application." });
-            setIsSubmitting(false);
-            setApplicationStatus(null); // Reset on failure
-        });
+        await batch.commit();
 
-    }, 5000);
+        toast({
+            title: "Application Approved!",
+            description: `You now have the ${selectedRole.replace(/_/g, ' ')} role. Please refresh to see changes.`,
+        });
+    } catch (error) {
+        console.error("Application submission failed:", error);
+        toast({ variant: "destructive", title: "Submission Failed", description: "Could not submit your application." });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
   
   const renderRoleForm = () => {
@@ -147,54 +143,6 @@ export function ApplyForRoleCard() {
     }
   }
 
-  const renderStatus = () => {
-    let statusText, Icon, colorClass, description;
-
-    switch(applicationStatus) {
-        case 'submitted':
-            statusText = 'Submitted';
-            Icon = Clock;
-            colorClass = 'text-blue-500';
-            description = 'Your application has been received and is pending review.';
-            break;
-        case 'waiting_for_approval':
-            statusText = 'Waiting For Approval';
-            Icon = Hourglass;
-            colorClass = 'text-yellow-500';
-            description = 'Your documents are being verified by our team. This may take some time.';
-            break;
-        case 'approved':
-            statusText = 'Approved';
-            Icon = CheckCircle2;
-            colorClass = 'text-green-500';
-            description = `Congratulations! Your role as a ${appliedRole?.replace(/_/g, ' ')} has been approved.`;
-            break;
-        default:
-            return null;
-    }
-    
-    return (
-         <Card className="mt-6 bg-card">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                    <UserPlus className="h-5 w-5 text-primary" />
-                    Application Status
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center text-center p-8">
-                <Icon className={cn("h-16 w-16 mb-4", colorClass)} />
-                <h3 className="text-xl font-semibold capitalize">Role: {appliedRole?.replace(/_/g, ' ')}</h3>
-                <p className={cn("font-bold text-lg", colorClass)}>{statusText}</p>
-                <p className="text-sm text-muted-foreground mt-2">{description}</p>
-            </CardContent>
-        </Card>
-    )
-  }
-
-  if (applicationStatus) {
-    return renderStatus();
-  }
-
   return (
     <Card className="mt-6 bg-card">
       <CardHeader className="p-4">
@@ -233,7 +181,7 @@ export function ApplyForRoleCard() {
         {selectedRole && (
           <CardFooter>
             <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? 'Submitting...' : `Apply for ${selectedRole.replace(/_/g, ' ')} Role`}
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : `Apply for ${selectedRole.replace(/_/g, ' ')} Role`}
             </Button>
           </CardFooter>
         )}
