@@ -20,12 +20,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { ApplyForRoleCard } from '../dashboard/profile/apply-for-role-card';
+import { useAuth } from '@/hooks/use-auth';
+import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 export function AccountSettingsTab() {
   const { toast } = useToast();
   const [isVitalsVisible, setIsVitalsVisible] = useState(true);
   const [isDiscoverable, setIsDiscoverable] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
+  const { user } = useAuth();
+  const firestore = useFirestore();
+  const auth = useFirebaseAuth();
+  const router = useRouter();
+
 
   const handleUpgrade = () => {
     // Mock premium upgrade
@@ -34,6 +44,40 @@ export function AccountSettingsTab() {
         title: "Congratulations!",
         description: "You've been upgraded to a Premium account."
     });
+  };
+
+  const handleAccountDeletion = async () => {
+    if (!user || !firestore || !auth) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not perform deletion. User session is invalid.",
+        });
+        return;
+    };
+
+    try {
+        const userRef = doc(firestore, "users", user.id);
+        await updateDoc(userRef, {
+            deletionScheduledAt: serverTimestamp()
+        });
+        
+        toast({
+            title: "Account Deletion Scheduled",
+            description: "Your account will be permanently deleted in 30 days. You have been logged out.",
+        });
+
+        await signOut(auth);
+        router.push('/'); // Force redirect to home page after logout.
+
+    } catch (error) {
+        console.error("Failed to schedule account deletion:", error);
+        toast({
+            variant: "destructive",
+            title: "Deletion Failed",
+            description: "An error occurred while scheduling your account for deletion.",
+        });
+    }
   };
 
   return (
@@ -128,12 +172,12 @@ export function AccountSettingsTab() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                                    This action cannot be undone. This will schedule your account for permanent deletion in 30 days. You will be logged out immediately.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => {}} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                <AlertDialogAction onClick={handleAccountDeletion} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>

@@ -38,6 +38,7 @@ export type User = {
   demographics?: UserDemographics;
   isPremium?: boolean;
   createdAt: FieldValue;
+  deletionScheduledAt?: FieldValue | null;
 };
 
 export type Patient = {

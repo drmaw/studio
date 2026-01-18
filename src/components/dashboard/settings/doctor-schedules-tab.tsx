@@ -23,7 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore } from "@/firebase";
-import { getDocs, collection, query, where } from "firebase/firestore";
+import { getDocs, collection, query, where, limit } from "firebase/firestore";
+import type { User } from "@/lib/definitions";
 
 const weekDays = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
 
@@ -74,35 +75,38 @@ export function DoctorSchedulesTab() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) return;
+    if (!user || !firestore) return;
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
     const usersRef = collection(firestore, 'users');
-    const q = query(usersRef, where('id', '==', values.healthId), where('roles', 'array-contains', 'doctor'), where('organizationId', '==', user.organizationId));
+    const q = query(usersRef, where('healthId', '==', values.healthId), where('roles', 'array-contains', 'doctor'), where('organizationId', '==', user.organizationId), limit(1));
 
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-        const doctor = querySnapshot.docs[0].data();
+        const doctorDoc = querySnapshot.docs[0];
+        const doctorData = doctorDoc.data() as User;
+        
         const newSchedule: DoctorSchedule = {
             id: `sched-${Date.now()}`,
-            doctorId: doctor.id,
-            doctorName: doctor.name,
-            ...values
-        }
+            doctorId: values.healthId,
+            doctorName: doctorData.name,
+            roomNumber: values.roomNumber,
+            fee: values.fee,
+            days: values.days,
+        };
+
         setSchedules(prev => [...prev, newSchedule]);
         toast({
             title: "Schedule Added",
-            description: `A new chamber has been scheduled for ${doctor.name}.`,
+            description: `A new chamber has been scheduled for ${doctorData.name}.`,
         });
-        form.reset();
-        form.setValue("days", []);
+        form.reset({ healthId: "", roomNumber: "", fee: 0, days: [] });
     } else {
       toast({
         variant: "destructive",
         title: "Doctor Not Found",
-        description: "No doctor found with that Health ID in your organization.",
+        description: "No doctor with that Health ID was found in your organization.",
       });
     }
 
