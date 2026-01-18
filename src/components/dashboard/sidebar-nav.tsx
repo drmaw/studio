@@ -39,7 +39,7 @@ export function SidebarNav() {
       href: "/dashboard",
       label: "My Dashboard",
       icon: LayoutDashboard,
-      roles: ['doctor', 'patient', 'hospital_owner', 'marketing_rep'],
+      roles: ['patient'], // Simplified: This is a patient-view, so it should be visible to all.
     },
     {
       href: "/dashboard/professional",
@@ -70,7 +70,7 @@ export function SidebarNav() {
       href: "/dashboard/settings",
       label: "Account Settings",
       icon: Settings,
-      roles: ['patient', 'doctor', 'marketing_rep'],
+      roles: ['patient', 'doctor', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'],
       condition: !isHospitalOwner
     },
     {
