@@ -37,7 +37,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow create: if isSignedIn();
       allow get: if isOwner(userId) || isRole('doctor') || isAdmin();
-      allow list: if isSignedIn();
+      allow list: if isRole('doctor') || isRole('hospital_owner') || isAdmin();
       allow update: if isOwner(userId) || isAdmin();
       allow write: if isAdmin();
     }
@@ -45,7 +45,7 @@ service cloud.firestore {
     // Patient Records
     match /patients/{patientId} {
       allow get: if isOwner(patientId) || (isRole('doctor') && isInOrg(resource.data.organizationId)) || isAdmin();
-      allow update: if (isRole('doctor') && isInOrg(resource.data.organizationId)) || isAdmin();
+      allow update: if isOwner(patientId) || (isRole('doctor') && isInOrg(resource.data.organizationId)) || isAdmin();
       allow create: if isOwner(patientId);
     }
     

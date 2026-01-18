@@ -41,7 +41,6 @@ export type User = {
 };
 
 export type Patient = {
-  id: string; // This is the Firebase Auth UID
   chronicConditions?: string[];
   allergies?: string[];
   redFlag?: {
