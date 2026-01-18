@@ -83,7 +83,7 @@ function ApplicationCard({ application, onApprove, onReject }: { application: Ro
             <CardHeader className="flex flex-row items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <Avatar className="h-12 w-12">
-                        <AvatarFallback>{application.userName.slice(0, 2)}</AvatarFallback>
+                        <AvatarFallback>{application.userName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                     </Avatar>
                     <div>
                         <CardTitle className="text-base">{application.userName}</CardTitle>
@@ -94,7 +94,7 @@ function ApplicationCard({ application, onApprove, onReject }: { application: Ro
             </CardHeader>
             <CardContent>
                 <div className="text-sm space-y-2">
-                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> <span>Applied: {format((application.createdAt as any).toDate(), 'dd-MM-yyyy, hh:mm a')}</span></div>
+                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> <span>Applied: {application.createdAt ? format((application.createdAt as any).toDate(), 'dd-MM-yyyy, hh:mm a') : ''}</span></div>
                     {application.requestedRole === 'hospital_owner' && (
                         <Card className="p-3 bg-background-soft">
                             <h4 className="font-semibold text-xs mb-2 flex items-center gap-2"><Building className="h-4 w-4" /> Proposed Organization</h4>
@@ -118,7 +118,7 @@ function RemovalRequestCard({ request, onApprove, onReject }: { request: RoleRem
             <CardHeader className="flex flex-row items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
                      <Avatar className="h-12 w-12">
-                        <AvatarFallback>{request.userName.slice(0, 2)}</AvatarFallback>
+                        <AvatarFallback>{request.userName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                     </Avatar>
                     <div>
                         <CardTitle className="text-base">{request.userName}</CardTitle>
@@ -129,7 +129,7 @@ function RemovalRequestCard({ request, onApprove, onReject }: { request: RoleRem
             </CardHeader>
             <CardContent>
                 <div className="text-sm space-y-2">
-                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> <span>Requested: {format((request.createdAt as any).toDate(), 'dd-MM-yyyy, hh:mm a')}</span></div>
+                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> <span>Requested: {request.createdAt ? format((request.createdAt as any).toDate(), 'dd-MM-yyyy, hh:mm a') : ''}</span></div>
                 </div>
                  <div className="mt-4 flex justify-end gap-2">
                     <Button variant="secondary" size="sm" onClick={() => onReject(request)}><X className="mr-2 h-4 w-4" /> Reject</Button>
