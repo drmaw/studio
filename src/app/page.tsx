@@ -57,7 +57,6 @@ export default function Home() {
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
                 <Link href="/" className="text-foreground font-semibold">Home</Link>
                 <Link href="#" className="text-foreground/80 hover:text-foreground">What We Treat</Link>
-                <Link href="#" className="text-foreground/80 hover:text-foreground">For Employers</Link>
                  <Link href="#" className="text-foreground/80 hover:text-foreground">About Us</Link>
             </nav>
             <div className="flex items-center gap-2">
@@ -132,12 +131,6 @@ export default function Home() {
             <p className="mt-4 md:mt-6 text-lg md:text-xl max-w-2xl mx-auto">
               One Medical is a membership-based primary care practice on a mission to make getting quality care more affordable, accessible, and enjoyable for all.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
-              <Button size="lg" variant="secondary" className="w-full sm:w-auto text-base font-semibold">
-                <Building className="mr-2"/>
-                Explore Employer Plans
-              </Button>
-            </div>
           </div>
         </section>
       </main>
