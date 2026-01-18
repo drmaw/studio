@@ -4,19 +4,24 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { doc, writeBatch } from 'firebase/firestore';
-import type { Role, User } from '@/lib/definitions';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import type { Role, RoleApplication } from '@/lib/definitions';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from '@/lib/utils';
 import { UserPlus, IdCard, File, Building, Hash, MapPin, Loader2 } from "lucide-react";
 
+
+const availableRoles = [
+    { value: 'doctor', label: 'Doctor'},
+    { value: 'nurse', label: 'Nurse' },
+    { value: 'hospital_owner', label: 'Hospital Owner' },
+];
 
 export function ApplyForRoleCard() {
   const { user } = useAuth();
@@ -26,6 +31,13 @@ export function ApplyForRoleCard() {
   const { toast } = useToast();
 
   const [orgDetails, setOrgDetails] = useState({ name: '', reg: '', tin: '', address: '' });
+
+  const applicationsQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, 'users', user.id, 'role_applications');
+  }, [user, firestore]);
+
+  const { data: applications, isLoading: applicationsLoading } = useCollection<RoleApplication>(applicationsQuery);
 
   const handleApply = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -38,45 +50,42 @@ export function ApplyForRoleCard() {
       return;
     }
 
+    const hasRole = user.roles.includes(selectedRole as Role);
+    const pendingApp = applications?.find(app => app.requestedRole === selectedRole && app.status === 'pending');
+
+    if (hasRole || pendingApp) {
+        toast({ title: "Not so fast!", description: "You either have this role or an application is already pending." });
+        return;
+    }
+
     setIsSubmitting(true);
     
+    const applicationDetails: any = {};
+    if (selectedRole === 'hospital_owner') {
+        applicationDetails.organization = orgDetails;
+    }
+    // In a real app, you would handle file uploads for BMDC certs, etc.
+    // For now, we'll just submit the form data.
+
     try {
-        const batch = writeBatch(firestore);
-        const userRef = doc(firestore, "users", user.id);
-        const patientRef = doc(firestore, "patients", user.id);
+        const applicationsRef = collection(firestore, 'users', user.id, 'role_applications');
+        
+        const newApplication: Omit<RoleApplication, 'id'> = {
+            userId: user.id,
+            userName: user.name,
+            requestedRole: selectedRole as Role,
+            status: 'pending',
+            details: applicationDetails,
+            createdAt: serverTimestamp(),
+        };
 
-        if (user.roles.includes(selectedRole as Role)) {
-            toast({
-                title: "Already Applied",
-                description: `You already have the ${selectedRole.replace(/_/g, ' ')} role.`,
-            });
-            setIsSubmitting(false);
-            return;
-        }
-
-        const updatedRoles = Array.from(new Set([...user.roles, selectedRole as Role]));
-        
-        let updateData: Partial<User> = { roles: updatedRoles };
-        const demoOrganizationId = 'org-1';
-        
-        if (selectedRole === 'hospital_owner') {
-             const organizationId = `org-${Date.now()}`;
-             updateData.organizationId = organizationId;
-             batch.update(patientRef, { organizationId: organizationId });
-        } 
-        else if (selectedRole === 'doctor' || selectedRole === 'nurse') {
-            updateData.organizationId = demoOrganizationId;
-            batch.update(patientRef, { organizationId: demoOrganizationId });
-        }
-        
-        batch.update(userRef, updateData);
-        
-        await batch.commit();
+        await addDoc(applicationsRef, newApplication);
 
         toast({
-            title: "Application Approved!",
-            description: `You now have the ${selectedRole.replace(/_/g, ' ')} role. Please refresh to see changes.`,
+            title: "Application Submitted",
+            description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is now pending review.`,
         });
+
     } catch (error) {
         console.error("Application submission failed:", error);
         toast({ variant: "destructive", title: "Submission Failed", description: "Could not submit your application." });
@@ -143,6 +152,19 @@ export function ApplyForRoleCard() {
     }
   }
 
+  if (!user) return null;
+
+  const isApplyDisabled = isSubmitting || !selectedRole || user.roles.includes(selectedRole as Role) || !!applications?.find(app => app.requestedRole === selectedRole && app.status === 'pending');
+  
+  let buttonText = `Apply for ${selectedRole ? selectedRole.replace(/_/g, ' ') : ''} Role`;
+  if (selectedRole && user.roles.includes(selectedRole as Role)) {
+      buttonText = "You already have this role";
+  } else if (selectedRole && applications?.find(app => app.requestedRole === selectedRole && app.status === 'pending')) {
+      buttonText = "Application is Pending";
+  } else if (!selectedRole) {
+      buttonText = "Select a Role to Apply";
+  }
+
   return (
     <Card className="mt-6 bg-card">
       <CardHeader className="p-4">
@@ -151,7 +173,7 @@ export function ApplyForRoleCard() {
           Apply for an Additional Role
         </CardTitle>
         <CardDescription className="text-sm pt-1">
-          Upgrade your account to a medical professional or hospital owner.
+          Upgrade your account to a medical professional or hospital owner. Your application will be reviewed by an administrator.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleApply}>
@@ -163,16 +185,30 @@ export function ApplyForRoleCard() {
                 <SelectValue placeholder="Select a role..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="doctor">Doctor</SelectItem>
-                <SelectItem value="nurse">Nurse</SelectItem>
-                <SelectItem value="hospital_owner">Hospital Owner</SelectItem>
+                {availableRoles.map(roleInfo => {
+                    const hasRole = user.roles.includes(roleInfo.value as Role);
+                    const pendingApp = applications?.find(app => app.requestedRole === roleInfo.value && app.status === 'pending');
+                    const isDisabled = hasRole || !!pendingApp;
+                    let statusText = '';
+                    if (hasRole) statusText = '(Current Role)';
+                    else if (pendingApp) statusText = '(Pending Approval)';
+
+                    return (
+                        <SelectItem key={roleInfo.value} value={roleInfo.value} disabled={isDisabled}>
+                          <div className="flex justify-between w-full items-center">
+                            <span>{roleInfo.label}</span>
+                            {statusText && <span className="text-muted-foreground text-xs ml-2">{statusText}</span>}
+                          </div>
+                        </SelectItem>
+                    );
+                })}
               </SelectContent>
             </Select>
           </div>
 
           {selectedRole && (
             <div className="space-y-4 pt-4 border-t">
-              <h3 className="font-medium capitalize">{selectedRole.replace(/_/g, ' ')} Application</h3>
+              <h3 className="font-medium capitalize">{selectedRole.replace(/_/g, ' ')} Application Details</h3>
               {renderRoleForm()}
             </div>
           )}
@@ -180,8 +216,8 @@ export function ApplyForRoleCard() {
         </CardContent>
         {selectedRole && (
           <CardFooter>
-            <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : `Apply for ${selectedRole.replace(/_/g, ' ')} Role`}
+            <Button type="submit" disabled={isApplyDisabled} className="w-full">
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : buttonText}
             </Button>
           </CardFooter>
         )}

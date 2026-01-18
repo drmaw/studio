@@ -83,7 +83,7 @@ export function RegisterForm() {
           healthId: healthId,
           name: isDevUser ? 'Dev' : values.name,
           email: firebaseUser.email!,
-          roles: isDevUser ? ['doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'] : ['patient'],
+          roles: isDevUser ? ['admin', 'doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'] : ['patient'],
           organizationId: orgId,
           avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
           createdAt: serverTimestamp(),

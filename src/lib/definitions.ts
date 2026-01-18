@@ -1,6 +1,6 @@
 import { FieldValue } from "firebase/firestore";
 
-export type Role = 'doctor' | 'patient' | 'marketing_rep' | 'nurse' | 'hospital_owner' | 'lab_technician' | 'pathologist' | 'pharmacist' | 'manager' | 'assistant_manager' | 'front_desk';
+export type Role = 'admin' | 'doctor' | 'patient' | 'marketing_rep' | 'nurse' | 'hospital_owner' | 'lab_technician' | 'pathologist' | 'pharmacist' | 'manager' | 'assistant_manager' | 'front_desk';
 
 export type EmergencyContact = {
     id: string;
@@ -110,4 +110,16 @@ export type PrivacyLogEntry = {
     organizationId: string;
     action: 'search' | 'view_record' | 'add_record';
     timestamp: FieldValue; // ISO 8601 string
+};
+
+export type RoleApplication = {
+  id: string;
+  userId: string;
+  userName: string;
+  requestedRole: Role;
+  status: 'pending' | 'approved' | 'rejected';
+  details: any; // Can be doctor details, hospital details, etc.
+  reason?: string; // Optional reason for rejection
+  createdAt: FieldValue;
+  reviewedAt?: FieldValue;
 };

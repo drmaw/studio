@@ -100,6 +100,21 @@
             "timestamp": { "type": "object" }
         },
         "required": ["actorId", "actorName", "patientId", "organizationId", "action", "timestamp"]
+    },
+    "RoleApplication": {
+      "title": "RoleApplication",
+      "description": "Represents a user's application for an additional role.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "requestedRole": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "details": { "type": "object" },
+        "createdAt": { "type": "object" },
+        "reviewedAt": { "type": "object" }
+      },
+      "required": ["userId", "userName", "requestedRole", "status", "createdAt"]
     }
   },
   "auth": {
@@ -110,6 +125,10 @@
       {
         "path": "/users/{userId}",
         "definition": { "schema": { "$ref": "#/entities/User" }, "description": "Top-level collection for all user profiles, where {userId} is the Firebase Auth UID." }
+      },
+      {
+        "path": "/users/{userId}/role_applications/{applicationId}",
+        "definition": { "schema": { "$ref": "#/entities/RoleApplication" }, "description": "Subcollection for a user's role applications." }
       },
       {
         "path": "/patients/{patientId}",
