@@ -61,6 +61,17 @@
       },
       "required": ["name", "ownerId", "status", "createdAt"]
     },
+    "DoctorProfile": {
+      "title": "DoctorProfile",
+      "description": "A public-facing profile for a doctor, used for discovery.",
+      "type": "object",
+      "properties": {
+        "healthId": { "type": "string" },
+        "name": { "type": "string" },
+        "avatarUrl": { "type": "string", "format": "uri" }
+      },
+      "required": ["healthId", "name", "avatarUrl"]
+    },
     "MedicalRecord": {
       "title": "MedicalRecord",
       "description": "A single medical record for a patient.",
@@ -299,6 +310,10 @@
       {
         "path": "/appointments/{appointmentId}",
         "definition": { "schema": { "$ref": "#/entities/Appointment" }, "description": "Top-level collection for all appointments." }
+      },
+      {
+        "path": "/doctors/{doctorId}",
+        "definition": { "schema": { "$ref": "#/entities/DoctorProfile" }, "description": "Public profiles for all doctors, for discovery." }
       }
     ]
   }

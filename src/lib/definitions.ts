@@ -59,6 +59,13 @@ export type Organization = {
   createdAt: FieldValue;
 };
 
+export type DoctorProfile = {
+  id: string; // This is the Firebase Auth UID
+  healthId: string;
+  name: string;
+  avatarUrl: string;
+};
+
 export type MedicalRecord = {
   id: string;
   patientId: string;

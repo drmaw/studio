@@ -9,11 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Search, Stethoscope, Hospital, CalendarDays, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { type User, type DoctorSchedule } from '@/lib/definitions';
+import { type DoctorProfile, type DoctorSchedule } from '@/lib/definitions';
 import { BookAppointmentCalendar } from '@/components/book-appointment-calendar';
 import Link from 'next/link';
 
-function DoctorCard({ doctor, onSelect }: { doctor: User, onSelect: (doctor: User) => void }) {
+function DoctorCard({ doctor, onSelect }: { doctor: DoctorProfile, onSelect: (doctor: DoctorProfile) => void }) {
     const initials = doctor.name.split(' ').map(n => n[0]).join('');
     return (
         <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => onSelect(doctor)}>
@@ -31,7 +31,7 @@ function DoctorCard({ doctor, onSelect }: { doctor: User, onSelect: (doctor: Use
     );
 }
 
-function DoctorDetail({ doctor, schedules }: { doctor: User, schedules: DoctorSchedule[] | null }) {
+function DoctorDetail({ doctor, schedules, schedulesLoading }: { doctor: DoctorProfile, schedules: DoctorSchedule[] | null, schedulesLoading: boolean }) {
     return (
         <Card className="mt-6">
             <CardHeader>
@@ -47,7 +47,11 @@ function DoctorDetail({ doctor, schedules }: { doctor: User, schedules: DoctorSc
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
-                {schedules && schedules.length > 0 ? (
+                {schedulesLoading ? (
+                     <div className="flex justify-center items-center p-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+                     </div>
+                ) : schedules && schedules.length > 0 ? (
                     schedules.map(schedule => (
                         <div key={schedule.id} className="p-4 border rounded-lg bg-background-soft">
                             <h3 className="font-semibold flex items-center gap-2"><Hospital className="h-4 w-4" /> {schedule.organizationName}</h3>
@@ -72,19 +76,19 @@ function DoctorDetail({ doctor, schedules }: { doctor: User, schedules: DoctorSc
 export default function FindDoctorPage() {
     const firestore = useFirestore();
     const [searchTerm, setSearchTerm] = useState('');
-    const [searchResults, setSearchResults] = useState<User[]>([]);
-    const [selectedDoctor, setSelectedDoctor] = useState<User | null>(null);
-    const [allDoctors, setAllDoctors] = useState<User[]>([]);
+    const [searchResults, setSearchResults] = useState<DoctorProfile[]>([]);
+    const [selectedDoctor, setSelectedDoctor] = useState<DoctorProfile | null>(null);
+    const [allDoctors, setAllDoctors] = useState<DoctorProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (!firestore) return;
         const fetchDoctors = async () => {
             setIsLoading(true);
-            const usersRef = collection(firestore, 'users');
-            const q = query(usersRef, where('roles', 'array-contains', 'doctor'));
+            const doctorsRef = collection(firestore, 'doctors');
+            const q = query(doctorsRef);
             const querySnapshot = await getDocs(q);
-            const doctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+            const doctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DoctorProfile));
             setAllDoctors(doctors);
             setIsLoading(false);
         };
@@ -145,7 +149,7 @@ export default function FindDoctorPage() {
                         {isLoading ? (
                             <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
                         ) : selectedDoctor ? (
-                            <DoctorDetail doctor={selectedDoctor} schedules={schedules} />
+                            <DoctorDetail doctor={selectedDoctor} schedules={schedules} schedulesLoading={schedulesLoading} />
                         ) : searchResults.length > 0 ? (
                             <div className="space-y-4">
                                 {searchResults.map(doctor => (

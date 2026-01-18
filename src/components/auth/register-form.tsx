@@ -22,7 +22,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
-import type { User, Patient } from "@/lib/definitions";
+import type { User, Patient, DoctorProfile } from "@/lib/definitions";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -95,6 +95,16 @@ export function RegisterForm() {
               mobileNumber: values.mobileNumber,
           }
       };
+
+      if (isDevUser) {
+        const doctorProfileRef = doc(firestore, 'doctors', firebaseUser.uid);
+        const newDoctorProfile: Omit<DoctorProfile, 'id'> = {
+            healthId: healthId,
+            name: newUser.name,
+            avatarUrl: newUser.avatarUrl,
+        };
+        batch.set(doctorProfileRef, newDoctorProfile);
+      }
 
       const newPatient: Omit<Patient, 'id'> = {
           createdAt: serverTimestamp(),
