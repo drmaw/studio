@@ -119,7 +119,7 @@ export function BookAppointmentCalendar({ schedule }: { schedule: DoctorSchedule
         // Notify the doctor
         await createNotification(
             firestore,
-            schedule.doctorId,
+            schedule.doctorAuthId,
             'New Appointment Request',
             `${user.name} has requested an appointment on ${format(date, 'dd-MM-yyyy')} at ${selectedTime}.`,
             `/dashboard/appointments/${schedule.organizationId}/${schedule.id}`

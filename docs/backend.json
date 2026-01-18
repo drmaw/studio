@@ -164,6 +164,7 @@
       "type": "object",
       "properties": {
         "doctorId": { "type": "string" },
+        "doctorAuthId": { "type": "string" },
         "doctorName": { "type": "string" },
         "organizationId": { "type": "string" },
         "organizationName": { "type": "string" },
@@ -174,7 +175,7 @@
         "endTime": { "type": "string" },
         "createdAt": { "type": "object" }
       },
-      "required": ["doctorId", "doctorName", "organizationId", "organizationName", "roomNumber", "fee", "days", "startTime", "endTime", "createdAt"]
+      "required": ["doctorId", "doctorAuthId", "doctorName", "organizationId", "organizationName", "roomNumber", "fee", "days", "startTime", "endTime", "createdAt"]
     },
     "Appointment": {
       "title": "Appointment",

@@ -136,7 +136,8 @@ export type Day = 'Sat' | 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri';
 
 export type DoctorSchedule = {
   id: string;
-  doctorId: string;
+  doctorId: string; // This is the public Health ID
+  doctorAuthId: string; // This is the Firebase Auth UID
   doctorName: string;
   organizationId: string;
   organizationName: string;

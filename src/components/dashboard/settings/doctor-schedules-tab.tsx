@@ -99,6 +99,7 @@ export function DoctorSchedulesTab() {
 
         const newSchedule: Omit<DoctorSchedule, 'id'> = {
             doctorId: doctorData.healthId,
+            doctorAuthId: doctorDoc.id,
             doctorName: doctorData.name,
             organizationId: hospitalOwner.organizationId,
             organizationName: organization.name,
