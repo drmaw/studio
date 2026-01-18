@@ -20,7 +20,7 @@ import { useState, useEffect } from "react"
 import { Loader2, Pencil } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useFirestore } from "@/firebase"
-import { doc, getDoc } from "firebase/firestore"
+import { doc, getDocs, collection, query, where, limit } from "firebase/firestore"
 
 
 export function EditContactDialog({ contact, onSave }: { contact: EmergencyContact, onSave: (contact: EmergencyContact) => void }) {
@@ -60,19 +60,25 @@ export function EditContactDialog({ contact, onSave }: { contact: EmergencyConta
             toast({ variant: 'destructive', title: 'Incomplete Information', description: 'Health ID and relation are required.'});
             return;
         }
-        const userDocRef = doc(firestore, 'users', healthId);
-        const contactUserDoc = await getDoc(userDocRef);
-        if (!contactUserDoc.exists()) {
+        if (!firestore) {
+            toast({ variant: "destructive", title: "Database Error", description: "Cannot verify Health ID right now." });
+            return;
+        }
+        const usersRef = collection(firestore, 'users');
+        const q = query(usersRef, where('healthId', '==', healthId), limit(1));
+        const contactUserSnapshot = await getDocs(q);
+
+        if (contactUserSnapshot.empty) {
             toast({ variant: "destructive", title: "User not found", description: "No user exists with that Health ID."});
             return;
         }
-        const contactUser = contactUserDoc.data() as User;
+        const contactUser = contactUserSnapshot.docs[0].data() as User;
         updatedContact = { ...updatedContact, name: contactUser.name, healthId, relation, contactNumber: undefined };
     }
 
 
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     onSave(updatedContact);
     

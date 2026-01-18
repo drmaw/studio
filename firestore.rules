@@ -79,8 +79,8 @@ service cloud.firestore {
     match /patients/{patientId}/privacy_log/{logId} {
         // ONLY the patient can read their log.
         allow get, list: if isOwner(patientId);
-        // A doctor can create a log entry (when searching/viewing).
-        allow create: if isRole('doctor');
+        // A doctor can create a log entry (when searching/viewing), but only for patients in their org.
+        allow create: if isRole('doctor') && isInOrg(getPatientOrgId(patientId));
     }
     
     // Organization Data
