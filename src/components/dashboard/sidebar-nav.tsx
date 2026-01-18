@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, CalendarCheck, DollarSign, Shield } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, CalendarCheck, DollarSign, Shield, BookOpenCheck } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Role } from "@/lib/definitions";
@@ -53,6 +53,18 @@ export function SidebarNav() {
       icon: FileHeart,
       roles: ['patient'],
     },
+    {
+        href: "/dashboard/my-appointments",
+        label: "My Appointments",
+        icon: CalendarCheck,
+        roles: ['patient'],
+    },
+    {
+        href: "/dashboard/book-appointment",
+        label: "Book Appointment",
+        icon: BookOpenCheck,
+        roles: ['patient'],
+    },
      {
         href: "/dashboard/privacy-log",
         label: "Privacy Log",
@@ -64,12 +76,6 @@ export function SidebarNav() {
       label: "Account Settings",
       icon: Settings,
       roles: ['patient'],
-    },
-    {
-        href: "/dashboard/my-appointments",
-        label: "My Appointments",
-        icon: CalendarCheck,
-        roles: ['patient'],
     },
     {
       href: "/dashboard/admin",
@@ -100,7 +106,7 @@ export function SidebarNav() {
       {availableMenuItems.map((item) => (
         <SidebarMenuItem key={item.label}>
           <Link href={item.href} passHref>
-            <SidebarMenuButton asChild isActive={pathname === item.href} onClick={handleLinkClick}>
+            <SidebarMenuButton asChild isActive={pathname.startsWith(item.href) && item.href !== '/dashboard' || pathname === item.href} onClick={handleLinkClick}>
               <span>
                 <item.icon />
                 <span>{item.label}</span>

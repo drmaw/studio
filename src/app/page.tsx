@@ -1,9 +1,12 @@
 
+'use client'
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Stethoscope, HeartPulse, Brain, Zap, Baby, ShieldCheck, Search, Building } from "lucide-react";
 import Link from "next/link";
 import Image from 'next/image';
+import { useState, useEffect } from "react";
 
 const featureCards = [
   {
@@ -46,6 +49,13 @@ const heroImage = {
 
 
 export default function Home() {
+  const [year, setYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    // This ensures the year is only set on the client, preventing hydration mismatch.
+    setYear(new Date().getFullYear());
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm">
@@ -136,7 +146,7 @@ export default function Home() {
 
       <footer className="py-8 bg-background border-t">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Digi Health. All rights reserved.</p>
+          <p>&copy; {year} Digi Health. All rights reserved.</p>
           <p className="mt-1">Compliant, Secure, and Built for Bangladesh.</p>
         </div>
       </footer>

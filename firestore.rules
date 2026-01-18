@@ -37,9 +37,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow create: if isSignedIn();
       allow get: if isOwner(userId) || isRole('doctor') || isAdmin();
-      allow list: if isRole('doctor') || isRole('hospital_owner') || isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
-      allow write: if isAdmin();
+      // Admins are the only ones who should be listing all users.
+      allow list: if isAdmin();
+      // Allow user to update their own profile, or admin, or a hospital owner to update a user in their org.
+      allow update: if isOwner(userId) || isAdmin() || (isRole('hospital_owner') && getUserData().organizationId == getUserOrgId(userId));
+      allow write: if isAdmin(); // Broad write for admin
     }
 
     // Patient Records
@@ -73,18 +75,22 @@ service cloud.firestore {
     
     // Organization Data
     match /organizations/{orgId} {
-        allow read, write: if isAdmin();
+        // Allow any signed-in user to read orgs (for appointment booking)
+        allow read: if isSignedIn();
+        // Allow owners to create their own individual org, and admins to write anything
+        allow write: if (request.method == 'create' && isOwner(request.resource.data.ownerId)) || isAdmin();
     }
     
     match /organizations/{orgId}/{collection}/{docId} {
         allow read, write: if (isInOrg(orgId) && (isRole('hospital_owner') || isRole('manager'))) || isAdmin();
+        // Allow any signed-in user to see schedules (for appointment booking)
         allow get, list: if collection == 'schedules' && isSignedIn();
     }
     
     // Appointments
     match /appointments/{appointmentId} {
         allow create: if isOwner(request.resource.data.patientId);
-        allow read, update: if isOwner(resource.data.patientId) || (isRole('doctor') && request.auth.uid == resource.data.doctorId) || isAdmin();
+        allow read, update: if isOwner(resource.data.patientId) || (isRole('doctor') && request.auth.uid == resource.data.doctorAuthId) || isAdmin();
         allow list: if isSignedIn();
     }
     

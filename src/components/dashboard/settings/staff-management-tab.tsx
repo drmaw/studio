@@ -13,18 +13,29 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo } from "react";
-import { Loader2, UserPlus, Users } from "lucide-react";
+import { Loader2, UserPlus, Users, UserX, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { User, Role } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, getDocs, doc, limit, writeBatch } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, limit, writeBatch, updateDoc } from "firebase/firestore";
 import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
 
 const formSchema = z.object({
@@ -75,9 +86,19 @@ export function StaffManagementTab() {
           const userDoc = userSnapshot.docs[0];
           const userToAdd = userDoc.data() as User;
           
+          if (userToAdd.organizationId !== hospitalOwner.organizationId && !userToAdd.organizationId.startsWith('org-ind-')) {
+            toast({
+                variant: "destructive",
+                title: "User Belongs to Another Organization",
+                description: `${userToAdd.name} is already a member of another hospital. They must be removed from their current organization before they can be hired.`,
+                duration: 6000,
+            });
+            setIsLoading(false);
+            return;
+          }
+
           const batch = writeBatch(firestore);
           
-          // Update the user document
           const userDocRef = doc(firestore, 'users', userDoc.id);
           const updatedRoles = Array.from(new Set([...userToAdd.roles, values.role]));
           batch.update(userDocRef, { 
@@ -110,6 +131,41 @@ export function StaffManagementTab() {
 
     setIsLoading(false);
   }
+
+  const handleRemoveStaff = async (staffMember: User) => {
+    if (!hospitalOwner || !firestore) return;
+
+    if (staffMember.id === hospitalOwner.id) {
+        toast({ variant: 'destructive', title: 'Action Not Allowed', description: 'The hospital owner cannot be removed from their own organization.'});
+        return;
+    }
+
+    try {
+        const userDocRef = doc(firestore, 'users', staffMember.id);
+        
+        // Revert user to a standard patient role and their personal organization
+        const newRoles = ['patient'];
+        const personalOrgId = `org-ind-${staffMember.id}`;
+
+        await updateDoc(userDocRef, {
+            roles: newRoles,
+            organizationId: personalOrgId,
+        });
+
+        toast({
+            title: "Staff Removed",
+            description: `${staffMember.name} has been removed from your organization.`,
+        });
+
+    } catch (e) {
+        console.error("Error removing staff:", e);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "An error occurred while removing the staff member.",
+        });
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -177,12 +233,13 @@ export function StaffManagementTab() {
                             <TableHead>Name</TableHead>
                             <TableHead>Health ID</TableHead>
                             <TableHead>Roles</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {staffLoading && (
                             <TableRow>
-                                <TableCell colSpan={3} className="text-center">
+                                <TableCell colSpan={4} className="text-center">
                                     <Loader2 className="mx-auto h-6 w-6 animate-spin"/>
                                 </TableCell>
                             </TableRow>
@@ -199,6 +256,31 @@ export function StaffManagementTab() {
                                             </Badge>
                                         ))}
                                     </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {member.id !== hospitalOwner?.id && (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                                    <UserX className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Remove {member.name}?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will remove all professional roles from this user and un-assign them from your organization. They will revert to a standard patient account. This action cannot be undone.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleRemoveStaff(member)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                        Confirm Removal
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}

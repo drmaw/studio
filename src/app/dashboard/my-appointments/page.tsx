@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FormattedDate } from '@/components/shared/formatted-date';
 import { createNotification } from '@/lib/notifications';
+import { format } from 'date-fns';
 
 export default function MyAppointmentsPage() {
     const { user, loading: userLoading } = useAuth();
@@ -57,11 +58,12 @@ export default function MyAppointmentsPage() {
         const scheduleSnap = await getDoc(scheduleRef);
         if (scheduleSnap.exists()) {
             const schedule = scheduleSnap.data() as DoctorSchedule;
+            const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
             await createNotification(
                 firestore,
                 schedule.doctorAuthId,
                 'Appointment Cancelled',
-                `${user.name} has cancelled their appointment for ${appointment.appointmentDate}.`,
+                `${user.name} has cancelled their appointment for ${formattedDate}.`,
                 `/dashboard/appointments/${appointment.organizationId}/${appointment.scheduleId}`
             );
         }
@@ -140,7 +142,7 @@ export default function MyAppointmentsPage() {
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow><TableCell colSpan={5} className="text-center h-24">You have no appointments.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={5} className="text-center h-24">You have no appointments. Click 'Book Appointment' in the sidebar to create one.</TableCell></TableRow>
                             )}
                         </TableBody>
                     </Table>

@@ -22,7 +22,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
-import type { User, Patient } from "@/lib/definitions";
+import type { User, Patient, Organization } from "@/lib/definitions";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -77,14 +77,15 @@ export function RegisterForm() {
       const patientDocRef = doc(firestore, "patients", firebaseUser.uid);
       
       const healthId = generateHealthId();
-      const orgId = `org-ind-${firebaseUser.uid}`;
+      const orgId = `org-ind-${firebaseUser.uid}`; // Personal organization ID
+      const orgDocRef = doc(firestore, "organizations", orgId);
       
       const newUser: Omit<User, 'id'> = {
           healthId: healthId,
           name: values.name,
           email: firebaseUser.email!,
           roles: ['patient'],
-          organizationId: orgId,
+          organizationId: orgId, // Assign personal org ID
           avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
           createdAt: serverTimestamp(),
           status: 'active',
@@ -105,8 +106,18 @@ export function RegisterForm() {
           allergies: [],
       };
       
+      // Create a minimal organization for the individual user to prevent orphaned data
+      const newOrganization: Omit<Organization, 'id'> = {
+          name: `${values.name}'s Personal Records`,
+          ownerId: firebaseUser.uid,
+          status: 'active',
+          createdAt: serverTimestamp(),
+      };
+      
       batch.set(userDocRef, newUser);
       batch.set(patientDocRef, newPatient);
+      batch.set(orgDocRef, newOrganization); // Add organization to the batch
+
       await batch.commit();
 
 
@@ -119,6 +130,7 @@ export function RegisterForm() {
 
     } catch (error: any) {
       console.error("Registration failed:", error);
+      // Remove hardcoded admin backdoor check
       toast({
         variant: "destructive",
         title: "Registration Failed",

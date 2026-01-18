@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Cake, User as UserIcon, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Plus, X, File, Trash2 } from "lucide-react";
+import { Cake, User as UserIcon, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Plus, X, File, Trash2, CalendarIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +21,9 @@ import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, writeBatch } from "firebase/firestore";
 import { ApplyForRoleCard } from "@/components/dashboard/profile/apply-for-role-card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 const ProfileInfoRow = ({ icon: Icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | null, children?: React.ReactNode }) => {
   if (!value && !children) return null;
@@ -89,7 +92,7 @@ export default function ProfilePage() {
 
         if (user.demographics?.dob) {
             try {
-                const birthDate = parse(user.demographics.dob, "dd-MM-yyyy", new Date());
+                const birthDate = parse(user.demographics.dob, "yyyy-MM-dd", new Date());
                 if(isValid(birthDate)) {
                     const calculatedAge = differenceInYears(new Date(), birthDate);
                     setAge(calculatedAge);
@@ -113,6 +116,12 @@ export default function ProfilePage() {
 
   const handleSelectChange = (name: keyof ProfileFormData) => (value: string) => {
     setFormData(prev => ({...prev, [name]: value }));
+  }
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+        setFormData(prev => ({...prev, dob: format(date, 'yyyy-MM-dd')}))
+    }
   }
 
   const handleAddAllergy = () => {
@@ -222,7 +231,7 @@ export default function ProfilePage() {
     );
   }
   
-  const dobDate = formData.dob ? parse(formData.dob, "dd-MM-yyyy", new Date()) : null;
+  const dobDate = formData.dob ? parse(formData.dob, "yyyy-MM-dd", new Date()) : null;
   const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd-MM-yyyy') : 'N/A';
 
   return (
@@ -254,7 +263,31 @@ export default function ProfilePage() {
                                 <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <ProfileEditRow label="Mobile Number" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} />
-                                    <ProfileEditRow label="Date of Birth (DD-MM-YYYY)" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="DD-MM-YYYY" />
+                                    <div className="space-y-1">
+                                        <Label className="text-sm text-muted-foreground">Date of Birth</Label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant={"outline"}
+                                                    className={cn("w-full justify-start text-left font-normal", !formData.dob && "text-muted-foreground")}
+                                                >
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    {dobDate && isValid(dobDate) ? format(dobDate, "PPP") : <span>Pick a date</span>}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={dobDate || undefined}
+                                                    onSelect={handleDateChange}
+                                                    captionLayout="dropdown-buttons"
+                                                    fromYear={1920}
+                                                    toYear={new Date().getFullYear()}
+                                                    initialFocus
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
                                     <div className="space-y-1">
                                         <Label className="text-sm text-muted-foreground">Gender</Label>
                                         <Select value={formData.gender} onValueChange={handleSelectChange('gender')}>
