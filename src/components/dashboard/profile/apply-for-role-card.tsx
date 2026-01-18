@@ -51,8 +51,8 @@ export function ApplyForRoleCard() {
         let updateData: Partial<User> = { roles: updatedRoles };
         const demoOrganizationId = 'org-1'; // Default demo hospital
         
-        // For organization owners, we create a new mock organization ID
-        if (selectedRole === 'organization_owner') {
+        // For hospital owners, we create a new mock organization ID
+        if (selectedRole === 'hospital_owner') {
              const organizationId = `org-${Date.now()}`;
              updateData.organizationId = organizationId;
              batch.update(patientRef, { organizationId: organizationId });
@@ -124,7 +124,7 @@ export function ApplyForRoleCard() {
             </div>
           </div>
         );
-      case 'organization_owner':
+      case 'hospital_owner':
         return (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -210,7 +210,7 @@ export function ApplyForRoleCard() {
           Apply for an Additional Role
         </CardTitle>
         <CardDescription className="text-sm pt-1">
-          Upgrade your account to a medical professional or organization owner.
+          Upgrade your account to a medical professional or hospital owner.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleApply}>
@@ -224,7 +224,7 @@ export function ApplyForRoleCard() {
               <SelectContent>
                 <SelectItem value="doctor">Doctor</SelectItem>
                 <SelectItem value="nurse">Nurse</SelectItem>
-                <SelectItem value="organization_owner">Organization Owner</SelectItem>
+                <SelectItem value="hospital_owner">Hospital Owner</SelectItem>
               </SelectContent>
             </Select>
           </div>
