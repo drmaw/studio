@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import type { User } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, getDocs, doc, limit, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, limit, updateDoc, writeBatch } from "firebase/firestore";
 
 const formSchema = z.object({
   healthId: z.string().min(1, { message: "Health ID is required." }),
@@ -62,22 +62,31 @@ export function StaffManagementTab() {
 
     try {
       const usersRef = collection(firestore, 'users');
-      // We search by healthId, but Firestore document ID is the UID.
-      // So first find the user by healthId
+      // Find the user by their unique Health ID
       const userSearchQuery = query(usersRef, where('healthId', '==', values.healthId), limit(1));
       const userSnapshot = await getDocs(userSearchQuery);
 
       if (!userSnapshot.empty) {
           const userDoc = userSnapshot.docs[0];
           const userToAdd = userDoc.data() as User;
-          const userDocRef = doc(firestore, 'users', userDoc.id);
           
+          const batch = writeBatch(firestore);
+          
+          // Update the user document
+          const userDocRef = doc(firestore, 'users', userDoc.id);
           const updatedRoles = Array.from(new Set([...userToAdd.roles, values.role]));
-
-          await updateDoc(userDocRef, { 
+          batch.update(userDocRef, { 
               organizationId: hospitalOwner.organizationId,
               roles: updatedRoles
           });
+
+          // Also update their corresponding patient document
+          const patientDocRef = doc(firestore, 'patients', userDoc.id);
+          batch.update(patientDocRef, {
+              organizationId: hospitalOwner.organizationId
+          });
+
+          await batch.commit();
 
           toast({
               title: "Staff Added",
@@ -92,6 +101,7 @@ export function StaffManagementTab() {
         });
       }
     } catch(e) {
+         console.error("Error adding staff:", e);
          toast({
             variant: "destructive",
             title: "Error",
