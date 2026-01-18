@@ -22,6 +22,7 @@ import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, getDocs, collection, query, where, limit, writeBatch } from "firebase/firestore";
+import { ApplyForRoleCard } from "@/components/dashboard/profile/apply-for-role-card";
 
 const ProfileInfoRow = ({ icon: Icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | null, children?: React.ReactNode }) => {
   if (!value && !children) return null;
@@ -479,6 +480,7 @@ export default function ProfilePage() {
                         </CardFooter>
                     )}
                 </Card>
+                <ApplyForRoleCard />
             </div>
         </div>
     </div>

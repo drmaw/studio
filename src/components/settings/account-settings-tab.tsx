@@ -19,7 +19,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { ApplyForRoleCard } from '../dashboard/profile/apply-for-role-card';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -152,8 +151,6 @@ export function AccountSettingsTab() {
                 )}
             </CardContent>
         </Card>
-        
-        <ApplyForRoleCard />
         
         <Card className="border-destructive/50">
             <CardHeader>
