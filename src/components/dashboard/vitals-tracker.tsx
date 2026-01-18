@@ -21,6 +21,7 @@ type VitalsTrackerProps = {
   vitalsData: Vitals[];
   currentUserRole: Role;
   patientId: string;
+  organizationId: string;
 };
 
 const chartConfig = {
@@ -53,9 +54,33 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Omit<Vitals
   const [weight, setWeight] = useState('');
   const [rbs, setRbs] = useState('');
   const [sCreatinine, setSCreatinine] = useState('');
+  const [activeInputTab, setActiveInputTab] = useState('rbs');
+
+  const addVital = (vital: any) => {
+    onAdd(vital);
+    // Reset fields based on current tab
+    switch(activeInputTab) {
+      case 'bp':
+        setBpSystolic('');
+        setBpDiastolic('');
+        break;
+      case 'pulse':
+        setPulse('');
+        break;
+      case 'weight':
+        setWeight('');
+        break;
+      case 'rbs':
+        setRbs('');
+        break;
+      case 'sCreatinine':
+        setSCreatinine('');
+        break;
+    }
+  }
 
   return (
-    <Tabs defaultValue="rbs">
+    <Tabs value={activeInputTab} onValueChange={setActiveInputTab}>
       <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="rbs">RBS</TabsTrigger>
         <TabsTrigger value="bp">BP</TabsTrigger>
@@ -66,7 +91,7 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Omit<Vitals
        <TabsContent value="rbs">
         <div className="flex gap-2 items-end">
           <Input className="flex-1" placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
-          <Button onClick={() => { onAdd({ rbs: parseFloat(rbs) }); setRbs(''); }} disabled={submitting || !rbs}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+          <Button onClick={() => addVital({ rbs: parseFloat(rbs) })} disabled={submitting || !rbs}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
         </div>
       </TabsContent>
       <TabsContent value="bp">
@@ -75,25 +100,25 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Omit<Vitals
             <Input placeholder="Systolic (e.g. 120)" value={bpSystolic} onChange={e => setBpSystolic(e.target.value)} type="number" />
             <Input placeholder="Diastolic (e.g. 80)" value={bpDiastolic} onChange={e => setBpDiastolic(e.target.value)} type="number" />
           </div>
-          <Button onClick={() => { onAdd({ bpSystolic: parseInt(bpSystolic), bpDiastolic: parseInt(bpDiastolic) }); setBpSystolic(''); setBpDiastolic(''); }} disabled={submitting || !bpSystolic || !bpDiastolic}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+          <Button onClick={() => addVital({ bpSystolic: parseInt(bpSystolic), bpDiastolic: parseInt(bpDiastolic) })} disabled={submitting || !bpSystolic || !bpDiastolic}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
         </div>
       </TabsContent>
        <TabsContent value="pulse">
         <div className="flex gap-2 items-end">
           <Input className="flex-1" placeholder="Pulse (bpm)" value={pulse} onChange={e => setPulse(e.target.value)} type="number" />
-          <Button onClick={() => { onAdd({ pulse: parseInt(pulse) }); setPulse(''); }} disabled={submitting || !pulse}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+          <Button onClick={() => addVital({ pulse: parseInt(pulse) })} disabled={submitting || !pulse}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
         </div>
       </TabsContent>
       <TabsContent value="weight">
          <div className="flex gap-2 items-end">
           <Input className="flex-1" placeholder="Weight (kg)" value={weight} onChange={e => setWeight(e.target.value)} type="number" />
-          <Button onClick={() => { onAdd({ weight: parseFloat(weight) }); setWeight(''); }} disabled={submitting || !weight}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+          <Button onClick={() => addVital({ weight: parseFloat(weight) })} disabled={submitting || !weight}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
         </div>
       </TabsContent>
       <TabsContent value="sCreatinine">
          <div className="flex gap-2 items-end">
           <Input className="flex-1" placeholder="S.Creatinine (mg/dL)" value={sCreatinine} onChange={e => setSCreatinine(e.target.value)} type="number" />
-          <Button onClick={() => { onAdd({ sCreatinine: parseFloat(sCreatinine) }); setSCreatinine(''); }} disabled={submitting || !sCreatinine}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+          <Button onClick={() => addVital({ sCreatinine: parseFloat(sCreatinine) })} disabled={submitting || !sCreatinine}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
         </div>
       </TabsContent>
     </Tabs>
@@ -101,10 +126,11 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Omit<Vitals
 }
 
 
-export function VitalsTracker({ vitalsData, currentUserRole, patientId }: VitalsTrackerProps) {
+export function VitalsTracker({ vitalsData, currentUserRole, patientId, organizationId }: VitalsTrackerProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
+  const [activeTab, setActiveTab] = useState('rbs');
 
   const formattedData = vitalsData.map(v => ({
     ...v,
@@ -120,6 +146,8 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
     try {
         const vitalsRef = collection(firestore, 'patients', patientId, 'vitals');
         const newVital = {
+            patientId,
+            organizationId,
             date: new Date().toISOString(),
             bpSystolic: newVitalData.bpSystolic ?? null,
             bpDiastolic: newVitalData.bpDiastolic ?? null,
@@ -152,12 +180,12 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
   const renderChart = (dataKey: "bpSystolic" | "pulse" | "weight" | "rbs" | "sCreatinine", label: string, color: string) => (
       <ResponsiveContainer width="100%" height={250}>
         <LineChart
-          data={formattedData.slice().reverse()}
+          data={formattedData.slice().reverse().filter(d => d[dataKey] != null)}
           margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
-          <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} />
+          <YAxis domain={['dataMin - 1', 'dataMax + 1']} />
           <Tooltip
             contentStyle={{
                 backgroundColor: 'hsl(var(--background))',
@@ -171,6 +199,20 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
       </ResponsiveContainer>
   );
 
+  const historyHeaders: Record<string, string> = {
+    rbs: 'RBS (mmol/L)',
+    bp: 'BP (Sys/Dia)',
+    pulse: 'Pulse (bpm)',
+    weight: 'Weight (kg)',
+    sCreatinine: 'S.Creatinine (mg/dL)',
+  };
+
+  const filteredHistory = formattedData.filter(v => {
+    if (activeTab === 'bp') return v.bpSystolic != null;
+    const key = activeTab as keyof Vitals;
+    return v[key] != null;
+  });
+
   return (
     <Card className="bg-background-soft">
       <CardHeader>
@@ -183,7 +225,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Tabs defaultValue="rbs">
+        <Tabs defaultValue="rbs" value={activeTab} onValueChange={(value) => setActiveTab(value || 'rbs')}>
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="rbs"><Droplet className="mr-2 h-4 w-4 hidden sm:inline" />RBS</TabsTrigger>
             <TabsTrigger value="bp"><HeartPulse className="mr-2 h-4 w-4 hidden sm:inline" />BP</TabsTrigger>
@@ -202,7 +244,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
              <div className="space-y-4 p-4 border rounded-lg bg-background">
                 <h4 className="font-medium text-center">Log New Vitals</h4>
                 {isSubmitting ? 
-                  <div className="flex justify-center items-center h-10">
+                  <div className="flex justify-center items-center h-20">
                     <Loader2 className="animate-spin" />
                   </div>
                   :
@@ -212,30 +254,32 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
         )}
 
         <div className="space-y-2">
-            <h4 className="font-medium">History</h4>
+            <h4 className="font-medium">History for {activeTab.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</h4>
             <ScrollArea className="h-64 border rounded-md bg-background">
                 <Table>
                     <TableHeader className="sticky top-0 bg-secondary">
                         <TableRow>
-                            <TableHead className="w-1/3">Date</TableHead>
-                            <TableHead>BP (Sys/Dia)</TableHead>
-                            <TableHead>Pulse</TableHead>
-                            <TableHead>Weight</TableHead>
-                            <TableHead>RBS</TableHead>
-                            <TableHead>S.Creatinine</TableHead>
+                            <TableHead className="w-1/2">Date</TableHead>
+                            <TableHead>{historyHeaders[activeTab]}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {formattedData.map(v => (
-                            <TableRow key={v.id}>
-                                <TableCell className="font-medium">{format(parseISO(v.date), 'dd-MM-yyyy, hh:mm a')}</TableCell>
-                                <TableCell>{v.bp ?? 'N/A'}</TableCell>
-                                <TableCell>{v.pulse ?? 'N/A'}</TableCell>
-                                <TableCell>{v.weight ?? 'N/A'}</TableCell>
-                                <TableCell>{v.rbs ?? 'N/A'}</TableCell>
-                                <TableCell>{v.sCreatinine ?? 'N/A'}</TableCell>
+                         {filteredHistory.length > 0 ? (
+                            filteredHistory.map(v => (
+                                <TableRow key={v.id}>
+                                    <TableCell className="font-medium">{format(parseISO(v.date), 'dd-MM-yyyy, hh:mm a')}</TableCell>
+                                    <TableCell>
+                                        {(activeTab === 'bp' ? v.bp : v[activeTab as keyof typeof v]) ?? 'N/A'}
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={2} className="text-center h-24">
+                                    No history for this vital.
+                                </TableCell>
                             </TableRow>
-                        ))}
+                        )}
                     </TableBody>
                 </Table>
             </ScrollArea>

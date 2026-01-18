@@ -119,6 +119,7 @@ export function PatientDashboard({ user }: { user: User }) {
             vitalsData={vitalsHistory}
             currentUserRole="patient"
             patientId={user.id}
+            organizationId={user.organizationId}
         />
       )}
 

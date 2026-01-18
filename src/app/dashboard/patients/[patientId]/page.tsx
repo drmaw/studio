@@ -110,7 +110,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
         />
       )}
 
-      {vitalsHistory && <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} patientId={patient.id} />}
+      {vitalsHistory && <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} patientId={patient.id} organizationId={patient.organizationId} />}
 
       <div>
         <h2 className="text-2xl font-bold mb-4">Medical Records</h2>
