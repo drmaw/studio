@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +47,37 @@ export function ApplyForRoleCard() {
   }, [user, firestore]);
 
   const { data: removalRequests, isLoading: removalRequestsLoading } = useCollection<RoleRemovalRequest>(removalRequestsQuery);
+
+  const allRoleActivities = useMemo(() => {
+    const creationActivities = (applications || []).map(app => ({
+      id: app.id,
+      type: 'creation' as const,
+      role: app.requestedRole,
+      status: app.status,
+      createdAt: app.createdAt,
+      reviewedAt: app.reviewedAt,
+      reason: app.reason,
+    }));
+
+    const removalActivities = (removalRequests || []).map(req => ({
+      id: req.id,
+      type: 'removal' as const,
+      role: req.roleToRemove,
+      status: req.status,
+      createdAt: req.createdAt,
+      reviewedAt: req.reviewedAt,
+    }));
+
+    const combined = [...creationActivities, ...removalActivities];
+
+    combined.sort((a, b) => {
+      const dateA = a.createdAt ? (a.createdAt as any).toDate() : new Date(0);
+      const dateB = b.createdAt ? (b.createdAt as any).toDate() : new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return combined;
+  }, [applications, removalRequests]);
 
 
   const handleApply = async (event: React.FormEvent) => {
@@ -201,8 +232,6 @@ export function ApplyForRoleCard() {
     }
   }
 
-  const pendingApplications = applications?.filter(app => app.status === 'pending');
-  const rejectedApplications = applications?.filter(app => app.status === 'rejected');
   const verifiedRoles = user?.roles.filter(r => r !== 'patient') || [];
 
   return (
@@ -270,39 +299,49 @@ export function ApplyForRoleCard() {
             <div>
                 <h3 className="text-base font-semibold flex items-center gap-2 mb-4">
                     <Clock className="h-5 w-5 text-primary" />
-                    Your Role Applications
+                    Your Application History
                 </h3>
-                {applicationsLoading ? (
+                {(applicationsLoading || removalRequestsLoading) ? (
                     <div className="space-y-2">
                         <div className="h-12 w-full bg-muted animate-pulse rounded-md" />
                         <div className="h-12 w-full bg-muted animate-pulse rounded-md" />
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        {(!pendingApplications || pendingApplications.length === 0) && (!rejectedApplications || rejectedApplications.length === 0) ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">No pending or denied applications.</p>
+                        {allRoleActivities.length === 0 ? (
+                             <p className="text-sm text-muted-foreground text-center py-4">No application history.</p>
                         ) : (
-                            <>
-                                {pendingApplications?.map(app => (
-                                    <div key={app.id} className="flex items-center justify-between p-3 border rounded-lg bg-background-soft">
-                                        <div>
-                                            <p className="font-medium capitalize">{app.requestedRole.replace(/_/g, ' ')}</p>
-                                            <p className="text-xs text-muted-foreground">Applied: {app.createdAt ? format((app.createdAt as any).toDate(), 'dd-MM-yyyy') : 'N/A'}</p>
-                                        </div>
-                                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">Pending</Badge>
+                            allRoleActivities.map(activity => (
+                                <div key={activity.id} className="flex items-center justify-between p-3 border rounded-lg bg-background-soft">
+                                    <div>
+                                        <p className="font-medium capitalize">
+                                            {activity.type === 'creation' ? 'Application for ' : 'Removal of '}
+                                            <span className="font-bold">{activity.role.replace(/_/g, ' ')}</span>
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {activity.type === 'creation' ? 'Applied: ' : 'Requested: '}
+                                            {activity.createdAt ? format((activity.createdAt as any).toDate(), 'dd-MM-yyyy') : 'N/A'}
+                                        </p>
+                                        {activity.status === 'rejected' && activity.reason && <p className="text-xs text-destructive/80 mt-1">Reason: {activity.reason}</p>}
+                                        {activity.status === 'approved' && activity.reviewedAt && (
+                                            <p className="text-xs text-green-600">
+                                                Approved: {format((activity.reviewedAt as any).toDate(), 'dd-MM-yyyy')}
+                                            </p>
+                                        )}
                                     </div>
-                                ))}
-                                {rejectedApplications?.map(app => (
-                                    <div key={app.id} className="flex items-center justify-between p-3 border rounded-lg bg-background-soft">
-                                        <div>
-                                            <p className="font-medium capitalize">{app.requestedRole.replace(/_/g, ' ')}</p>
-                                             <p className="text-xs text-muted-foreground">Applied: {app.createdAt ? format((app.createdAt as any).toDate(), 'dd-MM-yyyy') : 'N/A'}</p>
-                                             {app.reason && <p className="text-xs text-destructive/80 mt-1">Reason: {app.reason}</p>}
-                                        </div>
-                                        <Badge variant="destructive">Denied</Badge>
-                                    </div>
-                                ))}
-                            </>
+                                    <Badge variant={
+                                        activity.status === 'pending' ? 'secondary' 
+                                        : activity.status === 'approved' ? 'default'
+                                        : 'destructive'
+                                    } className={
+                                        activity.status === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-200' 
+                                        : activity.status === 'approved' ? 'bg-green-100 text-green-800 border-green-200'
+                                        : ''
+                                    }>
+                                        {activity.status.charAt(0).toUpperCase() + activity.status.slice(1)}
+                                    </Badge>
+                                </div>
+                            ))
                         )}
                     </div>
                 )}
