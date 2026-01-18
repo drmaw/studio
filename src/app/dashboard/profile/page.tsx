@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Cake, User as UserIcon, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Plus, X, File, Trash2 } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { differenceInYears, parse, isValid, format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import type { Role, UserDemographics, EmergencyContact, User } from "@/lib/definitions";
+import type { UserDemographics, EmergencyContact, User } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthIdCard } from "@/components/dashboard/health-id-card";
@@ -21,7 +21,6 @@ import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore } from "@/firebase";
 import { doc, getDocs, collection, query, where, limit, updateDoc } from "firebase/firestore";
-import { ApplyForRoleCard } from "@/components/dashboard/profile/apply-for-role-card";
 
 
 const ProfileInfoRow = ({ icon: Icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | null, children?: React.ReactNode }) => {
@@ -54,7 +53,7 @@ const maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed'];
 
 
 export default function ProfilePage() {
-  const { user, loading, hasRole } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const firestore = useFirestore();
   
@@ -69,8 +68,6 @@ export default function ProfilePage() {
   const [newContactNumber, setNewContactNumber] = useState('');
   const [newContactHealthId, setNewContactHealthId] = useState('');
   const [newContactMethod, setNewContactMethod] = useState('details');
-
-  const stableHasRole = useCallback(hasRole, [user]);
 
   useEffect(() => {
     if (user) {
@@ -232,8 +229,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-  
-  const isOnlyPatient = user.roles?.length === 1 && stableHasRole('patient');
   
   const dobDate = formData.dob ? parse(formData.dob, "dd-MM-yyyy", new Date()) : null;
   const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd-MM-yyyy') : 'N/A';
@@ -473,7 +468,6 @@ export default function ProfilePage() {
                         </CardFooter>
                     )}
                 </Card>
-                {isOnlyPatient && <ApplyForRoleCard />}
             </div>
         </div>
     </div>

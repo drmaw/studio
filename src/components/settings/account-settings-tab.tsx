@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -19,12 +20,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
+import { useAuth } from '@/hooks/use-auth';
+import { ApplyForRoleCard } from '../dashboard/profile/apply-for-role-card';
 
 export function AccountSettingsTab() {
   const { toast } = useToast();
   const [isVitalsVisible, setIsVitalsVisible] = useState(true);
   const [isDiscoverable, setIsDiscoverable] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
+  const { user, hasRole } = useAuth();
 
   const handleUpgrade = () => {
     // Mock premium upgrade
@@ -34,6 +38,8 @@ export function AccountSettingsTab() {
         description: "You've been upgraded to a Premium account."
     });
   };
+
+  const isOnlyPatient = user?.roles?.length === 1 && hasRole('patient');
 
   return (
     <div className="space-y-6">
@@ -107,6 +113,8 @@ export function AccountSettingsTab() {
                 )}
             </CardContent>
         </Card>
+        
+        {isOnlyPatient && <ApplyForRoleCard />}
         
         <Card className="border-destructive/50">
             <CardHeader>
