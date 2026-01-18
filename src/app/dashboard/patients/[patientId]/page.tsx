@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VitalsTracker } from "@/components/dashboard/vitals-tracker";
 import { RedBanner } from "@/components/dashboard/red-banner";
 import { useDoc, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { doc, collection, query, orderBy } from "firebase/firestore";
+import { doc, collection, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import type { Patient, MedicalRecord, Vitals, User } from "@/lib/definitions";
 
 
@@ -57,6 +57,38 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
 
   const { data: vitalsHistory, isLoading: areVitalsLoading } = useCollection<Vitals>(vitalsQuery);
   
+  // Effect to log the view action
+  useEffect(() => {
+    if (
+        !firestore ||
+        !currentUser ||
+        !patientUser ||
+        currentUserLoading ||
+        isPatientUserLoading
+    ) {
+        return;
+    }
+
+    // Log only if a doctor is viewing another patient's record
+    if (hasRole('doctor') && currentUser.id !== patientId) {
+        const logRef = collection(firestore, 'patients', patientId, 'privacy_log');
+        const logEntry = {
+            actorId: currentUser.healthId,
+            actorName: currentUser.name,
+            actorAvatarUrl: currentUser.avatarUrl,
+            patientId: patientId,
+            organizationId: currentUser.organizationId,
+            action: 'view_record' as const,
+            timestamp: serverTimestamp(),
+        };
+
+        addDoc(logRef, logEntry).catch(logError => {
+             console.error("Failed to write privacy log:", logError);
+        });
+    }
+  }, [firestore, currentUser, patientUser, currentUserLoading, isPatientUserLoading, hasRole, patientId]);
+
+
   const pageIsLoading = currentUserLoading || isPatientUserLoading || isPatientDataLoading || areRecordsLoading || areVitalsLoading || !currentUser;
   
   if (pageIsLoading && !patientUser) {
