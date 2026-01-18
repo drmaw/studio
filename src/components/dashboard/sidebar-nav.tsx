@@ -63,12 +63,6 @@ export function SidebarNav() {
       roles: ['patient'],
     },
     {
-        href: "/dashboard/my-appointments",
-        label: "My Appointments",
-        icon: CalendarCheck,
-        roles: ['patient'],
-    },
-    {
       href: "/dashboard/my-records",
       label: "My Health Records",
       icon: FileHeart,
@@ -85,6 +79,12 @@ export function SidebarNav() {
       label: "Account Settings",
       icon: Settings,
       roles: ['patient'],
+    },
+    {
+        href: "/dashboard/my-appointments",
+        label: "My Appointments",
+        icon: CalendarCheck,
+        roles: ['patient'],
     },
     {
       href: "/dashboard/admin",
