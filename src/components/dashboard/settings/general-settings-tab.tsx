@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -10,46 +9,47 @@ import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import type { Organization } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
-
-type FacilityImage = {
-  id: string;
-  url: string;
-};
-
-const initialImages: FacilityImage[] = [
-  { id: 'img1', url: 'https://picsum.photos/seed/hospital1/600/400' },
-  { id: 'img2', url: 'https://picsum.photos/seed/hospital2/600/400' },
-];
-
+import { useSearchParams } from 'next/navigation';
 
 export function GeneralSettingsTab() {
-  const { user, loading: userLoading } = useAuth();
+  const { user, loading: userLoading, hasRole } = useAuth();
   const firestore = useFirestore();
-  const [images, setImages] = useState<FacilityImage[]>(initialImages); // Mock images
+  const searchParams = useSearchParams();
+
+  const adminOrgId = searchParams.get('orgId');
+  const isAdminView = hasRole('admin') && !!adminOrgId;
+  const orgId = isAdminView ? adminOrgId : user?.organizationId;
 
   const orgDocRef = useMemoFirebase(() => {
-    if (!firestore || !user?.organizationId) return null;
-    return doc(firestore, 'organizations', user.organizationId);
-  }, [firestore, user?.organizationId]);
+    if (!firestore || !orgId) return null;
+    return doc(firestore, 'organizations', orgId);
+  }, [firestore, orgId]);
 
   const { data: organization, isLoading: orgLoading } = useDoc<Organization>(orgDocRef);
   
   const isLoading = userLoading || orgLoading;
 
-  const handleAddImage = () => {
-    const newImage: FacilityImage = {
-        id: `img${Date.now()}`,
-        url: `https://picsum.photos/seed/${Math.random()}/600/400`
-    };
-    setImages(prev => [...prev, newImage]);
+  const handleAddImage = async () => {
+    if (!firestore || !organization) return;
+    const newImageUrl = `https://picsum.photos/seed/${Math.random()}/600/400`;
+    const orgRef = doc(firestore, 'organizations', organization.id);
+    await updateDoc(orgRef, {
+        facilityImages: arrayUnion(newImageUrl)
+    });
   }
 
-  const handleRemoveImage = (id: string) => {
-    setImages(prev => prev.filter(img => img.id !== id));
+  const handleRemoveImage = async (imageUrl: string) => {
+    if (!firestore || !organization) return;
+    const orgRef = doc(firestore, 'organizations', organization.id);
+    await updateDoc(orgRef, {
+        facilityImages: arrayRemove(imageUrl)
+    });
   }
+
+  const images = organization?.facilityImages || [];
 
   if (isLoading) {
     return (
@@ -103,10 +103,10 @@ export function GeneralSettingsTab() {
         <div className="p-4 border rounded-lg">
           {images.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {images.map(image => (
-                    <div key={image.id} className="relative group">
+                {images.map((image, index) => (
+                    <div key={index} className="relative group">
                         <Image
-                            src={image.url}
+                            src={image}
                             alt="Facility Image"
                             width={600}
                             height={400}
@@ -116,7 +116,7 @@ export function GeneralSettingsTab() {
                             variant="destructive"
                             size="icon"
                             className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleRemoveImage(image.id)}
+                            onClick={() => handleRemoveImage(image)}
                         >
                             <Trash2 className="h-4 w-4" />
                         </Button>

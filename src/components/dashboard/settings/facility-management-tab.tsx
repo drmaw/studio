@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,6 +43,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import type { Facility } from "@/lib/definitions";
 import { collection, addDoc, updateDoc, deleteDoc, serverTimestamp, doc } from "firebase/firestore";
+import { useSearchParams } from "next/navigation";
 
 const formSchema = z.object({
   type: z.enum(['ward', 'cabin'], { required_error: "Facility type is required." }),
@@ -55,13 +55,18 @@ const formSchema = z.object({
 export function FacilityManagementTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { user: hospitalOwner } = useAuth();
+  const { user: hospitalOwner, hasRole } = useAuth();
   const firestore = useFirestore();
+  const searchParams = useSearchParams();
+
+  const adminOrgId = searchParams.get('orgId');
+  const isAdminView = hasRole('admin') && !!adminOrgId;
+  const orgId = isAdminView ? adminOrgId : hospitalOwner?.organizationId;
 
   const facilitiesQuery = useMemoFirebase(() => {
-    if (!firestore || !hospitalOwner) return null;
-    return collection(firestore, 'organizations', hospitalOwner.organizationId, 'facilities');
-  }, [firestore, hospitalOwner]);
+    if (!firestore || !orgId) return null;
+    return collection(firestore, 'organizations', orgId, 'facilities');
+  }, [firestore, orgId]);
 
   const { data: facilities, isLoading: facilitiesLoading } = useCollection<Facility>(facilitiesQuery);
 
@@ -75,12 +80,12 @@ export function FacilityManagementTab() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!hospitalOwner || !firestore) return;
+    if (!orgId || !firestore) return;
     setIsSubmitting(true);
     
-    const facilitiesRef = collection(firestore, 'organizations', hospitalOwner.organizationId, 'facilities');
+    const facilitiesRef = collection(firestore, 'organizations', orgId, 'facilities');
     await addDoc(facilitiesRef, {
-        organizationId: hospitalOwner.organizationId,
+        organizationId: orgId,
         ...values,
         createdAt: serverTimestamp()
     });
@@ -95,8 +100,8 @@ export function FacilityManagementTab() {
   }
 
   const handleDelete = async (facilityId: string) => {
-    if (!hospitalOwner || !firestore) return;
-    const facilityRef = doc(firestore, 'organizations', hospitalOwner.organizationId, 'facilities', facilityId);
+    if (!orgId || !firestore) return;
+    const facilityRef = doc(firestore, 'organizations', orgId, 'facilities', facilityId);
     await deleteDoc(facilityRef);
     toast({
       title: "Facility Removed",
@@ -105,8 +110,8 @@ export function FacilityManagementTab() {
   };
   
   const handleUpdate = async (updatedFacility: Facility) => {
-    if (!hospitalOwner || !firestore) return;
-    const facilityRef = doc(firestore, 'organizations', hospitalOwner.organizationId, 'facilities', updatedFacility.id);
+    if (!orgId || !firestore) return;
+    const facilityRef = doc(firestore, 'organizations', orgId, 'facilities', updatedFacility.id);
     const { id, organizationId, createdAt, ...updateData } = updatedFacility;
     await updateDoc(facilityRef, updateData);
      toast({

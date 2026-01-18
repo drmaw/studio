@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +24,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { getDocs, collection, query, where, limit, doc, addDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import type { User, DoctorSchedule, Organization } from "@/lib/definitions";
+import { useSearchParams } from "next/navigation";
 
 const weekDays = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
 
@@ -43,20 +43,25 @@ const formSchema = z.object({
 export function DoctorSchedulesTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { user: hospitalOwner, loading: ownerLoading } = useAuth();
+  const { user: hospitalOwner, loading: ownerLoading, hasRole } = useAuth();
   const firestore = useFirestore();
+  const searchParams = useSearchParams();
+
+  const adminOrgId = searchParams.get('orgId');
+  const isAdminView = hasRole('admin') && !!adminOrgId;
+  const orgId = isAdminView ? adminOrgId : hospitalOwner?.organizationId;
 
   const organizationDocRef = useMemoFirebase(() => {
-    if (!firestore || !hospitalOwner) return null;
-    return doc(firestore, 'organizations', hospitalOwner.organizationId);
-  }, [firestore, hospitalOwner]);
+    if (!firestore || !orgId) return null;
+    return doc(firestore, 'organizations', orgId);
+  }, [firestore, orgId]);
 
   const { data: organization, isLoading: orgLoading } = useDoc<Organization>(organizationDocRef);
 
   const schedulesQuery = useMemoFirebase(() => {
-    if (!firestore || !hospitalOwner) return null;
-    return query(collection(firestore, 'organizations', hospitalOwner.organizationId, 'schedules'), where('organizationId', '==', hospitalOwner.organizationId));
-  }, [firestore, hospitalOwner]);
+    if (!firestore || !orgId) return null;
+    return query(collection(firestore, 'organizations', orgId, 'schedules'), where('organizationId', '==', orgId));
+  }, [firestore, orgId]);
 
   const { data: schedules, isLoading: schedulesLoading } = useCollection<DoctorSchedule>(schedulesQuery);
 
@@ -73,7 +78,7 @@ export function DoctorSchedulesTab() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!hospitalOwner || !firestore || !organization) return;
+    if (!hospitalOwner || !firestore || !organization || !orgId) return;
     setIsSubmitting(true);
     
     const usersRef = collection(firestore, 'users');
@@ -95,13 +100,13 @@ export function DoctorSchedulesTab() {
             return;
         }
         
-        const schedulesRef = collection(firestore, 'organizations', hospitalOwner.organizationId, 'schedules');
+        const schedulesRef = collection(firestore, 'organizations', orgId, 'schedules');
         
         const newSchedule: Omit<DoctorSchedule, 'id'> = {
             doctorId: doctorData.healthId,
             doctorAuthId: doctorDoc.id,
             doctorName: doctorData.name,
-            organizationId: hospitalOwner.organizationId,
+            organizationId: orgId,
             organizationName: organization.name,
             roomNumber: values.roomNumber,
             fee: values.fee,
@@ -130,8 +135,8 @@ export function DoctorSchedulesTab() {
   }
   
   const handleDelete = async (scheduleId: string) => {
-    if (!hospitalOwner || !firestore) return;
-    const scheduleRef = doc(firestore, 'organizations', hospitalOwner.organizationId, 'schedules', scheduleId);
+    if (!orgId || !firestore) return;
+    const scheduleRef = doc(firestore, 'organizations', orgId, 'schedules', scheduleId);
     await deleteDoc(scheduleRef);
     toast({
       variant: "destructive",

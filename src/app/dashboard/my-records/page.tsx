@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -35,7 +34,7 @@ import type { RecordFile } from '@/lib/definitions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, serverTimestamp, query, orderBy, doc, deleteDoc, writeBatch, addDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, query, orderBy, doc, deleteDoc, writeBatch, addDoc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FormattedDate } from '@/components/shared/formatted-date';
@@ -179,6 +178,20 @@ export default function MyHealthRecordsPage() {
         });
         setSelectedRecords([]);
     };
+
+    const handleUpgrade = async () => {
+        if (!user || !firestore) return;
+        try {
+            const userRef = doc(firestore, 'users', user.id);
+            await updateDoc(userRef, { isPremium: true });
+            toast({
+                title: "Congratulations!",
+                description: "You've been upgraded to a Premium account."
+            });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Upgrade Failed' });
+        }
+    };
     
     const toggleRecordSelection = (id: string) => {
         setSelectedRecords(prev => 
@@ -264,7 +277,7 @@ export default function MyHealthRecordsPage() {
                         <Progress value={storagePercentage} />
                         {!user?.isPremium && (
                             <div className="pt-2 text-center text-sm">
-                            <Button variant="link" className="p-0 h-auto text-primary">
+                            <Button variant="link" className="p-0 h-auto text-primary" onClick={handleUpgrade}>
                                     <Sparkles className="mr-2 h-4 w-4" />
                                     Upgrade to Premium for {MAX_RECORDS_PREMIUM} slots
                             </Button>

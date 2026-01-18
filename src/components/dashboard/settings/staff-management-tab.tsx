@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,6 +36,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, getDocs, doc, limit, writeBatch, updateDoc } from "firebase/firestore";
 import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
+import { useSearchParams } from "next/navigation";
 
 const formSchema = z.object({
   healthId: z.string().min(1, { message: "Health ID is required." }),
@@ -47,15 +47,20 @@ const formSchema = z.object({
 export function StaffManagementTab() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { user: hospitalOwner } = useAuth();
+  const { user: hospitalOwner, hasRole } = useAuth();
   const firestore = useFirestore();
+  const searchParams = useSearchParams();
+
+  const adminOrgId = searchParams.get('orgId');
+  const isAdminView = hasRole('admin') && !!adminOrgId;
+  const orgId = isAdminView ? adminOrgId : hospitalOwner?.organizationId;
 
   const staffInOrgQuery = useMemoFirebase(() => {
-    if (!firestore || !hospitalOwner?.organizationId) return null;
+    if (!firestore || !orgId) return null;
     return query(collection(firestore, 'users'), 
-      where('organizationId', '==', hospitalOwner.organizationId)
+      where('organizationId', '==', orgId)
     );
-  }, [firestore, hospitalOwner?.organizationId]);
+  }, [firestore, orgId]);
 
   const { data: staffInOrg, isLoading: staffLoading } = useCollection<User>(staffInOrgQuery);
 
@@ -73,7 +78,7 @@ export function StaffManagementTab() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!hospitalOwner?.organizationId || !firestore) return;
+    if (!orgId || !firestore) return;
     setIsLoading(true);
 
     try {
@@ -86,7 +91,7 @@ export function StaffManagementTab() {
           const userDoc = userSnapshot.docs[0];
           const userToAdd = userDoc.data() as User;
           
-          if (userToAdd.organizationId !== hospitalOwner.organizationId && !userToAdd.organizationId.startsWith('org-ind-')) {
+          if (userToAdd.organizationId !== orgId && !userToAdd.organizationId.startsWith('org-ind-')) {
             toast({
                 variant: "destructive",
                 title: "User Belongs to Another Organization",
@@ -102,7 +107,7 @@ export function StaffManagementTab() {
           const userDocRef = doc(firestore, 'users', userDoc.id);
           const updatedRoles = Array.from(new Set([...userToAdd.roles, values.role]));
           batch.update(userDocRef, { 
-              organizationId: hospitalOwner.organizationId,
+              organizationId: orgId,
               roles: updatedRoles
           });
 
@@ -135,7 +140,7 @@ export function StaffManagementTab() {
   const handleRemoveStaff = async (staffMember: User) => {
     if (!hospitalOwner || !firestore) return;
 
-    if (staffMember.id === hospitalOwner.id) {
+    if (staffMember.id === hospitalOwner.id && !isAdminView) {
         toast({ variant: 'destructive', title: 'Action Not Allowed', description: 'The hospital owner cannot be removed from their own organization.'});
         return;
     }

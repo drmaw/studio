@@ -9,6 +9,8 @@ import {
   QuerySnapshot,
   CollectionReference,
 } from 'firebase/firestore';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };
@@ -83,7 +85,15 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        console.error("useCollection Firestore Error:", error);
+        if (error.code === 'permission-denied') {
+          const path = (memoizedTargetRefOrQuery as CollectionReference).path || (memoizedTargetRefOrQuery as InternalQuery)._query?.path?.canonicalString();
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: path || 'Unknown path',
+              operation: 'list',
+          }));
+        } else {
+            console.error("useCollection Firestore Error:", error);
+        }
         setError(error);
         setData(null);
         setIsLoading(false);
@@ -93,7 +103,7 @@ export function useCollection<T = any>(
     return () => unsubscribe();
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
+    throw new Error('useCollection query was not properly memoized using useMemoFirebase');
   }
   return { data, isLoading, error };
 }

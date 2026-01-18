@@ -27,7 +27,8 @@ export function HealthIdCard({ user, patient }: { user: User, patient: Patient |
     useEffect(() => {
         if (user?.demographics?.dob) {
             try {
-                const birthDate = parse(user.demographics.dob, "dd-MM-yyyy", new Date());
+                // The date is stored as yyyy-MM-dd
+                const birthDate = parse(user.demographics.dob, "yyyy-MM-dd", new Date());
                 if(isValid(birthDate)) {
                     setAge(differenceInYears(new Date(), birthDate));
                 }
