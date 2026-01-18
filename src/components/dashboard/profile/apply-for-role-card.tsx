@@ -5,8 +5,7 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { commitBatchNonBlocking } from '@/firebase/non-blocking-updates';
-import { doc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import type { Role, User } from '@/lib/definitions';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -31,7 +30,7 @@ export function ApplyForRoleCard() {
 
   const handleApply = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedRole || !user) {
+    if (!selectedRole || !user || !firestore) {
       toast({
         variant: "destructive",
         title: "No Role Selected",
@@ -59,10 +58,10 @@ export function ApplyForRoleCard() {
         }
         
         batch.update(userRef, updateData);
-
-        commitBatchNonBlocking(batch, { operation: 'update', path: `users/${user.id}` });
+        await batch.commit();
         
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing
+        // Mock API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         setAppliedRole(selectedRole);
         setApplicationStatus('submitted');

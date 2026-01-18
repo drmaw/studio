@@ -11,10 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "../ui/badge";
 import { differenceInYears, parse, isValid } from 'date-fns';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore } from "@/firebase";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export function HealthIdCard({ user }: { user: User }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +48,7 @@ export function HealthIdCard({ user }: { user: User }) {
 
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file || !authUser) return;
+        if (!file || !authUser || !firestore) return;
 
         if (file.size > 2 * 1024 * 1024) { // 2MB limit
             toast({
@@ -71,7 +70,7 @@ export function HealthIdCard({ user }: { user: User }) {
             const downloadURL = await getDownloadURL(storageRef);
 
             const userDocRef = doc(firestore, 'users', authUser.id);
-            setDocumentNonBlocking(userDocRef, { avatarUrl: downloadURL }, { merge: true });
+            await setDoc(userDocRef, { avatarUrl: downloadURL }, { merge: true });
             
             toast({
                 title: 'Profile Picture Updated',
@@ -176,4 +175,3 @@ export function HealthIdCard({ user }: { user: User }) {
         </Card>
     );
 }
-    

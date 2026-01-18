@@ -24,8 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import type { User } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, getDocs, doc, limit } from "firebase/firestore";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, query, where, getDocs, doc, limit, updateDoc } from "firebase/firestore";
 
 const formSchema = z.object({
   healthId: z.string().min(1, { message: "Health ID is required." }),
@@ -58,7 +57,7 @@ export function StaffManagementTab() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!hospitalOwner?.organizationId) return;
+    if (!hospitalOwner?.organizationId || !firestore) return;
     setIsLoading(true);
 
     try {
@@ -75,7 +74,7 @@ export function StaffManagementTab() {
           
           const updatedRoles = Array.from(new Set([...userToAdd.roles, values.role]));
 
-          updateDocumentNonBlocking(userDocRef, { 
+          await updateDoc(userDocRef, { 
               organizationId: hospitalOwner.organizationId,
               roles: updatedRoles
           });

@@ -41,8 +41,7 @@ const featureCards = [
 const heroImage = {
   id: "hero-background-bangladesh",
   description: "A stylized green map of Bangladesh, representing the app's focus on healthcare in the region.",
-  imageUrl: "https://images.unsplash.com/photo-1590248446961-d6215c893273?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtYXAlMjBvZiUyMGJhbmdsYWRlc2h8ZW58MHx8fHwxNzE5NDI4Mjg3fDA&ixlib=rb-4.1.0&q=80&w=1080",
-  imageHint: "map Bangladesh"
+  imageUrl: "https://images.unsplash.com/photo-1590248446961-d6215c893273?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtYXAlMjBvZiUyMGJhbmdsYWRlc2h8ZW58MHx8fHwxNzE5NDI4Mjg3fDA&ixlib=rb-4.1.0&q=80&w=1080"
 };
 
 
@@ -122,7 +121,6 @@ export default function Home() {
                 alt={heroImage.description}
                 fill
                 className="object-cover -z-20 brightness-50"
-                data-ai-hint={heroImage.imageHint}
                 priority
               />
               <div className="absolute inset-0 bg-green-900/60 -z-10"></div>

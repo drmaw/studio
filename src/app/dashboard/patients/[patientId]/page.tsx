@@ -84,7 +84,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
       <Card className="bg-card">
         <CardHeader className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
           <Avatar className="h-24 w-24">
-            <AvatarImage data-ai-hint="person portrait" src={`https://picsum.photos/seed/${patient.id}/100/100`} />
+            <AvatarImage src={`https://picsum.photos/seed/${patient.id}/100/100`} />
             <AvatarFallback>{patient.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
           </Avatar>
           <div>

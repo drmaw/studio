@@ -17,8 +17,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Loader2, Pencil } from "lucide-react"
 import { useFirestore } from "@/firebase"
-import { doc } from "firebase/firestore"
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates"
+import { doc, updateDoc } from "firebase/firestore"
 
 export function EditNoteDialog({ record, patientId }: { record: MedicalRecord, patientId: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,20 +27,28 @@ export function EditNoteDialog({ record, patientId }: { record: MedicalRecord, p
   const firestore = useFirestore();
 
   const handleSave = async () => {
-    if (!patientId) return;
+    if (!patientId || !firestore) return;
     setIsSaving(true);
     
-    const recordRef = doc(firestore, "patients", patientId, "medical_records", record.id);
-    updateDocumentNonBlocking(recordRef, { notes: note });
-
-    await new Promise(resolve => setTimeout(resolve, 500)); // Give feedback
-    
-    setIsSaving(false);
-    setIsOpen(false);
-    toast({
-      title: "Note Saved",
-      description: "The medical record has been updated successfully.",
-    });
+    try {
+        const recordRef = doc(firestore, "patients", patientId, "medical_records", record.id);
+        await updateDoc(recordRef, { notes: note });
+        
+        setIsOpen(false);
+        toast({
+          title: "Note Saved",
+          description: "The medical record has been updated successfully.",
+        });
+    } catch (error) {
+        console.error("Failed to save note:", error);
+        toast({
+            variant: "destructive",
+            title: "Save Failed",
+            description: "Could not update the medical record.",
+        });
+    } finally {
+        setIsSaving(false);
+    }
   }
 
   return (

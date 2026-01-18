@@ -25,7 +25,6 @@ import { useToast } from "@/hooks/use-toast";
 import { QrScannerDialog } from "./qr-scanner-dialog";
 import { collection, getDocs, query, where, limit, addDoc, serverTimestamp } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
-import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const chamberSchedules = [
     { id: 1, hospital: 'Digital Health Clinic', room: '302', days: 'Sat, Mon, Wed', time: '5 PM - 9 PM' },
@@ -38,7 +37,7 @@ function PatientSearchResultCard({ patient }: { patient: Patient }) {
     <Card className="bg-background">
       <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-4">
          <Avatar className="h-20 w-20">
-            <AvatarImage data-ai-hint="person portrait" src={`https://picsum.photos/seed/${patient.id}/100/100`} />
+            <AvatarImage src={`https://picsum.photos/seed/${patient.id}/100/100`} />
             <AvatarFallback className="text-2xl">{patientInitials}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
@@ -129,17 +128,21 @@ export function DoctorDashboard({ user }: { user: User }) {
             setSearchResult(patientData);
 
             // Log the search action
-            const logRef = collection(firestore, 'patients', patientData.id, 'privacy_log');
-            const logEntry = {
-                actorId: user.healthId,
-                actorName: user.name,
-                actorAvatarUrl: user.avatarUrl,
-                patientId: patientData.id,
-                organizationId: user.organizationId,
-                action: 'search' as const,
-                timestamp: serverTimestamp(),
-            };
-            addDocumentNonBlocking(logRef, logEntry);
+            try {
+                const logRef = collection(firestore, 'patients', patientData.id, 'privacy_log');
+                const logEntry = {
+                    actorId: user.healthId,
+                    actorName: user.name,
+                    actorAvatarUrl: user.avatarUrl,
+                    patientId: patientData.id,
+                    organizationId: user.organizationId,
+                    action: 'search' as const,
+                    timestamp: serverTimestamp(),
+                };
+                await addDoc(logRef, logEntry);
+            } catch (logError) {
+                console.error("Failed to write privacy log:", logError);
+            }
 
         } else {
             setSearchResult('not_found');

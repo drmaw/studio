@@ -20,8 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useFirestore } from "@/firebase";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { doc, updateDoc } from "firebase/firestore";
 
 type RedBannerProps = {
     patientId: string;
@@ -38,30 +37,38 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
     const firestore = useFirestore();
 
     const handleSave = async () => {
-        if (!patientId) return;
-        const patientRef = doc(firestore, 'patients', patientId);
-        updateDocumentNonBlocking(patientRef, { redFlag: { title: redFlag.title, comment: comment } });
+        if (!patientId || !firestore) return;
+        try {
+            const patientRef = doc(firestore, 'patients', patientId);
+            await updateDoc(patientRef, { redFlag: { title: redFlag.title, comment: comment } });
 
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setRedFlag(prev => ({ ...prev, comment }));
-        setIsEditing(false);
-        toast({
-            title: "Alert Saved",
-            description: "The critical alert has been updated.",
-        });
+            setRedFlag(prev => ({ ...prev, comment }));
+            setIsEditing(false);
+            toast({
+                title: "Alert Saved",
+                description: "The critical alert has been updated.",
+            });
+        } catch (error) {
+            console.error("Failed to save alert:", error);
+            toast({ variant: "destructive", title: "Save Failed", description: "Could not save the alert." });
+        }
     };
 
     const handleDelete = async () => {
-        if (!patientId) return;
-        const patientRef = doc(firestore, 'patients', patientId);
-        updateDocumentNonBlocking(patientRef, { redFlag: null });
+        if (!patientId || !firestore) return;
+        try {
+            const patientRef = doc(firestore, 'patients', patientId);
+            await updateDoc(patientRef, { redFlag: null });
 
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setIsVisible(false);
-        toast({
-            title: "Alert Removed",
-            description: "The critical alert has been removed for this patient.",
-        });
+            setIsVisible(false);
+            toast({
+                title: "Alert Removed",
+                description: "The critical alert has been removed for this patient.",
+            });
+        } catch (error) {
+            console.error("Failed to delete alert:", error);
+            toast({ variant: "destructive", title: "Delete Failed", description: "Could not remove the alert." });
+        }
     };
 
     if (!isVisible) {

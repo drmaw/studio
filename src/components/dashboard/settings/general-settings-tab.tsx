@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useState } from 'react';
 import { Input } from "@/components/ui/input";
@@ -89,7 +89,6 @@ export function GeneralSettingsTab() {
                 {images.map(image => (
                     <div key={image.id} className="relative group">
                         <Image
-                            data-ai-hint="hospital building"
                             src={image.url}
                             alt="Facility Image"
                             width={600}

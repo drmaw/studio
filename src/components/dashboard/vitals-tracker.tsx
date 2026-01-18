@@ -15,8 +15,7 @@ import type { Role, Vitals } from '@/lib/definitions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
 import { useFirestore } from '@/firebase';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 type VitalsTrackerProps = {
   vitalsData: Vitals[];
@@ -114,33 +113,40 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
   }));
 
   const handleAddVitals = async (newVitalData: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => {
-    if (!patientId) return;
+    if (!patientId || !firestore) return;
 
     setIsSubmitting(true);
     
-    const vitalsRef = collection(firestore, 'patients', patientId, 'vitals');
-    const newVital = {
-        date: new Date().toISOString(),
-        bpSystolic: newVitalData.bpSystolic ?? null,
-        bpDiastolic: newVitalData.bpDiastolic ?? null,
-        pulse: newVitalData.pulse ?? null,
-        weight: newVitalData.weight ?? null,
-        rbs: newVitalData.rbs ?? null,
-        sCreatinine: newVitalData.sCreatinine ?? null,
-        createdAt: serverTimestamp()
-    };
-    
-    addDocumentNonBlocking(vitalsRef, newVital);
-    
-    // Simulate a delay for the non-blocking operation to give feedback
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+        const vitalsRef = collection(firestore, 'patients', patientId, 'vitals');
+        const newVital = {
+            date: new Date().toISOString(),
+            bpSystolic: newVitalData.bpSystolic ?? null,
+            bpDiastolic: newVitalData.bpDiastolic ?? null,
+            pulse: newVitalData.pulse ?? null,
+            weight: newVitalData.weight ?? null,
+            rbs: newVitalData.rbs ?? null,
+            sCreatinine: newVitalData.sCreatinine ?? null,
+            createdAt: serverTimestamp()
+        };
+        
+        await addDoc(vitalsRef, newVital);
 
-    toast({
-      title: "Vitals Logged",
-      description: "Your latest health vitals have been recorded.",
-    });
+        toast({
+          title: "Vitals Logged",
+          description: "Your latest health vitals have been recorded.",
+        });
 
-    setIsSubmitting(false);
+    } catch (error) {
+        console.error("Failed to log vitals:", error);
+        toast({
+            variant: "destructive",
+            title: "Log Failed",
+            description: "Could not save your vitals.",
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
   
   const renderChart = (dataKey: "bpSystolic" | "pulse" | "weight" | "rbs" | "sCreatinine", label: string, color: string) => (
@@ -238,5 +244,3 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId }: Vitals
     </Card>
   )
 }
-
-    
