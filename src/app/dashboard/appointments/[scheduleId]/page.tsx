@@ -4,7 +4,7 @@
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc, orderBy, query, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, doc, orderBy, query, updateDoc, where, serverTimestamp } from "firebase/firestore";
 import type { Appointment, DoctorSchedule } from "@/lib/definitions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,6 +14,18 @@ import { Button } from "@/components/ui/button";
 import { Check, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+
+async function createNotification(firestore: any, userId: string, title: string, description: string, href?: string) {
+    const notificationsRef = collection(firestore, 'users', userId, 'notifications');
+    await addDoc(notificationsRef, {
+        userId,
+        title,
+        description,
+        href: href || '#',
+        isRead: false,
+        createdAt: serverTimestamp(),
+    });
+}
 
 export default function DoctorAppointmentsPage() {
     const params = useParams();
@@ -42,9 +54,16 @@ export default function DoctorAppointmentsPage() {
         }, [firestore, orgId, scheduleId])
     );
 
-    const handleStatusChange = async (appointmentId: string, status: 'confirmed' | 'cancelled') => {
-        const appointmentRef = doc(firestore, 'appointments', appointmentId);
+    const handleStatusChange = async (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
+        if (!firestore) return;
+        const appointmentRef = doc(firestore, 'appointments', appointment.id);
         await updateDoc(appointmentRef, { status });
+
+        // Notify patient
+        const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Cancelled';
+        const description = `Your appointment with ${appointment.doctorName} on ${format(parseISO(appointment.appointmentDate), 'PPP')} has been ${status}.`;
+        await createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
+
         toast({
             title: `Appointment ${status}`,
             description: `The appointment has been ${status}.`
@@ -105,10 +124,10 @@ export default function DoctorAppointmentsPage() {
                                         <TableCell className="text-right space-x-1">
                                             {apt.status === 'pending' && (
                                                 <>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:bg-green-100 hover:text-green-700" onClick={() => handleStatusChange(apt.id, 'confirmed')}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:bg-green-100 hover:text-green-700" onClick={() => handleStatusChange(apt, 'confirmed')}>
                                                         <Check className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleStatusChange(apt.id, 'cancelled')}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleStatusChange(apt, 'cancelled')}>
                                                         <X className="h-4 w-4" />
                                                     </Button>
                                                 </>

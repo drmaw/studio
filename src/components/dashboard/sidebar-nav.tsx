@@ -8,7 +8,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, Briefcase, CalendarCheck, DollarSign } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, Briefcase, CalendarCheck, DollarSign, Shield } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -34,6 +34,12 @@ export function SidebarNav() {
     : 'Professional Dashboard';
 
   const menuItems = [
+     {
+      href: "/dashboard/admin",
+      label: "Admin Dashboard",
+      icon: Shield,
+      roles: ['admin'],
+    },
     {
       href: "/dashboard",
       label: "My Dashboard",

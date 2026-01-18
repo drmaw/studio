@@ -24,6 +24,10 @@ service cloud.firestore {
     function isRole(role) {
         return isSignedIn() && role in getUserData().roles;
     }
+    
+    function isAdmin() {
+        return isRole('admin');
+    }
 
     function isInOrg(orgId) {
         return isSignedIn() && getUserData().organizationId == orgId;
@@ -31,19 +35,19 @@ service cloud.firestore {
 
     // User Profiles
     match /users/{userId} {
-      // Users can read and update their own profile. Create is handled by register logic.
-      allow read, update: if isOwner(userId);
       allow create: if isSignedIn();
-      // Authenticated users can list other users (e.g., for searching by Health ID).
-      allow list: if isSignedIn();
+      // User can read their own profile. Doctors can list users. Admin can do anything.
+      allow read: if isOwner(userId) || isRole('doctor') || isAdmin();
+      // User can update own profile. Admin can update anyone's profile.
+      allow update: if isOwner(userId) || isAdmin();
     }
 
     // Patient Records
     match /patients/{patientId} {
       // A patient can read their own record.
       allow get: if isOwner(patientId);
-      // A doctor in the same organization can read/update a patient's record.
-      allow get, update: if isRole('doctor') && isInOrg(resource.data.organizationId);
+      // A doctor in the same organization can read/update a patient's record. Admin can read/update any.
+      allow get, update: if (isRole('doctor') && isInOrg(resource.data.organizationId)) || isAdmin();
        // Allow creation during registration
       allow create: if isOwner(patientId);
     }
@@ -82,7 +86,7 @@ service cloud.firestore {
     // Organization Data
     match /organizations/{orgId}/{collection}/{docId} {
         // Only a hospital owner or manager of that specific org can manage its subcollections.
-        allow read, write: if isInOrg(orgId) && (isRole('hospital_owner') || isRole('manager'));
+        allow read, write: if (isInOrg(orgId) && (isRole('hospital_owner') || isRole('manager'))) || isAdmin();
         // Any signed-in user can read schedules (for booking appointments)
         allow get, list: if collection == 'schedules' && isSignedIn();
     }
@@ -92,7 +96,7 @@ service cloud.firestore {
         // Patient can create their own appointment.
         allow create: if isOwner(request.resource.data.patientId);
         // Patient can read/update their own appointments. Doctor can read/update their appointments.
-        allow get, update: if isOwner(resource.data.patientId) || (isDoctor() && request.auth.uid == resource.data.doctorId);
+        allow read, update: if isOwner(resource.data.patientId) || (isRole('doctor') && request.auth.uid == resource.data.doctorId) || isAdmin();
         // Authenticated users can list appointments (queries must be secured on client).
         allow list: if isSignedIn();
     }
@@ -101,14 +105,29 @@ service cloud.firestore {
     match /users/{userId}/role_applications/{applicationId} {
         // A user can create and read their own applications.
         allow read, create: if isOwner(userId);
-        // Admin approval logic would go here. For now, deny updates.
-        allow update: if false; 
+        // Admin can update any application.
+        allow update: if isAdmin(); 
     }
     
     match /users/{userId}/role_removal_requests/{requestId} {
         // A user can create and read their own requests.
         allow read, create: if isOwner(userId);
-        allow update: if false;
+        // Admin can update any request.
+        allow update: if isAdmin();
+    }
+
+    // Collection group queries for admins
+    match /{path=**}/role_applications/{applicationId} {
+      allow list: if isAdmin();
+    }
+
+     match /{path=**}/role_removal_requests/{requestId} {
+      allow list: if isAdmin();
+    }
+    
+    // Notifications
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if isOwner(userId);
     }
   }
 }

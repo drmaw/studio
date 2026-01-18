@@ -27,6 +27,18 @@ import { useRouter } from 'next/navigation';
 
 const dayMapping = { 'Sat': 6, 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5 };
 
+async function createNotification(firestore: any, userId: string, title: string, description: string, href?: string) {
+    const notificationsRef = collection(firestore, 'users', userId, 'notifications');
+    await addDoc(notificationsRef, {
+        userId,
+        title,
+        description,
+        href: href || '#',
+        isRead: false,
+        createdAt: serverTimestamp(),
+    });
+}
+
 export function BookAppointmentCalendar({ schedule }: { schedule: DoctorSchedule }) {
     const { user } = useAuth();
     const firestore = useFirestore();
@@ -102,7 +114,16 @@ export function BookAppointmentCalendar({ schedule }: { schedule: DoctorSchedule
             createdAt: serverTimestamp()
         };
 
-        await addDoc(collection(firestore, 'appointments'), newAppointment);
+        const appointmentRef = await addDoc(collection(firestore, 'appointments'), newAppointment);
+
+        // Notify the doctor
+        await createNotification(
+            firestore,
+            schedule.doctorId,
+            'New Appointment Request',
+            `${user.name} has requested an appointment on ${format(date, 'PPP')} at ${selectedTime}.`,
+            `/dashboard/appointments/${schedule.id}`
+        );
 
         setIsBooking(false);
         setIsDialogOpen(false);

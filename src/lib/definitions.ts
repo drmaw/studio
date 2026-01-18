@@ -185,3 +185,13 @@ export type Facility = {
   cost: number;
   createdAt: FieldValue;
 };
+
+export type Notification = {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  href?: string;
+  isRead: boolean;
+  createdAt: FieldValue;
+};

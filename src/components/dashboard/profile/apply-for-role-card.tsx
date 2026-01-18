@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import type { Role, RoleApplication, RoleRemovalRequest } from '@/lib/definitions';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -66,6 +67,7 @@ export function ApplyForRoleCard() {
       status: req.status,
       createdAt: req.createdAt,
       reviewedAt: req.reviewedAt,
+      reason: undefined,
     }));
 
     const combined = [...creationActivities, ...removalActivities];
@@ -110,7 +112,7 @@ export function ApplyForRoleCard() {
     try {
         const applicationsRef = collection(firestore, 'users', user.id, 'role_applications');
         
-        const newApplication: Omit<RoleApplication, 'id'> = {
+        const newApplication: Omit<RoleApplication, 'id' | 'reason'> = {
             userId: user.id,
             userName: user.name,
             requestedRole: selectedRole as Role,
@@ -152,7 +154,7 @@ export function ApplyForRoleCard() {
 
     try {
         const removalRequestsRef = collection(firestore, 'users', user.id, 'role_removal_requests');
-        const newRemovalRequest = {
+        const newRemovalRequest: Omit<RoleRemovalRequest, 'id'> = {
             userId: user.id,
             userName: user.name,
             roleToRemove: roleToDelete,

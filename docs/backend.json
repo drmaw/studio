@@ -111,6 +111,7 @@
         "requestedRole": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "details": { "type": "object" },
+        "reason": { "type": "string", "description": "The reason for the application's status (e.g., rejection)." },
         "createdAt": { "type": "object" },
         "reviewedAt": { "type": "object" }
       },
@@ -193,6 +194,20 @@
         "createdAt": { "type": "object" }
       },
       "required": ["organizationId", "type", "name", "beds", "cost", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Represents a user notification.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "href": { "type": "string", "format": "uri" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["userId", "title", "description", "isRead", "createdAt"]
     }
   },
   "auth": {
@@ -211,6 +226,10 @@
       {
         "path": "/users/{userId}/role_removal_requests/{requestId}",
         "definition": { "schema": { "$ref": "#/entities/RoleRemovalRequest" }, "description": "Subcollection for a user's role removal requests." }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": { "schema": { "$ref": "#/entities/Notification" }, "description": "Subcollection for user notifications." }
       },
       {
         "path": "/patients/{patientId}",
