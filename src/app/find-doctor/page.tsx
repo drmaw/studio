@@ -1,9 +1,9 @@
 
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit, startAt, endAt, collectionGroup } from 'firebase/firestore';
+import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2, Search, Stethoscope, Hospital, CalendarDays, Clock } from 'lucide-react';
@@ -72,9 +72,24 @@ function DoctorDetail({ doctor, schedules }: { doctor: User, schedules: DoctorSc
 export default function FindDoctorPage() {
     const firestore = useFirestore();
     const [searchTerm, setSearchTerm] = useState('');
-    const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState<User[]>([]);
     const [selectedDoctor, setSelectedDoctor] = useState<User | null>(null);
+    const [allDoctors, setAllDoctors] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!firestore) return;
+        const fetchDoctors = async () => {
+            setIsLoading(true);
+            const usersRef = collection(firestore, 'users');
+            const q = query(usersRef, where('roles', 'array-contains', 'doctor'));
+            const querySnapshot = await getDocs(q);
+            const doctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+            setAllDoctors(doctors);
+            setIsLoading(false);
+        };
+        fetchDoctors();
+    }, [firestore]);
 
     const schedulesQuery = useMemoFirebase(() => {
         if (!firestore || !selectedDoctor) return null;
@@ -83,26 +98,14 @@ export default function FindDoctorPage() {
 
     const { data: schedules, isLoading: schedulesLoading } = useCollection<DoctorSchedule>(schedulesQuery);
 
-    const handleSearch = async () => {
-        if (!searchTerm.trim()) return;
-        setIsSearching(true);
+    const handleSearch = () => {
+        if (!searchTerm.trim()) {
+            setSearchResults([]);
+            return;
+        }
         setSelectedDoctor(null);
-        setSearchResults([]);
-
-        const usersRef = collection(firestore, 'users');
-        const q = query(
-            usersRef,
-            where('roles', 'array-contains', 'doctor'),
-            orderBy('name'),
-            startAt(searchTerm),
-            endAt(searchTerm + '\uf8ff'),
-            limit(10)
-        );
-
-        const querySnapshot = await getDocs(q);
-        const results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+        const results = allDoctors.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase())).slice(0, 10);
         setSearchResults(results);
-        setIsSearching(false);
     };
 
     return (
@@ -131,14 +134,15 @@ export default function FindDoctorPage() {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            disabled={isLoading}
                         />
-                        <Button size="lg" onClick={handleSearch} disabled={isSearching}>
-                            {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
+                        <Button size="lg" onClick={handleSearch} disabled={isLoading}>
+                            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
                         </Button>
                     </div>
 
                     <div className="mt-8">
-                        {isSearching ? (
+                        {isLoading ? (
                             <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
                         ) : selectedDoctor ? (
                             <DoctorDetail doctor={selectedDoctor} schedules={schedules} />
@@ -149,7 +153,7 @@ export default function FindDoctorPage() {
                                 ))}
                             </div>
                         ) : (
-                            !isSearching && searchTerm && <p className="text-center text-muted-foreground">No doctors found matching your search.</p>
+                            !isLoading && searchTerm && <p className="text-center text-muted-foreground">No doctors found matching your search.</p>
                         )}
                     </div>
                 </div>

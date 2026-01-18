@@ -70,13 +70,23 @@ export function DoctorSchedulesTab() {
     setIsSubmitting(true);
     
     const usersRef = collection(firestore, 'users');
-    const q = query(usersRef, where('healthId', '==', values.healthId), where('roles', 'array-contains', 'doctor'), limit(1));
+    const q = query(usersRef, where("healthId", "==", values.healthId), limit(1));
 
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
         const doctorDoc = querySnapshot.docs[0];
         const doctorData = doctorDoc.data() as User;
+
+        if (!doctorData.roles.includes('doctor')) {
+            toast({
+                variant: "destructive",
+                title: "User Is Not a Doctor",
+                description: "The user with this Health ID does not have a 'doctor' role.",
+            });
+            setIsSubmitting(false);
+            return;
+        }
         
         const schedulesRef = collection(firestore, 'organizations', hospitalOwner.organizationId, 'schedules');
 
