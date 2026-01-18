@@ -47,19 +47,18 @@ const chartConfig = {
   }
 };
 
-function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => void, submitting: boolean }) {
+function VitalsInput({ onAdd, submitting, activeTab }: { onAdd: (vital: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => void, submitting: boolean, activeTab: string }) {
   const [bpSystolic, setBpSystolic] = useState('');
   const [bpDiastolic, setBpDiastolic] = useState('');
   const [pulse, setPulse] = useState('');
   const [weight, setWeight] = useState('');
   const [rbs, setRbs] = useState('');
   const [sCreatinine, setSCreatinine] = useState('');
-  const [activeInputTab, setActiveInputTab] = useState('rbs');
 
   const addVital = (vital: any) => {
     onAdd(vital);
     // Reset fields based on current tab
-    switch(activeInputTab) {
+    switch(activeTab) {
       case 'bp':
         setBpSystolic('');
         setBpDiastolic('');
@@ -79,50 +78,58 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Omit<Vitals
     }
   }
 
-  return (
-    <Tabs value={activeInputTab} onValueChange={setActiveInputTab}>
-      <TabsList className="grid w-full grid-cols-5">
-        <TabsTrigger value="rbs">RBS</TabsTrigger>
-        <TabsTrigger value="bp">BP</TabsTrigger>
-        <TabsTrigger value="pulse">Pulse</TabsTrigger>
-        <TabsTrigger value="weight">Weight</TabsTrigger>
-        <TabsTrigger value="sCreatinine">S.Creatinine</TabsTrigger>
-      </TabsList>
-       <TabsContent value="rbs">
-        <div className="flex gap-2 items-end">
-          <Input className="flex-1" placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
-          <Button onClick={() => addVital({ rbs: parseFloat(rbs) })} disabled={submitting || !rbs}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-        </div>
-      </TabsContent>
-      <TabsContent value="bp">
-        <div className="flex gap-2 items-end">
-          <div className="grid grid-cols-2 gap-2 flex-1">
-            <Input placeholder="Systolic (e.g. 120)" value={bpSystolic} onChange={e => setBpSystolic(e.target.value)} type="number" />
-            <Input placeholder="Diastolic (e.g. 80)" value={bpDiastolic} onChange={e => setBpDiastolic(e.target.value)} type="number" />
+  const renderInputForTab = () => {
+    switch (activeTab) {
+      case 'rbs':
+        return (
+          <div className="flex gap-2 items-end">
+            <Input className="flex-1" placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
+            <Button onClick={() => addVital({ rbs: parseFloat(rbs) })} disabled={submitting || !rbs}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
           </div>
-          <Button onClick={() => addVital({ bpSystolic: parseInt(bpSystolic), bpDiastolic: parseInt(bpDiastolic) })} disabled={submitting || !bpSystolic || !bpDiastolic}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-        </div>
-      </TabsContent>
-       <TabsContent value="pulse">
-        <div className="flex gap-2 items-end">
-          <Input className="flex-1" placeholder="Pulse (bpm)" value={pulse} onChange={e => setPulse(e.target.value)} type="number" />
-          <Button onClick={() => addVital({ pulse: parseInt(pulse) })} disabled={submitting || !pulse}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-        </div>
-      </TabsContent>
-      <TabsContent value="weight">
-         <div className="flex gap-2 items-end">
-          <Input className="flex-1" placeholder="Weight (kg)" value={weight} onChange={e => setWeight(e.target.value)} type="number" />
-          <Button onClick={() => addVital({ weight: parseFloat(weight) })} disabled={submitting || !weight}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-        </div>
-      </TabsContent>
-      <TabsContent value="sCreatinine">
-         <div className="flex gap-2 items-end">
-          <Input className="flex-1" placeholder="S.Creatinine (mg/dL)" value={sCreatinine} onChange={e => setSCreatinine(e.target.value)} type="number" />
-          <Button onClick={() => addVital({ sCreatinine: parseFloat(sCreatinine) })} disabled={submitting || !sCreatinine}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-        </div>
-      </TabsContent>
-    </Tabs>
-  );
+        );
+      case 'bp':
+        return (
+          <div className="flex gap-2 items-end">
+            <div className="grid grid-cols-2 gap-2 flex-1">
+              <Input placeholder="Systolic (e.g. 120)" value={bpSystolic} onChange={e => setBpSystolic(e.target.value)} type="number" />
+              <Input placeholder="Diastolic (e.g. 80)" value={bpDiastolic} onChange={e => setBpDiastolic(e.target.value)} type="number" />
+            </div>
+            <Button onClick={() => addVital({ bpSystolic: parseInt(bpSystolic), bpDiastolic: parseInt(bpDiastolic) })} disabled={submitting || !bpSystolic || !bpDiastolic}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+          </div>
+        );
+      case 'pulse':
+        return (
+          <div className="flex gap-2 items-end">
+            <Input className="flex-1" placeholder="Pulse (bpm)" value={pulse} onChange={e => setPulse(e.target.value)} type="number" />
+            <Button onClick={() => addVital({ pulse: parseInt(pulse) })} disabled={submitting || !pulse}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+          </div>
+        );
+      case 'weight':
+        return (
+          <div className="flex gap-2 items-end">
+            <Input className="flex-1" placeholder="Weight (kg)" value={weight} onChange={e => setWeight(e.target.value)} type="number" />
+            <Button onClick={() => addVital({ weight: parseFloat(weight) })} disabled={submitting || !weight}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+          </div>
+        );
+      case 'sCreatinine':
+        return (
+          <div className="flex gap-2 items-end">
+            <Input className="flex-1" placeholder="S.Creatinine (mg/dL)" value={sCreatinine} onChange={e => setSCreatinine(e.target.value)} type="number" />
+            <Button onClick={() => addVital({ sCreatinine: parseFloat(sCreatinine) })} disabled={submitting || !sCreatinine}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+          </div>
+        );
+      default:
+        // By default, show the input for the first tab
+        return (
+           <div className="flex gap-2 items-end">
+            <Input className="flex-1" placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
+            <Button onClick={() => addVital({ rbs: parseFloat(rbs) })} disabled={submitting || !rbs}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+          </div>
+        );
+    }
+  };
+
+  return renderInputForTab();
 }
 
 
@@ -242,19 +249,19 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
         
         {currentUserRole === 'patient' && (
              <div className="space-y-4 p-4 border rounded-lg bg-background">
-                <h4 className="font-medium text-center">Log New Vitals</h4>
+                <h4 className="font-medium text-center">Log New '{historyHeaders[activeTab]}'</h4>
                 {isSubmitting ? 
-                  <div className="flex justify-center items-center h-20">
+                  <div className="flex justify-center items-center h-12">
                     <Loader2 className="animate-spin" />
                   </div>
                   :
-                  <VitalsInput onAdd={handleAddVitals} submitting={isSubmitting} />
+                  <VitalsInput onAdd={handleAddVitals} submitting={isSubmitting} activeTab={activeTab} />
                 }
             </div>
         )}
 
         <div className="space-y-2">
-            <h4 className="font-medium">History for {activeTab.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</h4>
+            <h4 className="font-medium">History for {historyHeaders[activeTab]}</h4>
             <ScrollArea className="h-64 border rounded-md bg-background">
                 <Table>
                     <TableHeader className="sticky top-0 bg-secondary">
