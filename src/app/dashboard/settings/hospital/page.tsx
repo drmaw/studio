@@ -1,10 +1,13 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StaffManagementTab } from "@/components/dashboard/settings/staff-management-tab";
-import { BillingFeesTab } from "@/components/dashboard/settings/billing-fees-tab";
 import { DoctorSchedulesTab } from "@/components/dashboard/settings/doctor-schedules-tab";
 import { FacilityManagementTab } from "@/components/dashboard/settings/facility-management-tab";
 import { GeneralSettingsTab } from "@/components/dashboard/settings/general-settings-tab";
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+
 
 export default function HospitalSettingsPage() {
     return (
@@ -49,8 +52,13 @@ export default function HospitalSettingsPage() {
                             <CardTitle>Billing & Fees</CardTitle>
                             <CardDescription>Manage the price chart for various services offered at your hospital.</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                           <BillingFeesTab />
+                        <CardContent className="flex flex-col items-center justify-center text-center p-12">
+                           <p className="text-muted-foreground mb-4">Billing management has been moved to its own dedicated page, accessible by both Hospital Owners and Managers.</p>
+                           <Button asChild>
+                               <Link href="/dashboard/billing">
+                                    Go to Billing & Fees <ArrowRight className="ml-2 h-4 w-4" />
+                               </Link>
+                           </Button>
                         </CardContent>
                     </Card>
                 </TabsContent>
