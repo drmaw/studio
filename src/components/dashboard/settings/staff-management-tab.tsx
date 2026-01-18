@@ -16,12 +16,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Loader2, UserPlus, Users } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { User } from "@/lib/definitions";
+import type { User, Role } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, getDocs, doc, limit, updateDoc, writeBatch } from "firebase/firestore";
@@ -38,16 +38,21 @@ export function StaffManagementTab() {
   const { user: hospitalOwner } = useAuth();
   const firestore = useFirestore();
 
-  const staffQuery = useMemoFirebase(() => {
+  const staffInOrgQuery = useMemoFirebase(() => {
     if (!firestore || !hospitalOwner?.organizationId) return null;
-    // Query for users that are NOT patients and belong to the owner's organization
     return query(collection(firestore, 'users'), 
-      where('organizationId', '==', hospitalOwner.organizationId),
-      where('roles', 'array-contains-any', ['doctor', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk', 'hospital_owner'])
+      where('organizationId', '==', hospitalOwner.organizationId)
     );
   }, [firestore, hospitalOwner?.organizationId]);
 
-  const { data: staff, isLoading: staffLoading } = useCollection<User>(staffQuery);
+  const { data: staffInOrg, isLoading: staffLoading } = useCollection<User>(staffInOrgQuery);
+
+  const staff = useMemo(() => {
+    if (!staffInOrg) return [];
+    const staffRoles: Role[] = ['doctor', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk', 'hospital_owner'];
+    return staffInOrg.filter(user => user.roles.some(role => staffRoles.includes(role)));
+  }, [staffInOrg]);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
