@@ -180,6 +180,8 @@ export function RoleManagementTab() {
                 const newOrg: Omit<Organization, 'id'> = {
                     name: app.details.organization.name,
                     address: app.details.organization.address,
+                    registrationNumber: app.details.organization.reg,
+                    tin: app.details.organization.tin,
                     ownerId: app.userId,
                     status: 'active',
                     createdAt: serverTimestamp(),

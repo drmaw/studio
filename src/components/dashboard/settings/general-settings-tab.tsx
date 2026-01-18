@@ -1,13 +1,18 @@
+
 'use client';
 
 import { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Building, Hash, MapPin, Phone, Image as ImageIcon, PlusCircle, Trash2, Loader2 } from 'lucide-react';
+import { Building, Hash, MapPin, Phone, Image as ImageIcon, PlusCircle, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/use-auth';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { Organization } from '@/lib/definitions';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type FacilityImage = {
   id: string;
@@ -19,22 +24,21 @@ const initialImages: FacilityImage[] = [
   { id: 'img2', url: 'https://picsum.photos/seed/hospital2/600/400' },
 ];
 
-export function GeneralSettingsTab() {
-  const [mobileNumber, setMobileNumber] = useState('+8801234567890');
-  const [images, setImages] = useState<FacilityImage[]>(initialImages);
-  const [isSaving, setIsSaving] = useState(false);
-  const { toast } = useToast();
 
-  const handleSaveChanges = async () => {
-    setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: "Settings Saved",
-      description: "Your general settings have been updated successfully.",
-    });
-    setIsSaving(false);
-  };
+export function GeneralSettingsTab() {
+  const { user, loading: userLoading } = useAuth();
+  const firestore = useFirestore();
+  const [images, setImages] = useState<FacilityImage[]>(initialImages); // Mock images
+
+  const orgDocRef = useMemoFirebase(() => {
+    if (!firestore || !user?.organizationId) return null;
+    return doc(firestore, 'organizations', user.organizationId);
+  }, [firestore, user?.organizationId]);
+
+  const { data: organization, isLoading: orgLoading } = useDoc<Organization>(orgDocRef);
   
+  const isLoading = userLoading || orgLoading;
+
   const handleAddImage = () => {
     const newImage: FacilityImage = {
         id: `img${Date.now()}`,
@@ -47,6 +51,15 @@ export function GeneralSettingsTab() {
     setImages(prev => prev.filter(img => img.id !== id));
   }
 
+  if (isLoading) {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+        </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Organization Details */}
@@ -55,19 +68,23 @@ export function GeneralSettingsTab() {
         <div className="grid sm:grid-cols-2 gap-4 p-4 border rounded-lg">
           <div className="space-y-2">
             <Label htmlFor="orgName" className="flex items-center gap-2"><Building className="h-4 w-4" /> Organization Name</Label>
-            <Input id="orgName" value="Digital Health Clinic" disabled />
+            <Input id="orgName" value={organization?.name || ''} disabled />
           </div>
           <div className="space-y-2">
             <Label htmlFor="regNumber" className="flex items-center gap-2"><Hash className="h-4 w-4" /> Registration Number</Label>
-            <Input id="regNumber" value="DH-123456789" disabled />
+            <Input id="regNumber" value={organization?.registrationNumber || ''} disabled />
           </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="address" className="flex items-center gap-2"><MapPin className="h-4 w-4" /> Address</Label>
-            <Input id="address" value="123 Health St, Medical Road, Dhaka, Bangladesh" disabled />
+          <div className="space-y-2">
+            <Label htmlFor="tin" className="flex items-center gap-2"><Hash className="h-4 w-4" /> TIN</Label>
+            <Input id="tin" value={organization?.tin || ''} disabled />
           </div>
            <div className="space-y-2">
             <Label htmlFor="mobileNumber" className="flex items-center gap-2"><Phone className="h-4 w-4" /> Mobile Number</Label>
-            <Input id="mobileNumber" value={mobileNumber} onChange={e => setMobileNumber(e.target.value)} />
+            <Input id="mobileNumber" value={organization?.mobileNumber || ''} disabled />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="address" className="flex items-center gap-2"><MapPin className="h-4 w-4" /> Address</Label>
+            <Input id="address" value={organization?.address || ''} disabled />
           </div>
         </div>
       </div>
@@ -113,11 +130,6 @@ export function GeneralSettingsTab() {
           )}
         </div>
       </div>
-      
-      <Button onClick={handleSaveChanges} disabled={isSaving}>
-        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Save All Changes
-      </Button>
     </div>
   );
 }

@@ -54,6 +54,9 @@ export type Organization = {
   id: string;
   name: string;
   address?: string;
+  registrationNumber?: string;
+  tin?: string;
+  mobileNumber?: string;
   ownerId: string;
   status: 'active' | 'suspended' | 'deleted';
   createdAt: FieldValue;

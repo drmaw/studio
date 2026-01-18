@@ -55,6 +55,7 @@
         "address": { "type": "string" },
         "registrationNumber": { "type": "string" },
         "tin": { "type": "string" },
+        "mobileNumber": { "type": "string" },
         "ownerId": { "type": "string" },
         "status": { "type": "string", "enum": ["active", "suspended", "deleted"] },
         "createdAt": { "type": "object" }
