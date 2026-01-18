@@ -127,7 +127,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
   const renderInput = () => {
     if (isSubmitting) {
         return (
-            <div className="flex justify-center items-center h-20">
+            <div className="flex justify-center items-center h-10">
                 <Loader2 className="animate-spin" />
             </div>
         );
