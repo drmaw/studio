@@ -22,9 +22,9 @@ export function useAuth() {
   const user = useMemo(() => {
     if (!firebaseUser || !userProfile) return null;
 
-    // Ensure roles is always an array, defaulting to ['patient'] if not present or empty.
-    // This makes the app more resilient to inconsistent data in Firestore.
-    const roles = (userProfile.roles && userProfile.roles.length > 0) ? userProfile.roles : ['patient'];
+    // Ensure that every user, regardless of their other roles, is always considered a patient.
+    // This aligns with the core concept that professional roles are additive.
+    const roles = Array.from(new Set([...(userProfile.roles || []), 'patient']));
     
     let displayName = userProfile.name;
     if (roles.includes('doctor') && !displayName.startsWith('Dr.')) {
