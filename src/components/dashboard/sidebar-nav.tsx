@@ -50,12 +50,6 @@ export function SidebarNav() {
   const userProfessionalRoles = professionalRoleOrder.filter(role => user.roles.includes(role));
 
   const menuItems = [
-     {
-      href: "/dashboard/admin",
-      label: "Admin Dashboard",
-      icon: Shield,
-      roles: ['admin'],
-    },
     {
       href: "/dashboard",
       label: "My Dashboard",
@@ -87,16 +81,22 @@ export function SidebarNav() {
         roles: ['patient'],
     },
     {
-        href: "/dashboard/billing",
-        label: "Billing & Fees",
-        icon: DollarSign,
-        roles: ['hospital_owner', 'manager'],
-    },
-    {
       href: "/dashboard/settings",
       label: "Account Settings",
       icon: Settings,
       roles: ['patient'],
+    },
+    {
+      href: "/dashboard/admin",
+      label: "Admin Dashboard",
+      icon: Shield,
+      roles: ['admin'],
+    },
+    {
+        href: "/dashboard/billing",
+        label: "Billing & Fees",
+        icon: DollarSign,
+        roles: ['hospital_owner', 'manager'],
     },
     {
       href: "/dashboard/settings/hospital",
