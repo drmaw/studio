@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useState, useMemo } from 'react'
@@ -15,6 +14,7 @@ import type { Role, Vitals } from '@/lib/definitions';
 import { useFirestore } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { FormattedDate } from '../shared/formatted-date';
 
 
 type VitalsTrackerProps = {
@@ -230,7 +230,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
                         {filteredHistory.length > 0 ? (
                             filteredHistory.map(vital => (
                                 <TableRow key={vital.id}>
-                                    <TableCell>{format(parseISO(vital.date), 'dd-MM-yyyy, hh:mm a')}</TableCell>
+                                    <TableCell><FormattedDate date={vital.date} formatString="dd-MM-yyyy, hh:mm a" /></TableCell>
                                     {renderTableCell(vital)}
                                 </TableRow>
                             ))

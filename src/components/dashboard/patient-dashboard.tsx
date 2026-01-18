@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { RecordFile, User, Patient, Vitals } from "@/lib/definitions";
@@ -12,11 +11,11 @@ import { Button } from "../ui/button";
 import { ArrowRight, FileText } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "../ui/badge";
-import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc, orderBy, query, limit } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
+import { FormattedDate } from "@/components/shared/formatted-date";
 
 
 function LatestRecordCard({ record }: { record: RecordFile }) {
@@ -35,7 +34,7 @@ function LatestRecordCard({ record }: { record: RecordFile }) {
                 <CardHeader>
                     <CardTitle>{record.name}</CardTitle>
                     <CardDescription>
-                       Uploaded by {record.uploaderName} on {record.createdAt ? format(new Date((record.createdAt as any).toDate()), "dd-MM-yyyy") : ''}
+                       Uploaded by {record.uploaderName} on <FormattedDate date={record.createdAt} formatString="dd-MM-yyyy" fallback="" />
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -108,7 +107,7 @@ export function PatientDashboard({ user }: { user: User }) {
       
       {patient?.redFlag && (
         <RedBanner
-          patientId={patient.id}
+          patientId={user.id}
           initialRedFlag={patient.redFlag}
           currentUserRole="patient"
         />
@@ -139,5 +138,3 @@ export function PatientDashboard({ user }: { user: User }) {
     </div>
   );
 }
-
-    

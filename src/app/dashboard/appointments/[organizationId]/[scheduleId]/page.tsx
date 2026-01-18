@@ -9,11 +9,11 @@ import type { Appointment, DoctorSchedule } from "@/lib/definitions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Check, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormattedDate } from "@/components/shared/formatted-date";
 
 async function createNotification(firestore: any, userId: string, title: string, description: string, href?: string) {
     const notificationsRef = collection(firestore, 'users', userId, 'notifications');
@@ -59,7 +59,7 @@ export default function DoctorAppointmentsPage() {
 
         // Notify patient
         const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Cancelled';
-        const description = `Your appointment with ${appointment.doctorName} on ${format(parseISO(appointment.appointmentDate), 'dd-MM-yyyy')} has been ${status}.`;
+        const description = `Your appointment with ${appointment.doctorName} on <FormattedDate date={appointment.appointmentDate} formatString="dd-MM-yyyy" /> has been ${status}.`;
         await createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
 
         toast({
@@ -107,7 +107,7 @@ export default function DoctorAppointmentsPage() {
                                 appointments.map(apt => (
                                     <TableRow key={apt.id}>
                                         <TableCell>
-                                            <div className="font-medium">{format(parseISO(apt.appointmentDate), 'dd-MM-yyyy')}</div>
+                                            <div className="font-medium"><FormattedDate date={apt.appointmentDate} formatString="dd-MM-yyyy" /></div>
                                             <div className="text-sm text-muted-foreground">{apt.appointmentTime}</div>
                                         </TableCell>
                                         <TableCell>{apt.patientName}</TableCell>

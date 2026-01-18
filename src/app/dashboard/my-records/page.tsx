@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -29,7 +30,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
 import { RecordViewer } from '@/components/dashboard/record-viewer';
 import type { RecordFile } from '@/lib/definitions';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -38,23 +38,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, serverTimestamp, query, orderBy, doc, deleteDoc, writeBatch, addDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Skeleton } from '@/components/ui/skeleton';
-
-
-// Client-side only component to format date and avoid hydration mismatch
-const FormattedDate = ({ date }: { date: string | Date }) => {
-    const [formattedDate, setFormattedDate] = useState('');
-
-    useEffect(() => {
-        const d = typeof date === 'string' ? new Date(date) : date;
-        setFormattedDate(format(d, "dd-MM-yyyy"));
-    }, [date]);
-
-    if (!formattedDate) {
-        return null;
-    }
-
-    return <span>{formattedDate}</span>;
-}
+import { FormattedDate } from '@/components/shared/formatted-date';
 
 
 export default function MyHealthRecordsPage() {
@@ -392,7 +376,7 @@ export default function MyHealthRecordsPage() {
                                         <div className="mt-4 space-y-2 text-xs text-muted-foreground pt-4 border-t border-dashed">
                                             <div className="flex items-center gap-2">
                                                 <Clock className="h-3 w-3"/>
-                                                {record.createdAt && <FormattedDate date={(record.createdAt as any).toDate()} />}
+                                                <FormattedDate date={record.createdAt} formatString="dd-MM-yyyy" />
                                                 <span className="font-semibold text-foreground/80">&bull; {record.size}</span>
                                             </div>
                                             <div className="flex items-center gap-2">

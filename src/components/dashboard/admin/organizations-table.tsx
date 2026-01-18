@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { FormattedDate } from '@/components/shared/formatted-date';
 
 export function OrganizationsTable() {
     const firestore = useFirestore();
@@ -39,7 +39,7 @@ export function OrganizationsTable() {
                                 <TableRow key={org.id}>
                                     <TableCell className="font-medium">{org.name}</TableCell>
                                     <TableCell>{org.ownerId}</TableCell>
-                                    <TableCell>{org.createdAt ? format((org.createdAt as any).toDate(), 'dd-MM-yyyy') : 'N/A'}</TableCell>
+                                    <TableCell><FormattedDate date={org.createdAt} formatString="dd-MM-yyyy" fallback="N/A" /></TableCell>
                                     <TableCell><Badge variant={org.status === 'suspended' ? 'destructive' : 'default'} className="capitalize">{org.status}</Badge></TableCell>
                                     <TableCell className="text-right"><Button variant="outline" size="sm">Manage</Button></TableCell>
                                 </TableRow>

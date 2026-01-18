@@ -16,8 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserPlus, IdCard, File, Building, Hash, MapPin, Loader2, Clock, CheckCircle, Trash2 } from "lucide-react";
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { FormattedDate } from '@/components/shared/formatted-date';
 
 
 const availableRoles = [
@@ -322,12 +322,12 @@ export function ApplyForRoleCard() {
                                         </p>
                                         <p className="text-xs text-muted-foreground">
                                             {activity.type === 'creation' ? 'Applied: ' : 'Requested: '}
-                                            {activity.createdAt ? format((activity.createdAt as any).toDate(), 'dd-MM-yyyy') : 'N/A'}
+                                            <FormattedDate date={activity.createdAt} formatString="dd-MM-yyyy" fallback="N/A" />
                                         </p>
                                         {activity.status === 'rejected' && activity.reason && <p className="text-xs text-destructive/80 mt-1">Reason: {activity.reason}</p>}
                                         {activity.status === 'approved' && activity.reviewedAt && (
                                             <p className="text-xs text-green-600">
-                                                Approved: {format((activity.reviewedAt as any).toDate(), 'dd-MM-yyyy')}
+                                                Approved: <FormattedDate date={activity.reviewedAt} formatString="dd-MM-yyyy" />
                                             </p>
                                         )}
                                     </div>
@@ -369,7 +369,7 @@ export function ApplyForRoleCard() {
                                 <div key={role} className="flex items-center justify-between p-3 border rounded-lg bg-emerald-50 border-emerald-200">
                                     <div>
                                         <p className="font-medium capitalize">{role.replace(/_/g, ' ')}</p>
-                                        <p className="text-xs text-muted-foreground">Verified: {approvalInfo?.reviewedAt ? format((approvalInfo.reviewedAt as any).toDate(), 'dd-MM-yyyy') : 'N/A'}</p>
+                                        <p className="text-xs text-muted-foreground">Verified: <FormattedDate date={approvalInfo?.reviewedAt} formatString="dd-MM-yyyy" fallback="N/A" /></p>
                                     </div>
 
                                     {removalPending ? (

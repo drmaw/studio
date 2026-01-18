@@ -1,17 +1,16 @@
 
-
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { History, Search, Eye, FilePlus, Loader2 } from "lucide-react";
-import { format } from "date-fns";
 import type { PrivacyLogEntry } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, where } from "firebase/firestore";
 import { useMemo } from "react";
+import { FormattedDate } from "@/components/shared/formatted-date";
 
 function LogEntry({ log }: { log: PrivacyLogEntry }) {
     const actorInitials = log.actorName.split(' ').map(n => n[0]).join('');
@@ -27,8 +26,8 @@ function LogEntry({ log }: { log: PrivacyLogEntry }) {
                 <p className="text-xs text-muted-foreground">Health ID: {log.actorId}</p>
             </div>
             <div className="text-right text-xs text-muted-foreground">
-                <p>{log.timestamp ? format(new Date((log.timestamp as any).toDate()), "dd-MM-yyyy") : ''}</p>
-                <p>{log.timestamp ? format(new Date((log.timestamp as any).toDate()), "hh:mm a") : ''}</p>
+                <p><FormattedDate date={log.timestamp} formatString="dd-MM-yyyy" fallback="N/A" /></p>
+                <p><FormattedDate date={log.timestamp} formatString="hh:mm a" fallback="" /></p>
             </div>
         </div>
     )
@@ -117,5 +116,3 @@ export default function PrivacyLogPage() {
         </div>
     )
 }
-
-    

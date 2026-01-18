@@ -21,9 +21,9 @@ import { signOut } from "firebase/auth";
 import { Badge } from "../ui/badge";
 import { collection, doc, orderBy, query, writeBatch } from "firebase/firestore";
 import type { Notification } from "@/lib/definitions";
-import { format } from "date-fns";
 import { ScrollArea } from "../ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { FormattedDate } from "../shared/formatted-date";
 
 function NotificationBell() {
   const { user } = useAppAuth();
@@ -89,7 +89,7 @@ function NotificationBell() {
                        <p className="font-semibold">{n.title}</p>
                        <p className="text-xs text-muted-foreground">{n.description}</p>
                        <p className="text-xs text-muted-foreground/80 self-end">
-                         {n.createdAt ? format((n.createdAt as any).toDate(), 'dd-MM-yyyy, hh:mm a') : ''}
+                         <FormattedDate date={n.createdAt} formatString="dd-MM-yyyy, hh:mm a" fallback="" />
                        </p>
                     </Link>
                   </DropdownMenuItem>

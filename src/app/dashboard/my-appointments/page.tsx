@@ -11,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarCheck, Loader2 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -24,6 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { FormattedDate } from '@/components/shared/formatted-date';
 
 export default function MyAppointmentsPage() {
     const { user, loading: userLoading } = useAuth();
@@ -84,7 +84,7 @@ export default function MyAppointmentsPage() {
                                         <TableCell className="font-medium">{apt.doctorName}</TableCell>
                                         <TableCell>{apt.organizationName}</TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{format(parseISO(apt.appointmentDate), 'dd-MM-yyyy')}</div>
+                                            <div className="font-medium"><FormattedDate date={apt.appointmentDate} formatString="dd-MM-yyyy" /></div>
                                             <div className="text-sm text-muted-foreground">{apt.appointmentTime}</div>
                                         </TableCell>
                                         <TableCell>

@@ -7,7 +7,6 @@ import { collection, collectionGroup, query, where, doc, writeBatch, serverTimes
 import type { Role, RoleApplication, RoleRemovalRequest, User, Organization } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -23,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { UserPlus, UserX, Loader2, Calendar, Building, Check, X, Trash2 } from 'lucide-react';
+import { FormattedDate } from '@/components/shared/formatted-date';
 
 async function createNotification(firestore: any, userId: string, title: string, description: string, href?: string) {
     const notificationsRef = collection(firestore, 'users', userId, 'notifications');
@@ -94,7 +94,7 @@ function ApplicationCard({ application, onApprove, onReject }: { application: Ro
             </CardHeader>
             <CardContent>
                 <div className="text-sm space-y-2">
-                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> <span>Applied: {application.createdAt ? format((application.createdAt as any).toDate(), 'dd-MM-yyyy, hh:mm a') : ''}</span></div>
+                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> <span>Applied: <FormattedDate date={application.createdAt} formatString="dd-MM-yyyy, hh:mm a" fallback="N/A" /></span></div>
                     {application.requestedRole === 'hospital_owner' && (
                         <Card className="p-3 bg-background-soft">
                             <h4 className="font-semibold text-xs mb-2 flex items-center gap-2"><Building className="h-4 w-4" /> Proposed Organization</h4>
@@ -129,7 +129,7 @@ function RemovalRequestCard({ request, onApprove, onReject }: { request: RoleRem
             </CardHeader>
             <CardContent>
                 <div className="text-sm space-y-2">
-                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> <span>Requested: {request.createdAt ? format((request.createdAt as any).toDate(), 'dd-MM-yyyy, hh:mm a') : ''}</span></div>
+                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> <span>Requested: <FormattedDate date={request.createdAt} formatString="dd-MM-yyyy, hh:mm a" fallback="N/A" /></span></div>
                 </div>
                  <div className="mt-4 flex justify-end gap-2">
                     <Button variant="secondary" size="sm" onClick={() => onReject(request)}><X className="mr-2 h-4 w-4" /> Reject</Button>

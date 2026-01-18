@@ -12,9 +12,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, File as FileIcon, Clock, User, Download, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
-import { format } from 'date-fns';
 import type { RecordFile } from '@/lib/definitions';
 import { Badge } from '../ui/badge';
+import { FormattedDate } from '../shared/formatted-date';
 
 type RecordViewerProps = {
   records: RecordFile[];
@@ -65,8 +65,6 @@ export function RecordViewer({ records, startIndex, open, onOpenChange }: Record
   if (!currentRecord) {
     return null;
   }
-  
-  const recordDate = currentRecord.createdAt && (currentRecord.createdAt as any).toDate ? (currentRecord.createdAt as any).toDate() : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,7 +72,7 @@ export function RecordViewer({ records, startIndex, open, onOpenChange }: Record
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="truncate">{currentRecord.name}</DialogTitle>
           <DialogDescription className="flex items-center gap-4 text-xs">
-             {recordDate && <span className='flex items-center gap-1'><Clock className="h-3 w-3" /> {format(recordDate, "dd-MM-yyyy, hh:mm a")}</span>}
+             <span className='flex items-center gap-1'><Clock className="h-3 w-3" /> <FormattedDate date={currentRecord.createdAt} formatString="dd-MM-yyyy, hh:mm a" /></span>
             <span className='flex items-center gap-1'><User className="h-3 w-3" /> Uploaded by {currentRecord.uploaderName}</span>
           </DialogDescription>
         </DialogHeader>
@@ -144,5 +142,3 @@ export function RecordViewer({ records, startIndex, open, onOpenChange }: Record
     </Dialog>
   );
 }
-
-    
