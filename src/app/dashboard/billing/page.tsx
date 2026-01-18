@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -30,28 +30,11 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, addDoc, updateDoc, deleteDoc, serverTimestamp, doc } from "firebase/firestore";
+import type { FeeItem } from "@/lib/definitions";
 
-
-type FeeItem = {
-    id: string;
-    name: string;
-    cost: number;
-};
-
-const initialInvestigations: FeeItem[] = [
-    { id: 'inv-1', name: 'Complete Blood Count (CBC)', cost: 500 },
-    { id: 'inv-2', name: 'X-Ray Chest PA view', cost: 700 },
-];
-
-const initialAdmissionFees: FeeItem[] = [
-    { id: 'adm-1', name: 'General Ward Admission', cost: 1500 },
-    { id: 'adm-2', name: 'Private Cabin Admission', cost: 5000 },
-];
-
-const initialDoctorFees: FeeItem[] = [
-    { id: 'doc-1', name: 'Dr. Anika Rahman - General Consultation', cost: 800 },
-    { id: 'doc-2', name: 'Dr. Farid Uddin - Specialist Consultation', cost: 1200 },
-];
 
 function EditFeeItemDialog({ 
     item, 
@@ -80,16 +63,9 @@ function EditFeeItemDialog({
         }
 
         setIsSaving(true);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Mock API call
-        
-        onSave({ ...item, name, cost: parsedCost });
-
+        await onSave({ ...item, name, cost: parsedCost });
         setIsSaving(false);
         setIsOpen(false);
-        toast({
-            title: 'Item Updated',
-            description: 'The fee item has been updated successfully.',
-        });
     };
 
     return (
@@ -127,23 +103,32 @@ function EditFeeItemDialog({
 function FeeCategory({ 
     title, 
     icon, 
-    items, 
-    setItems,
+    items,
+    isLoading,
     placeholder,
-    description
+    description,
+    category,
+    onAddItem,
+    onUpdateItem,
+    onDeleteItem
 }: { 
     title: string; 
     icon: React.ReactNode; 
     items: FeeItem[]; 
-    setItems: React.Dispatch<React.SetStateAction<FeeItem[]>>;
+    isLoading: boolean;
     placeholder: string;
     description: string;
+    category: FeeItem['category'];
+    onAddItem: (category: FeeItem['category'], name: string, cost: number) => Promise<void>;
+    onUpdateItem: (item: FeeItem) => Promise<void>;
+    onDeleteItem: (itemId: string) => Promise<void>;
 }) {
     const { toast } = useToast();
     const [newItemName, setNewItemName] = useState('');
     const [newItemCost, setNewItemCost] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleAddItem = () => {
+    const handleAddItem = async () => {
         const cost = parseFloat(newItemCost);
         if (!newItemName || isNaN(cost) || cost <= 0) {
             toast({
@@ -154,32 +139,11 @@ function FeeCategory({
             return;
         }
 
-        const newItem: FeeItem = {
-            id: `${title.toLowerCase().replace(' ', '-')}-${Date.now()}`,
-            name: newItemName,
-            cost: cost,
-        };
-
-        setItems(prev => [...prev, newItem]);
+        setIsSubmitting(true);
+        await onAddItem(category, newItemName, cost);
         setNewItemName('');
         setNewItemCost('');
-        toast({
-            title: 'Item Added',
-            description: `${newItemName} has been added to ${title}.`,
-        });
-    };
-    
-    const handleUpdateItem = (updatedItem: FeeItem) => {
-        setItems(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
-    };
-    
-    const handleDeleteItem = (itemId: string) => {
-        setItems(prev => prev.filter(item => item.id !== itemId));
-        toast({
-            variant: "destructive",
-            title: 'Item Removed',
-            description: `The item has been removed from ${title}.`,
-        });
+        setIsSubmitting(false);
     };
 
     return (
@@ -199,43 +163,57 @@ function FeeCategory({
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {items.map(item => (
-                                <TableRow key={item.id}>
-                                    <TableCell>{item.name}</TableCell>
-                                    <TableCell className="font-mono">{item.cost.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right space-x-1">
-                                        <EditFeeItemDialog
-                                            item={item}
-                                            onSave={handleUpdateItem}
-                                            trigger={
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                            }
-                                        />
-                                        
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This action cannot be undone. This will permanently delete the fee item.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteItem(item.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center h-24">
+                                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : items.length > 0 ? (
+                                items.map(item => (
+                                    <TableRow key={item.id}>
+                                        <TableCell>{item.name}</TableCell>
+                                        <TableCell className="font-mono">{item.cost.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right space-x-1">
+                                            <EditFeeItemDialog
+                                                item={item}
+                                                onSave={onUpdateItem}
+                                                trigger={
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                }
+                                            />
+                                            
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This action cannot be undone. This will permanently delete the fee item.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => onDeleteItem(item.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center h-24">
+                                        No items have been added to this category.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </div>
@@ -245,6 +223,7 @@ function FeeCategory({
                         value={newItemName}
                         onChange={(e) => setNewItemName(e.target.value)}
                         className="flex-1"
+                        disabled={isSubmitting}
                     />
                     <div className="relative w-32">
                         <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -254,10 +233,11 @@ function FeeCategory({
                             value={newItemCost}
                             onChange={(e) => setNewItemCost(e.target.value)}
                             className="pl-7"
+                            disabled={isSubmitting}
                         />
                     </div>
-                    <Button onClick={handleAddItem} size="icon">
-                        <PlusCircle className="h-4 w-4" />
+                    <Button onClick={handleAddItem} size="icon" disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
                         <span className="sr-only">Add Item</span>
                     </Button>
                 </div>
@@ -267,9 +247,58 @@ function FeeCategory({
 }
 
 export default function BillingPage() {
-    const [investigations, setInvestigations] = useState(initialInvestigations);
-    const [admissionFees, setAdmissionFees] = useState(initialAdmissionFees);
-    const [doctorFees, setDoctorFees] = useState(initialDoctorFees);
+    const { user } = useAuth();
+    const firestore = useFirestore();
+    const { toast } = useToast();
+
+    const feeItemsQuery = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return collection(firestore, 'organizations', user.organizationId, 'fee_items');
+    }, [user, firestore]);
+
+    const { data: feeItems, isLoading } = useCollection<FeeItem>(feeItemsQuery);
+
+    const investigations = useMemo(() => feeItems?.filter(item => item.category === 'investigation') || [], [feeItems]);
+    const admissionFees = useMemo(() => feeItems?.filter(item => item.category === 'admission') || [], [feeItems]);
+    const doctorFees = useMemo(() => feeItems?.filter(item => item.category === 'doctor_fee') || [], [feeItems]);
+
+
+    const handleAddItem = async (category: FeeItem['category'], name: string, cost: number) => {
+        if (!user || !firestore) return;
+        const feeItemsRef = collection(firestore, 'organizations', user.organizationId, 'fee_items');
+        await addDoc(feeItemsRef, {
+            organizationId: user.organizationId,
+            category,
+            name,
+            cost,
+            createdAt: serverTimestamp()
+        });
+        toast({
+            title: 'Item Added',
+            description: `"${name}" has been added.`,
+        });
+    };
+    
+    const handleUpdateItem = async (item: FeeItem) => {
+        if (!user || !firestore) return;
+        const itemRef = doc(firestore, 'organizations', user.organizationId, 'fee_items', item.id);
+        await updateDoc(itemRef, { name: item.name, cost: item.cost });
+        toast({
+            title: 'Item Updated',
+            description: 'The fee item has been updated successfully.',
+        });
+    };
+    
+    const handleDeleteItem = async (itemId: string) => {
+        if (!user || !firestore) return;
+        const itemRef = doc(firestore, 'organizations', user.organizationId, 'fee_items', itemId);
+        await deleteDoc(itemRef);
+        toast({
+            variant: "destructive",
+            title: 'Item Removed',
+            description: 'The item has been removed.',
+        });
+    };
 
     return (
         <div className="space-y-6">
@@ -284,25 +313,37 @@ export default function BillingPage() {
                             title="Investigations"
                             icon={<TestTube className="h-5 w-5 text-primary" />}
                             items={investigations}
-                            setItems={setInvestigations}
+                            isLoading={isLoading}
                             placeholder="e.g. Lipid Profile"
                             description="Manage fees for laboratory tests and diagnostic imaging."
+                            category="investigation"
+                            onAddItem={handleAddItem}
+                            onUpdateItem={handleUpdateItem}
+                            onDeleteItem={handleDeleteItem}
                         />
                         <FeeCategory
                             title="Patient Admission"
                             icon={<Bed className="h-5 w-5 text-primary" />}
                             items={admissionFees}
-                            setItems={setAdmissionFees}
+                            isLoading={isLoading}
                             placeholder="e.g. ICU Admission (per day)"
                             description="Set costs for different types of patient admissions and stays."
+                            category="admission"
+                            onAddItem={handleAddItem}
+                            onUpdateItem={handleUpdateItem}
+                            onDeleteItem={handleDeleteItem}
                         />
                         <FeeCategory
                             title="Doctor Visit Fees"
                             icon={<StethoscopeIcon className="h-5 w-5 text-primary" />}
                             items={doctorFees}
-                            setItems={setDoctorFees}
+                            isLoading={isLoading}
                             placeholder="e.g. Dr. Name - Chamber Type"
                             description="Manage consultation fees for different doctors and chambers/specialties."
+                            category="doctor_fee"
+                            onAddItem={handleAddItem}
+                            onUpdateItem={handleUpdateItem}
+                            onDeleteItem={handleDeleteItem}
                         />
                         <AccordionItem value="Surgical Procedures" disabled>
                             <AccordionTrigger className="text-lg font-medium">

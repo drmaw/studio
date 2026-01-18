@@ -166,6 +166,19 @@
         "createdAt": { "type": "object" }
       },
       "required": ["patientId", "patientName", "doctorId", "doctorName", "organizationId", "organizationName", "scheduleId", "appointmentDate", "status", "createdAt"]
+    },
+    "FeeItem": {
+      "title": "FeeItem",
+      "description": "Represents a single billable item in an organization's price chart.",
+      "type": "object",
+      "properties": {
+        "organizationId": { "type": "string" },
+        "category": { "type": "string", "enum": ["investigation", "admission", "doctor_fee", "procedure"] },
+        "name": { "type": "string" },
+        "cost": { "type": "number" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["organizationId", "category", "name", "cost", "createdAt"]
     }
   },
   "auth": {
@@ -208,6 +221,10 @@
       {
         "path": "/organizations/{organizationId}/schedules/{scheduleId}",
         "definition": { "schema": { "$ref": "#/entities/DoctorSchedule" }, "description": "Subcollection for an organization's doctor schedules." }
+      },
+      {
+        "path": "/organizations/{organizationId}/fee_items/{feeItemId}",
+        "definition": { "schema": { "$ref": "#/entities/FeeItem" }, "description": "Subcollection for an organization's price chart items." }
       },
       {
         "path": "/appointments/{appointmentId}",

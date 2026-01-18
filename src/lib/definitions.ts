@@ -166,3 +166,12 @@ export type Appointment = {
   reason: string;
   createdAt: FieldValue;
 };
+
+export type FeeItem = {
+  id: string;
+  organizationId: string;
+  category: 'investigation' | 'admission' | 'doctor_fee' | 'procedure';
+  name: string;
+  cost: number;
+  createdAt: FieldValue;
+};
