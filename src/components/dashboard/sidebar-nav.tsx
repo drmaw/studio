@@ -7,14 +7,34 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, Briefcase, CalendarCheck, DollarSign, Shield } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, Briefcase, CalendarCheck, DollarSign, Shield, Stethoscope, UserCog, UserCheck, FlaskConical, Microscope, Pill } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import type { Role } from "@/lib/definitions";
+
+const professionalRolesConfig: Record<string, { label: string, icon: React.ElementType }> = {
+    doctor: { label: 'Doctor', icon: Stethoscope },
+    hospital_owner: { label: 'Hospital Owner', icon: UserCog },
+    nurse: { label: 'Nurse', icon: UserCheck },
+    lab_technician: { label: 'Lab Technician', icon: FlaskConical },
+    pathologist: { label: 'Pathologist', icon: Microscope },
+    pharmacist: { label: 'Pharmacist', icon: Pill },
+    manager: { label: 'Manager', icon: Briefcase },
+    assistant_manager: { label: 'Asst. Manager', icon: Briefcase },
+    front_desk: { label: 'Front Desk', icon: Briefcase },
+    marketing_rep: { label: 'Marketing Rep', icon: Briefcase },
+};
+
+const professionalRoleOrder: Role[] = [
+    'hospital_owner', 'manager', 'assistant_manager', 'doctor', 'nurse', 'pharmacist', 'lab_technician', 'pathologist', 'front_desk', 'marketing_rep'
+];
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { user, hasRole, activeRole } = useAuth();
+  const searchParams = useSearchParams();
+  const { user, hasRole } = useAuth();
   const { setOpenMobile, isMobile } = useSidebar();
 
   const handleLinkClick = () => {
@@ -27,11 +47,7 @@ export function SidebarNav() {
     return null;
   }
 
-  const isProfessional = user?.roles?.some(r => r !== 'patient');
-
-  const professionalDashboardLabel = activeRole 
-    ? `${activeRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Dashboard`
-    : 'Professional Dashboard';
+  const userProfessionalRoles = professionalRoleOrder.filter(role => user.roles.includes(role));
 
   const menuItems = [
      {
@@ -45,13 +61,6 @@ export function SidebarNav() {
       label: "My Dashboard",
       icon: LayoutDashboard,
       roles: ['patient'], 
-    },
-    {
-      href: "/dashboard/professional",
-      label: professionalDashboardLabel,
-      icon: Briefcase,
-      roles: ['doctor', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'],
-      condition: isProfessional
     },
     {
       href: "/dashboard/profile",
@@ -87,7 +96,7 @@ export function SidebarNav() {
       href: "/dashboard/settings",
       label: "Account Settings",
       icon: Settings,
-      roles: ['patient'], // Now visible to all users, as everyone has the 'patient' role.
+      roles: ['patient'],
     },
     {
       href: "/dashboard/settings/hospital",
@@ -98,7 +107,7 @@ export function SidebarNav() {
   ];
 
   const availableMenuItems = menuItems.filter(item => 
-    (item.condition !== false) && user?.roles && item.roles.some(role => hasRole(role as any))
+    user?.roles && item.roles.some(role => hasRole(role as any))
   );
 
   return (
@@ -106,7 +115,7 @@ export function SidebarNav() {
       {availableMenuItems.map((item) => (
         <SidebarMenuItem key={item.label}>
           <Link href={item.href} passHref>
-            <SidebarMenuButton asChild isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/dashboard')} onClick={handleLinkClick}>
+            <SidebarMenuButton asChild isActive={pathname === item.href} onClick={handleLinkClick}>
               <span>
                 <item.icon />
                 <span>{item.label}</span>
@@ -115,6 +124,29 @@ export function SidebarNav() {
           </Link>
         </SidebarMenuItem>
       ))}
+
+      {userProfessionalRoles.length > 0 && availableMenuItems.length > 0 && <Separator className="my-2" />}
+      
+      {userProfessionalRoles.map(role => {
+          const config = professionalRolesConfig[role];
+          if (!config) return null;
+          
+          const currentRoleParam = searchParams.get('role');
+          const isActive = pathname === '/dashboard/professional' && currentRoleParam === role;
+
+          return (
+            <SidebarMenuItem key={role}>
+              <Link href={`/dashboard/professional?role=${role}`} passHref>
+                <SidebarMenuButton asChild isActive={isActive} onClick={handleLinkClick}>
+                  <span>
+                    <config.icon />
+                    <span>{config.label}</span>
+                  </span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          )
+      })}
     </SidebarMenu>
   );
 }

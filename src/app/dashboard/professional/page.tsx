@@ -13,6 +13,8 @@ import { PharmacistDashboard } from "@/components/dashboard/pharmacist-dashboard
 import { ManagerDashboard } from "@/components/dashboard/manager-dashboard";
 import { AssistantManagerDashboard } from "@/components/dashboard/assistant-manager-dashboard";
 import { FrontDeskDashboard } from "@/components/dashboard/front-desk-dashboard";
+import { useSearchParams } from "next/navigation";
+import { type Role } from "@/lib/definitions";
 
 function GenericDashboard({ name }: { name: string }) {
     return (
@@ -28,8 +30,11 @@ function GenericDashboard({ name }: { name: string }) {
 }
 
 export default function ProfessionalDashboardPage() {
-  const { user, loading, activeRole, hasRole } = useAuth();
-  
+  const { user, loading, hasRole, activeRole } = useAuth();
+  const searchParams = useSearchParams();
+  const roleFromQuery = searchParams.get('role') as Role | null;
+
+
   if (loading || !user) {
     return (
         <div className="space-y-4">
@@ -39,13 +44,16 @@ export default function ProfessionalDashboardPage() {
     );
   }
   
+  // Use role from query param if valid, otherwise fallback to activeRole.
+  const dashboardRole = roleFromQuery && user.roles.includes(roleFromQuery) ? roleFromQuery : activeRole;
+
   // The root layout and sidebar navigation should prevent users with only the 'patient'
   // role from reaching this page. If they do, render nothing until navigation corrects.
   if (user.roles?.length === 1 && hasRole('patient')) {
     return null;
   }
 
-  switch (activeRole) {
+  switch (dashboardRole) {
     case 'doctor':
       return <DoctorDashboard user={user} />;
     case 'marketing_rep':
