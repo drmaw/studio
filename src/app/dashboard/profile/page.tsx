@@ -1,5 +1,3 @@
-
-
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
@@ -21,8 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore } from "@/firebase";
-import { doc, getDocs, collection, query, where, limit } from "firebase/firestore";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { doc, getDocs, collection, query, where, limit, updateDoc } from "firebase/firestore";
 import { ApplyForRoleCard } from "@/components/dashboard/profile/apply-for-role-card";
 
 
@@ -179,29 +176,37 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!user || !firestore) return;
     
-    const userRef = doc(firestore, "users", user.id);
-    updateDocumentNonBlocking(userRef, { demographics: formData });
-    
-    // Also update the patient document with relevant info
-    const patientRef = doc(firestore, "patients", user.id);
-    const patientUpdateData = {
-        'demographics.dob': formData.dob,
-        'demographics.gender': formData.gender,
-        'demographics.contact': formData.mobileNumber,
-        chronicConditions: formData.chronicConditions,
-        allergies: formData.allergies,
-    };
-    updateDocumentNonBlocking(patientRef, patientUpdateData);
+    try {
+        const userRef = doc(firestore, "users", user.id);
+        await updateDoc(userRef, { demographics: formData });
+        
+        // Also update the patient document with relevant info
+        const patientRef = doc(firestore, "patients", user.id);
+        const patientUpdateData = {
+            'demographics.dob': formData.dob,
+            'demographics.gender': formData.gender,
+            'demographics.contact': formData.mobileNumber,
+            chronicConditions: formData.chronicConditions,
+            allergies: formData.allergies,
+        };
+        await updateDoc(patientRef, patientUpdateData);
 
-
-    toast({
-        title: "Profile Updated",
-        description: "Your personal information has been saved.",
-    });
-    setIsEditing(false);
+        toast({
+            title: "Profile Updated",
+            description: "Your personal information has been saved.",
+        });
+        setIsEditing(false);
+    } catch (error) {
+        console.error("Failed to update profile:", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not save your profile changes.",
+        });
+    }
   }
 
   const handleCancel = () => {
@@ -395,85 +400,8 @@ export default function ProfilePage() {
                                    </div>
                                 </div>
                             </>
-                        ) : (
-                        <>
-                            <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                                <ProfileInfoRow icon={Phone} label="Mobile Number" value={formData.mobileNumber} />
-                                <div className="flex items-start gap-3">
-                                    <Cake className="h-4 w-4 mt-1 text-muted-foreground" />
-                                    <div className="flex-1">
-                                        <p className="text-sm text-muted-foreground">Date of Birth</p>
-                                        <p className="font-medium">
-                                            {displayDob}
-                                            {age !== null && <span className="text-sm text-muted-foreground"> (Age: {age})</span>}
-                                        </p>
-                                    </div>
-                                </div>
-                                <ProfileInfoRow icon={Users} label="Gender" value={formData.gender} />
-                                <ProfileInfoRow icon={Users} label="Marital Status" value={formData.maritalStatus} />
-                                <ProfileInfoRow icon={UserIcon} label="Father's Name" value={formData.fatherName} />
-                                <ProfileInfoRow icon={UserIcon} label="Mother's Name" value={formData.motherName} />
-                                <ProfileInfoRow icon={Fingerprint} label="NID" value={formData.nid} />
-                                <ProfileInfoRow icon={Droplet} label="Blood Group" value={formData.bloodGroup} />
-
-                                <div className="md:col-span-2">
-                                <ProfileInfoRow icon={MapPin} label="Present Address" value={formData.presentAddress} />
-                                </div>
-                                <div className="md:col-span-2">
-                                <ProfileInfoRow icon={MapPin} label="Permanent Address" value={formData.permanentAddress} />
-                                </div>
-                            </div>
-                            <Separator />
-                            <h3 className="text-lg font-semibold border-b pb-2">Medical Information</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                                <ProfileInfoRow icon={HeartPulse} label="Chronic Conditions">
-                                    {formData.chronicConditions && formData.chronicConditions.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2 pt-1">
-                                            {formData.chronicConditions.map(c => (
-                                                <Badge key={c} variant="outline" className="capitalize">
-                                                    {c}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    ) : <p className="font-medium text-muted-foreground/80">None reported</p>}
-                                </ProfileInfoRow>
-                                <ProfileInfoRow icon={Siren} label="Allergies">
-                                    {formData.allergies && formData.allergies.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2 pt-1">
-                                            {formData.allergies.map(allergy => (
-                                                <Badge key={allergy} variant="destructive" className="pr-1 capitalize">
-                                                    {allergy}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    ) : <p className="font-medium text-muted-foreground/80">None reported</p>}
-                                </ProfileInfoRow>
-                            </div>
-                            <Separator />
-                            <h3 className="text-lg font-semibold border-b pb-2">Emergency Contacts</h3>
-                            <div className="space-y-2">
-                                {formData.emergencyContacts && formData.emergencyContacts.length > 0 ? (
-                                    formData.emergencyContacts.map(contact => (
-                                        <div key={contact.id} className="flex items-center p-3 rounded-md bg-secondary">
-                                            <div className="flex-1">
-                                                <p className="font-semibold">{contact.name} <span className="font-normal text-muted-foreground">({contact.relation})</span></p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {contact.contactNumber ? (
-                                                        <span className="flex items-center gap-2"><Phone className="h-3 w-3" />{contact.contactNumber}</span>
-                                                    ) : (
-                                                        <span className="flex items-center gap-2"><Fingerprint className="h-3 w-3" />Health ID: {contact.healthId}</span>
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">No emergency contacts added.</p>
-                                )}
-                            </div>
-                        </>
                         )}
+                        </>
                     </CardContent>
 
                     {isEditing && (
@@ -483,6 +411,7 @@ export default function ProfilePage() {
                                     <XCircle className="mr-2 h-4 w-4" />
                                     Cancel
                                 </Button>
+
                                 <Button onClick={handleSave}>
                                     <Save className="mr-2 h-4 w-4" />
                                     Save Changes

@@ -1,5 +1,3 @@
-
-
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -37,9 +35,8 @@ import type { RecordFile } from '@/lib/definitions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, serverTimestamp, query, orderBy, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, serverTimestamp, query, orderBy, doc, deleteDoc, writeBatch, addDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { addDocumentNonBlocking, deleteDocumentNonBlocking, commitBatchNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -98,7 +95,7 @@ export default function MyHealthRecordsPage() {
     };
 
     const handleUpload = async () => {
-        if (!selectedFile || !recordType || !user) return;
+        if (!selectedFile || !recordType || !user || !firestore) return;
 
         setIsUploading(true);
         
@@ -124,7 +121,7 @@ export default function MyHealthRecordsPage() {
                 createdAt: serverTimestamp(),
             };
 
-            addDocumentNonBlocking(recordFilesRef, newRecord);
+            await addDoc(recordFilesRef, newRecord);
 
             toast({
                 title: 'Upload successful',
@@ -141,33 +138,43 @@ export default function MyHealthRecordsPage() {
         }
     };
 
-    const handleDelete = (id: string) => {
-        if(!user) return;
-        const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
-        deleteDocumentNonBlocking(docRef);
-        setSelectedRecords(prev => prev.filter(selectedId => selectedId !== id));
-        toast({
-            title: 'Record deleted',
-            description: 'The selected health record has been removed.',
-        })
+    const handleDelete = async (id: string) => {
+        if(!user || !firestore) return;
+        try {
+            const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
+            await deleteDoc(docRef);
+            setSelectedRecords(prev => prev.filter(selectedId => selectedId !== id));
+            toast({
+                title: 'Record deleted',
+                description: 'The selected health record has been removed.',
+            });
+        } catch (error) {
+             console.error("Delete failed: ", error);
+            toast({ variant: 'destructive', title: 'Delete Failed', description: 'Could not delete the record.'});
+        }
     }
 
-    const handleDeleteSelected = () => {
-        if (!user || selectedRecords.length === 0) return;
+    const handleDeleteSelected = async () => {
+        if (!user || !firestore || selectedRecords.length === 0) return;
         
-        const batch = writeBatch(firestore);
-        selectedRecords.forEach(id => {
-            const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
-            batch.delete(docRef);
-        });
-
-        commitBatchNonBlocking(batch, { operation: 'delete', path: `patients/${user.id}/record_files` });
-        
-        toast({
-            title: `${selectedRecords.length} records deleted`,
-            description: 'The selected health records have been removed.',
-        });
-        setSelectedRecords([]);
+        try {
+            const batch = writeBatch(firestore);
+            selectedRecords.forEach(id => {
+                const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
+                batch.delete(docRef);
+            });
+    
+            await batch.commit();
+            
+            toast({
+                title: `${selectedRecords.length} records deleted`,
+                description: 'The selected health records have been removed.',
+            });
+            setSelectedRecords([]);
+        } catch (error) {
+             console.error("Batch delete failed: ", error);
+            toast({ variant: 'destructive', title: 'Delete Failed', description: 'Could not delete selected records.'});
+        }
     };
 
     const handleDownloadSelected = () => {
