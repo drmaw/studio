@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { QrScannerDialog } from "@/components/dashboard/qr-scanner-dialog";
-import { collection, getDocs, query, where, limit, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, limit, doc, getDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { BookAppointmentDialog } from "@/components/dashboard/book-appointment-dialog";
@@ -122,6 +122,24 @@ export default function BookAppointmentPage() {
                     id: patientUser.id,
                 };
                 setSearchedPatient(combinedData);
+                
+                // Log the search action
+                try {
+                    const logRef = collection(firestore, 'patients', combinedData.id, 'privacy_log');
+                    const logEntry = {
+                        actorId: currentUser.healthId,
+                        actorName: currentUser.name,
+                        actorAvatarUrl: currentUser.avatarUrl,
+                        patientId: combinedData.id,
+                        organizationId: currentUser.organizationId,
+                        action: 'search' as const,
+                        timestamp: serverTimestamp(),
+                    };
+                    await addDoc(logRef, logEntry);
+                } catch (logError) {
+                    console.error("Failed to write privacy log:", logError);
+                }
+
             } else {
                 setSearchedPatient('not_found');
             }

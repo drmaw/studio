@@ -90,6 +90,8 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
     
     try {
         const appointmentRef = collection(firestore, 'appointments');
+        const formattedDate = format(values.appointmentDate, 'dd-MM-yyyy');
+
         const newAppointment = {
             patientId: patient.id,
             patientName: patient.name,
@@ -107,13 +109,22 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
 
         await addDoc(appointmentRef, newAppointment);
         
-        // Notify the doctor
+        // Notify the doctor of the new request
         await createNotification(
             firestore, 
             schedule.doctorAuthId,
             'New Appointment Request',
-            `${patient.name} has requested an appointment on ${format(values.appointmentDate, 'dd-MM-yyyy')} at ${values.appointmentTime}.`,
+            `${patient.name} has requested an appointment on ${formattedDate} at ${values.appointmentTime}.`,
             `/dashboard/appointments/${organization.id}/${schedule.id}`
+        );
+
+        // Notify the patient that an appointment was booked for them
+        await createNotification(
+            firestore,
+            patient.id,
+            'New Appointment Booked',
+            `An appointment with ${schedule.doctorName} on ${formattedDate} at ${values.appointmentTime} has been booked for you. It is pending confirmation.`,
+            '/dashboard/my-appointments'
         );
 
         toast({

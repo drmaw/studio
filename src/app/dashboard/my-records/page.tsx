@@ -63,6 +63,7 @@ export default function MyHealthRecordsPage() {
     const MAX_RECORDS_STANDARD = 10;
     const MAX_RECORDS_PREMIUM = 40;
     const maxRecords = user?.isPremium ? MAX_RECORDS_PREMIUM : MAX_RECORDS_STANDARD;
+    const currentRecords = records || [];
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -80,6 +81,15 @@ export default function MyHealthRecordsPage() {
 
     const handleUpload = async () => {
         if (!selectedFile || !recordType || !user || !firestore) return;
+
+        if (currentRecords.length >= maxRecords) {
+            toast({
+                variant: 'destructive',
+                title: 'Storage Limit Reached',
+                description: `You cannot upload more than ${maxRecords} records. Upgrade to premium for more space.`,
+            });
+            return;
+        }
 
         setIsUploading(true);
         
@@ -191,7 +201,6 @@ export default function MyHealthRecordsPage() {
         setViewerOpen(true);
     }
     
-    const currentRecords = records || [];
     const storagePercentage = (currentRecords.length / maxRecords) * 100;
 
     if (loading) {
