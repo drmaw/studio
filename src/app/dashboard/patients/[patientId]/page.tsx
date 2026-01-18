@@ -15,6 +15,7 @@ import { RedBanner } from "@/components/dashboard/red-banner";
 import { useDoc, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { doc, collection, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import type { Patient, MedicalRecord, Vitals, User } from "@/lib/definitions";
+import { AddMedicalRecordDialog } from "@/components/dashboard/add-medical-record-dialog";
 
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
@@ -89,7 +90,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   }, [firestore, currentUser, patientUser, currentUserLoading, isPatientUserLoading, hasRole, patientId]);
 
 
-  const pageIsLoading = currentUserLoading || isPatientUserLoading || isPatientDataLoading || areRecordsLoading || areVitalsLoading || !currentUser;
+  const pageIsLoading = currentUserLoading || isPatientUserLoading || isPatientDataLoading || areRecordsLoading || areVitalsLoading;
   
   if (pageIsLoading && !patientUser) {
      return <div className="space-y-6">
@@ -110,13 +111,16 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
     }
   }
 
-
   if (pageIsLoading) {
     return <div className="space-y-6">
         <Skeleton className="h-48 w-full" />
         <Skeleton className="h-12 w-1/4" />
         <Skeleton className="h-64 w-full" />
     </div>
+  }
+
+  if (!currentUser) {
+      return null;
   }
 
   return (
@@ -153,7 +157,12 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
       {vitalsHistory && <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} patientId={patientId} organizationId={patientUser.organizationId} />}
 
       <div>
-        <h2 className="text-2xl font-bold mb-4">Medical Records</h2>
+        <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">Medical Records</h2>
+            {hasRole('doctor') && (
+                <AddMedicalRecordDialog patient={patientUser} doctor={currentUser} />
+            )}
+        </div>
         <div className="space-y-4">
           {records && records.length > 0 ? (
             records.map(record => (
