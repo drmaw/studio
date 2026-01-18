@@ -33,12 +33,6 @@ service cloud.firestore {
         return isSignedIn() && getUserData().organizationId == orgId;
     }
     
-    // Doctor Profiles
-    match /doctors/{doctorId} {
-        allow get, list: if true;
-        allow write: if isAdmin();
-    }
-
     // User Profiles
     match /users/{userId} {
       allow create: if isSignedIn();

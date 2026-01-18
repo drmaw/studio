@@ -173,16 +173,6 @@ export function RoleManagementTab() {
             const newRoles = Array.from(new Set([...currentRoles, app.requestedRole]));
             batch.update(userRef, { roles: newRoles });
 
-            // If approving a doctor, create public profile
-            if (app.requestedRole === 'doctor') {
-                const doctorProfileRef = doc(firestore, 'doctors', app.userId);
-                batch.set(doctorProfileRef, {
-                    healthId: userDoc.healthId,
-                    name: userDoc.name,
-                    avatarUrl: userDoc.avatarUrl
-                });
-            }
-
              // If approving a hospital owner, create the organization
             if (app.requestedRole === 'hospital_owner') {
                 const orgCollectionRef = collection(firestore, 'organizations');
@@ -228,12 +218,6 @@ export function RoleManagementTab() {
         if (userDoc) {
             const newRoles = (userDoc.roles || []).filter((r: Role) => r !== req.roleToRemove);
             batch.update(userRef, { roles: newRoles });
-        }
-        
-        // If removing a doctor, delete public profile
-        if (req.roleToRemove === 'doctor') {
-            const doctorProfileRef = doc(firestore, 'doctors', req.userId);
-            batch.delete(doctorProfileRef);
         }
         
         await batch.commit();
