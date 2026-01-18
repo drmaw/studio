@@ -5,6 +5,7 @@ import { useMemo, useCallback } from 'react';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import type { Role, User } from "@/lib/definitions";
 import { doc } from 'firebase/firestore';
+import { allRoleHierarchy } from '@/lib/roles';
 
 export function useAuth() {
   const { user: firebaseUser, isUserLoading: isAuthLoading } = useUser();
@@ -48,21 +49,7 @@ export function useAuth() {
   const activeRole = useMemo(() => {
     if (!user?.roles) return 'patient'; 
     
-    const roleHierarchy: Role[] = [
-      'hospital_owner', 
-      'doctor', 
-      'nurse', 
-      'manager', 
-      'assistant_manager',
-      'lab_technician',
-      'pathologist',
-      'pharmacist',
-      'front_desk',
-      'marketing_rep',
-      'patient'
-    ];
-
-    for (const role of roleHierarchy) {
+    for (const role of allRoleHierarchy) {
       if (user.roles.includes(role)) {
         return role;
       }

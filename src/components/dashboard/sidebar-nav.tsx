@@ -9,27 +9,12 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, Briefcase, CalendarCheck, DollarSign, Shield, Stethoscope, UserCog, UserCheck, FlaskConical, Microscope, Pill } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, CalendarCheck, DollarSign, Shield } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Role } from "@/lib/definitions";
+import { professionalRolesConfig, professionalRoleHierarchy } from "@/lib/roles";
 
-const professionalRolesConfig: Record<string, { label: string, icon: React.ElementType }> = {
-    doctor: { label: 'Doctor', icon: Stethoscope },
-    hospital_owner: { label: 'Hospital Owner', icon: UserCog },
-    nurse: { label: 'Nurse', icon: UserCheck },
-    lab_technician: { label: 'Lab Technician', icon: FlaskConical },
-    pathologist: { label: 'Pathologist', icon: Microscope },
-    pharmacist: { label: 'Pharmacist', icon: Pill },
-    manager: { label: 'Manager', icon: Briefcase },
-    assistant_manager: { label: 'Asst. Manager', icon: Briefcase },
-    front_desk: { label: 'Front Desk', icon: Briefcase },
-    marketing_rep: { label: 'Marketing Rep', icon: Briefcase },
-};
-
-const professionalRoleOrder: Role[] = [
-    'hospital_owner', 'manager', 'assistant_manager', 'doctor', 'nurse', 'pharmacist', 'lab_technician', 'pathologist', 'front_desk', 'marketing_rep'
-];
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -47,7 +32,7 @@ export function SidebarNav() {
     return null;
   }
 
-  const userProfessionalRoles = professionalRoleOrder.filter(role => user.roles.includes(role));
+  const userProfessionalRoles = professionalRoleHierarchy.filter(role => user.roles.includes(role));
 
   const menuItems = [
     {

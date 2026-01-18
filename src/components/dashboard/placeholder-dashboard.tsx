@@ -1,10 +1,27 @@
+
 'use client'
 
-import type { User } from "@/lib/definitions";
+import type { User, Role } from "@/lib/definitions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { professionalRolesConfig } from "@/lib/roles";
 
-export function PlaceholderDashboard({ user, roleInfo }: { user: User, roleInfo: { title: string, description: string, icon: React.ElementType } }) {
-    const { title, description, icon: Icon } = roleInfo;
+export function PlaceholderDashboard({ user, role }: { user: User, role: Role }) {
+    const roleInfo = professionalRolesConfig[role];
+
+    if (!roleInfo) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Welcome, {user.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p>Dashboard for role '{role}' is not configured.</p>
+                </CardContent>
+            </Card>
+        );
+    }
+    const { label: title, description, icon: Icon } = roleInfo;
+
     return (
         <div className="space-y-6">
             <div>

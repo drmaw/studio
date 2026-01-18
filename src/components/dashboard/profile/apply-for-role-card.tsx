@@ -18,13 +18,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { FormattedDate } from '@/components/shared/formatted-date';
+import { applicationRoles, professionalRolesConfig } from '@/lib/roles';
 
-
-const availableRoles = [
-    { value: 'doctor', label: 'Doctor'},
-    { value: 'nurse', label: 'Nurse' },
-    { value: 'hospital_owner', label: 'Hospital Owner' },
-];
 
 export function ApplyForRoleCard() {
   const { user, loading: userLoading } = useAuth();
@@ -256,17 +251,20 @@ export function ApplyForRoleCard() {
                 <SelectValue placeholder="Select a role..." />
               </SelectTrigger>
               <SelectContent>
-                {availableRoles.map(roleInfo => {
+                {applicationRoles.map(roleValue => {
                     if (!user) return null;
-                    const hasRole = user.roles.includes(roleInfo.value as Role);
-                    const pendingApp = applications?.find(app => app.requestedRole === roleInfo.value && app.status === 'pending');
+                    const roleInfo = professionalRolesConfig[roleValue];
+                    if (!roleInfo) return null;
+
+                    const hasRole = user.roles.includes(roleValue as Role);
+                    const pendingApp = applications?.find(app => app.requestedRole === roleValue && app.status === 'pending');
                     const isDisabled = hasRole || !!pendingApp;
                     let statusText = '';
                     if (hasRole) statusText = '(Current Role)';
                     else if (pendingApp) statusText = '(Pending Approval)';
 
                     return (
-                        <SelectItem key={roleInfo.value} value={roleInfo.value} disabled={isDisabled}>
+                        <SelectItem key={roleValue} value={roleValue} disabled={isDisabled}>
                           <div className="flex justify-between w-full items-center">
                             <span>{roleInfo.label}</span>
                             {statusText && <span className="text-muted-foreground text-xs ml-2">{statusText}</span>}

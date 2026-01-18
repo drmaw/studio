@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +25,7 @@ import type { User, Role } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, getDocs, doc, limit, writeBatch } from "firebase/firestore";
+import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
 
 const formSchema = z.object({
   healthId: z.string().min(1, { message: "Health ID is required." }),
@@ -50,8 +50,7 @@ export function StaffManagementTab() {
 
   const staff = useMemo(() => {
     if (!staffInOrg) return [];
-    const staffRoles: Role[] = ['doctor', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk', 'hospital_owner'];
-    return staffInOrg.filter(user => user.roles.some(role => staffRoles.includes(role)));
+    return staffInOrg.filter(user => user.roles.some(role => assignableStaffRoles.includes(role) || role === 'hospital_owner'));
   }, [staffInOrg]);
 
 
@@ -147,14 +146,10 @@ export function StaffManagementTab() {
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="doctor">Doctor</SelectItem>
-                                <SelectItem value="nurse">Nurse</SelectItem>
-                                <SelectItem value="lab_technician">Lab Technician</SelectItem>
-                                <SelectItem value="pathologist">Pathologist</SelectItem>
-                                <SelectItem value="pharmacist">Pharmacist</SelectItem>
-                                <SelectItem value="manager">Manager</SelectItem>
-                                <SelectItem value="assistant_manager">Assistant Manager</SelectItem>
-                                <SelectItem value="front_desk">Front Desk</SelectItem>
+                                {assignableStaffRoles.map(role => {
+                                    const roleInfo = professionalRolesConfig[role];
+                                    return <SelectItem key={role} value={role}>{roleInfo?.label || role}</SelectItem>
+                                })}
                             </SelectContent>
                         </Select>
                         <FormMessage />
