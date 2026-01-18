@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -14,6 +14,8 @@ import { PlusCircle, Loader2, HeartPulse, Droplet, Weight, Activity, Beaker } fr
 import type { Role, Vitals } from '@/lib/definitions';
 import { useFirestore } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+
 
 type VitalsTrackerProps = {
   vitalsData: Vitals[];
@@ -45,8 +47,15 @@ const chartConfig = {
   }
 };
 
+type VitalKey = 'rbs' | 'bp' | 'pulse' | 'weight' | 'sCreatinine';
 
-function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => void, submitting: boolean }) {
+export function VitalsTracker({ vitalsData, currentUserRole, patientId, organizationId }: VitalsTrackerProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  const firestore = useFirestore();
+  const [activeTab, setActiveTab] = useState<VitalKey>('rbs');
+
+  // State for each input
   const [bpSystolic, setBpSystolic] = useState('');
   const [bpDiastolic, setBpDiastolic] = useState('');
   const [pulse, setPulse] = useState('');
@@ -54,75 +63,23 @@ function VitalsInput({ onAdd, submitting }: { onAdd: (vital: Partial<Omit<Vitals
   const [rbs, setRbs] = useState('');
   const [sCreatinine, setSCreatinine] = useState('');
 
-  const addVital = (vital: any) => {
-    onAdd(vital);
-    setBpSystolic('');
-    setBpDiastolic('');
-    setPulse('');
-    setWeight('');
-    setRbs('');
-    setSCreatinine('');
-  }
-
-  return (
-    <Tabs defaultValue="rbs">
-        <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="rbs">RBS</TabsTrigger>
-            <TabsTrigger value="bp">BP</TabsTrigger>
-            <TabsTrigger value="pulse">Pulse</TabsTrigger>
-            <TabsTrigger value="weight">Weight</TabsTrigger>
-            <TabsTrigger value="sCreatinine">S.Creatinine</TabsTrigger>
-        </TabsList>
-        <TabsContent value="rbs" className="pt-4">
-             <div className="flex gap-2 items-end">
-                <Input className="flex-1" placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
-                <Button onClick={() => addVital({ rbs: parseFloat(rbs) })} disabled={submitting || !rbs}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-            </div>
-        </TabsContent>
-        <TabsContent value="bp" className="pt-4">
-            <div className="flex gap-2 items-end">
-                <div className="grid grid-cols-2 gap-2 flex-1">
-                    <Input placeholder="Systolic (e.g. 120)" value={bpSystolic} onChange={e => setBpSystolic(e.target.value)} type="number" />
-                    <Input placeholder="Diastolic (e.g. 80)" value={bpDiastolic} onChange={e => setBpDiastolic(e.target.value)} type="number" />
-                </div>
-                <Button onClick={() => addVital({ bpSystolic: parseInt(bpSystolic), bpDiastolic: parseInt(bpDiastolic) })} disabled={submitting || !bpSystolic || !bpDiastolic}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-            </div>
-        </TabsContent>
-        <TabsContent value="pulse" className="pt-4">
-             <div className="flex gap-2 items-end">
-                <Input className="flex-1" placeholder="Pulse (bpm)" value={pulse} onChange={e => setPulse(e.target.value)} type="number" />
-                <Button onClick={() => addVital({ pulse: parseInt(pulse) })} disabled={submitting || !pulse}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-            </div>
-        </TabsContent>
-         <TabsContent value="weight" className="pt-4">
-             <div className="flex gap-2 items-end">
-                <Input className="flex-1" placeholder="Weight (kg)" value={weight} onChange={e => setWeight(e.target.value)} type="number" />
-                <Button onClick={() => addVital({ weight: parseFloat(weight) })} disabled={submitting || !weight}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-            </div>
-        </TabsContent>
-         <TabsContent value="sCreatinine" className="pt-4">
-             <div className="flex gap-2 items-end">
-                <Input className="flex-1" placeholder="S.Creatinine (mg/dL)" value={sCreatinine} onChange={e => setSCreatinine(e.target.value)} type="number" />
-                <Button onClick={() => addVital({ sCreatinine: parseFloat(sCreatinine) })} disabled={submitting || !sCreatinine}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-            </div>
-        </TabsContent>
-    </Tabs>
-  )
-}
-
-
-export function VitalsTracker({ vitalsData, currentUserRole, patientId, organizationId }: VitalsTrackerProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const firestore = useFirestore();
 
   const formattedData = vitalsData.map(v => ({
     ...v,
     name: format(parseISO(v.date), 'dd-MM'),
-  }));
+  })).slice().reverse();
 
   const handleAddVitals = async (newVitalData: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => {
     if (!patientId || !firestore) return;
+
+    if (Object.values(newVitalData).every(val => val === null || val === undefined || isNaN(val as number))) {
+        toast({
+            variant: "destructive",
+            title: "No data entered",
+            description: "Please enter a value for the vital.",
+        });
+        return;
+    }
 
     setIsSubmitting(true);
     
@@ -148,6 +105,13 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
           description: "Your latest health vitals have been recorded.",
         });
 
+        setBpSystolic('');
+        setBpDiastolic('');
+        setPulse('');
+        setWeight('');
+        setRbs('');
+        setSCreatinine('');
+
     } catch (error) {
         console.error("Failed to log vitals:", error);
         toast({
@@ -159,28 +123,152 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
         setIsSubmitting(false);
     }
   };
+
+  const renderInput = () => {
+    if (isSubmitting) {
+        return (
+            <div className="flex justify-center items-center h-20">
+                <Loader2 className="animate-spin" />
+            </div>
+        );
+    }
+    
+    switch (activeTab) {
+        case 'rbs':
+            return (
+                <div className="flex gap-2 items-end">
+                    <Input className="flex-1" placeholder="RBS (mmol/L)" value={rbs} onChange={e => setRbs(e.target.value)} type="number" />
+                    <Button onClick={() => handleAddVitals({ rbs: parseFloat(rbs) })} disabled={isSubmitting || !rbs}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+                </div>
+            );
+        case 'bp':
+            return (
+                <div className="flex gap-2 items-end">
+                    <div className="grid grid-cols-2 gap-2 flex-1">
+                        <Input placeholder="Systolic (e.g. 120)" value={bpSystolic} onChange={e => setBpSystolic(e.target.value)} type="number" />
+                        <Input placeholder="Diastolic (e.g. 80)" value={bpDiastolic} onChange={e => setBpDiastolic(e.target.value)} type="number" />
+                    </div>
+                    <Button onClick={() => handleAddVitals({ bpSystolic: parseInt(bpSystolic), bpDiastolic: parseInt(bpDiastolic) })} disabled={isSubmitting || !bpSystolic || !bpDiastolic}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+                </div>
+            );
+        case 'pulse':
+            return (
+                 <div className="flex gap-2 items-end">
+                    <Input className="flex-1" placeholder="Pulse (bpm)" value={pulse} onChange={e => setPulse(e.target.value)} type="number" />
+                    <Button onClick={() => handleAddVitals({ pulse: parseInt(pulse) })} disabled={isSubmitting || !pulse}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+                </div>
+            );
+        case 'weight':
+             return (
+                 <div className="flex gap-2 items-end">
+                    <Input className="flex-1" placeholder="Weight (kg)" value={weight} onChange={e => setWeight(e.target.value)} type="number" />
+                    <Button onClick={() => handleAddVitals({ weight: parseFloat(weight) })} disabled={isSubmitting || !weight}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+                </div>
+            );
+        case 'sCreatinine':
+            return (
+                 <div className="flex gap-2 items-end">
+                    <Input className="flex-1" placeholder="S.Creatinine (mg/dL)" value={sCreatinine} onChange={e => setSCreatinine(e.target.value)} type="number" />
+                    <Button onClick={() => handleAddVitals({ sCreatinine: parseFloat(sCreatinine) })} disabled={isSubmitting || !sCreatinine}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+                </div>
+            );
+        default:
+            return null;
+    }
+  }
+
+  const renderHistoryTable = () => {
+    let filteredHistory: Vitals[] = [];
+    let tableHead: React.ReactNode = null;
+
+    switch (activeTab) {
+        case 'rbs':
+            filteredHistory = vitalsData.filter(v => v.rbs !== null);
+            tableHead = <TableHead>RBS (mmol/L)</TableHead>;
+            break;
+        case 'bp':
+            filteredHistory = vitalsData.filter(v => v.bpSystolic !== null && v.bpDiastolic !== null);
+            tableHead = <><TableHead>Systolic</TableHead><TableHead>Diastolic</TableHead></>;
+            break;
+        case 'pulse':
+            filteredHistory = vitalsData.filter(v => v.pulse !== null);
+            tableHead = <TableHead>Pulse (bpm)</TableHead>;
+            break;
+        case 'weight':
+            filteredHistory = vitalsData.filter(v => v.weight !== null);
+            tableHead = <TableHead>Weight (kg)</TableHead>;
+            break;
+        case 'sCreatinine':
+            filteredHistory = vitalsData.filter(v => v.sCreatinine !== null);
+            tableHead = <TableHead>S.Creatinine (mg/dL)</TableHead>;
+            break;
+    }
+    
+    const renderTableCell = (vital: Vitals) => {
+        switch(activeTab) {
+            case 'rbs': return <TableCell>{vital.rbs}</TableCell>
+            case 'bp': return <><TableCell>{vital.bpSystolic}</TableCell><TableCell>{vital.bpDiastolic}</TableCell></>
+            case 'pulse': return <TableCell>{vital.pulse}</TableCell>
+            case 'weight': return <TableCell>{vital.weight}</TableCell>
+            case 'sCreatinine': return <TableCell>{vital.sCreatinine}</TableCell>
+            default: return null;
+        }
+    }
+
+    return (
+        <div className='mt-6 space-y-2'>
+             <h4 className="font-medium text-center">History for {activeTab === 'bp' ? 'BP' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h4>
+             <div className="border rounded-md max-h-60 overflow-y-auto">
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Date</TableHead>
+                            {tableHead}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredHistory.length > 0 ? (
+                            filteredHistory.map(vital => (
+                                <TableRow key={vital.id}>
+                                    <TableCell>{format(parseISO(vital.date), 'dd-MM-yyyy, hh:mm a')}</TableCell>
+                                    {renderTableCell(vital)}
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={activeTab === 'bp' ? 3 : 2} className="text-center">No history for this vital.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+             </div>
+        </div>
+    );
+  }
   
-  const renderChart = (dataKey: "bpSystolic" | "pulse" | "weight" | "rbs" | "sCreatinine", label: string, color: string) => (
-      <ResponsiveContainer width="100%" height={250}>
-        <LineChart
-          data={formattedData.slice().reverse()}
-          margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip
-            contentStyle={{
-                backgroundColor: 'hsl(var(--background))',
-                borderColor: 'hsl(var(--border))'
-            }}
-          />
-          <Legend />
-          <Line type="monotone" dataKey={dataKey} name={label} stroke={color} strokeWidth={2} dot={{r: 4}} activeDot={{r: 6}} />
-          {dataKey === 'bpSystolic' && <Line type="monotone" dataKey="bpDiastolic" name="Diastolic" stroke={color} strokeOpacity={0.5} />}
-        </LineChart>
-      </ResponsiveContainer>
-  );
+  const renderChart = (dataKey: "bpSystolic" | "pulse" | "weight" | "rbs" | "sCreatinine", label: string, color: string) => {
+      const chartData = formattedData.filter(d => d[dataKey] !== null && d[dataKey] !== undefined);
+      return (
+        <ResponsiveContainer width="100%" height={250}>
+            <LineChart
+            data={chartData}
+            margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+            >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip
+                contentStyle={{
+                    backgroundColor: 'hsl(var(--background))',
+                    borderColor: 'hsl(var(--border))'
+                }}
+            />
+            <Legend />
+            <Line type="monotone" dataKey={dataKey} name={label} stroke={color} strokeWidth={2} dot={{r: 4}} activeDot={{r: 6}} connectNulls />
+            {dataKey === 'bpSystolic' && <Line type="monotone" dataKey="bpDiastolic" name="Diastolic" stroke={color} strokeOpacity={0.5} connectNulls />}
+            </LineChart>
+        </ResponsiveContainer>
+    )};
 
   return (
     <Card className="bg-background-soft">
@@ -194,7 +282,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Tabs defaultValue="rbs">
+        <Tabs defaultValue="rbs" value={activeTab} onValueChange={(value) => setActiveTab(value as VitalKey)}>
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="rbs"><Droplet className="mr-2 h-4 w-4 hidden sm:inline" />RBS</TabsTrigger>
             <TabsTrigger value="bp"><HeartPulse className="mr-2 h-4 w-4 hidden sm:inline" />BP</TabsTrigger>
@@ -211,16 +299,11 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
         
         {currentUserRole === 'patient' && (
              <div className="space-y-4 p-4 border rounded-lg bg-background">
-                <h4 className="font-medium text-center">Log New Vitals</h4>
-                {isSubmitting ? 
-                  <div className="flex justify-center items-center h-12">
-                    <Loader2 className="animate-spin" />
-                  </div>
-                  :
-                  <VitalsInput onAdd={handleAddVitals} submitting={isSubmitting} />
-                }
+                <h4 className="font-medium text-center">Log New {activeTab === 'bp' ? 'BP' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h4>
+                {renderInput()}
             </div>
         )}
+        {renderHistoryTable()}
       </CardContent>
     </Card>
   )
