@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
@@ -400,8 +401,60 @@ export default function ProfilePage() {
                                    </div>
                                 </div>
                             </>
+                        ) : (
+                            <>
+                                <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <ProfileInfoRow icon={Phone} label="Mobile" value={user.demographics?.mobileNumber} />
+                                    <ProfileInfoRow icon={Cake} label="Date of Birth & Age" value={displayDob && age ? `${displayDob} (${age} years)` : displayDob} />
+                                    <ProfileInfoRow icon={UserIcon} label="Gender" value={user.demographics?.gender} />
+                                    <ProfileInfoRow icon={Fingerprint} label="NID" value={user.demographics?.nid} />
+                                    <ProfileInfoRow icon={Users} label="Marital Status" value={user.demographics?.maritalStatus} />
+                                    <div className="md:col-span-2">
+                                        <ProfileInfoRow icon={MapPin} label="Present Address" value={user.demographics?.presentAddress} />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <ProfileInfoRow icon={MapPin} label="Permanent Address" value={user.demographics?.permanentAddress} />
+                                    </div>
+                                </div>
+                                <Separator />
+                                <h3 className="text-lg font-semibold border-b pb-2 pt-2">Medical Information</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <ProfileInfoRow icon={Droplet} label="Blood Group" value={user.demographics?.bloodGroup} />
+                                    <ProfileInfoRow icon={HeartPulse} label="Chronic Conditions">
+                                        {formData.chronicConditions && formData.chronicConditions.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                                {formData.chronicConditions.map(c => <Badge key={c} variant="outline" className="capitalize">{c}</Badge>)}
+                                            </div>
+                                        ) : <p className="font-medium">None</p>}
+                                    </ProfileInfoRow>
+                                    <div className="md:col-span-2">
+                                    <ProfileInfoRow icon={Siren} label="Allergies">
+                                        {formData.allergies && formData.allergies.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                                {formData.allergies.map(a => <Badge key={a} variant="destructive" className="bg-destructive/10 text-destructive-foreground border-destructive/20 capitalize">{a}</Badge>)}
+                                            </div>
+                                        ) : <p className="font-medium">None</p>}
+                                    </ProfileInfoRow>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <h3 className="text-lg font-semibold border-b pb-2 pt-2">Emergency Contacts</h3>
+                                {formData.emergencyContacts && formData.emergencyContacts.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {formData.emergencyContacts.map(contact => (
+                                            <div key={contact.id} className="flex items-center justify-between p-2 rounded-md border bg-background-softer">
+                                                <div>
+                                                    <p className="font-semibold">{contact.name || 'N/A'}</p>
+                                                    <p className="text-sm text-muted-foreground">{contact.relation}</p>
+                                                    <p className="text-sm text-muted-foreground">{contact.contactNumber || `Health ID: ${contact.healthId}`}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : <p className="text-sm text-muted-foreground">No emergency contacts added.</p>}
+                            </>
                         )}
-                        </>
                     </CardContent>
 
                     {isEditing && (
