@@ -1,22 +1,14 @@
+
 'use client';
 
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { AccountSettingsTab } from "@/components/settings/account-settings-tab";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SettingsPage() {
-    const { user, loading, hasRole } = useAuth();
-    const router = useRouter();
+    const { user, loading } = useAuth();
 
-    useEffect(() => {
-        if (!loading && hasRole('hospital_owner')) {
-            router.replace('/dashboard/settings/hospital');
-        }
-    }, [user, loading, hasRole, router]);
-
-    if (loading || !user || hasRole('hospital_owner')) {
+    if (loading || !user) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-10 w-1/3" />
@@ -26,6 +18,6 @@ export default function SettingsPage() {
         );
     }
     
-    // Default to account settings for other roles like patient, doctor, etc.
+    // This page is now the same for everyone.
     return <AccountSettingsTab />;
 }

@@ -28,7 +28,6 @@ export function SidebarNav() {
   }
 
   const isProfessional = user?.roles?.some(r => r !== 'patient');
-  const isHospitalOwner = hasRole('hospital_owner');
 
   const professionalDashboardLabel = activeRole 
     ? `${activeRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Dashboard`
@@ -39,7 +38,7 @@ export function SidebarNav() {
       href: "/dashboard",
       label: "My Dashboard",
       icon: LayoutDashboard,
-      roles: ['patient'], // Simplified: This is a patient-view, so it should be visible to all.
+      roles: ['patient'], 
     },
     {
       href: "/dashboard/professional",
@@ -52,7 +51,7 @@ export function SidebarNav() {
       href: "/dashboard/profile",
       label: "Profile",
       icon: UserIcon,
-      roles: ['doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'],
+      roles: ['patient'],
     },
     {
       href: "/dashboard/my-records",
@@ -70,8 +69,7 @@ export function SidebarNav() {
       href: "/dashboard/settings",
       label: "Account Settings",
       icon: Settings,
-      roles: ['patient', 'doctor', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'],
-      condition: !isHospitalOwner
+      roles: ['patient'], // Now visible to all users, as everyone has the 'patient' role.
     },
     {
       href: "/dashboard/settings/hospital",
