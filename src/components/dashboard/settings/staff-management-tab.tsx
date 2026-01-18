@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import type { User, Role } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, getDocs, doc, limit, updateDoc, writeBatch } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, limit, writeBatch } from "firebase/firestore";
 
 const formSchema = z.object({
   healthId: z.string().min(1, { message: "Health ID is required." }),
@@ -83,12 +84,6 @@ export function StaffManagementTab() {
           batch.update(userDocRef, { 
               organizationId: hospitalOwner.organizationId,
               roles: updatedRoles
-          });
-
-          // Also update their corresponding patient document
-          const patientDocRef = doc(firestore, 'patients', userDoc.id);
-          batch.update(patientDocRef, {
-              organizationId: hospitalOwner.organizationId
           });
 
           await batch.commit();
