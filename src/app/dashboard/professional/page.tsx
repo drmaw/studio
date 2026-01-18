@@ -1,4 +1,3 @@
-
 'use client'
 
 import { DoctorDashboard } from "@/components/dashboard/doctor-dashboard";
@@ -7,6 +6,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HospitalOwnerDashboard } from "@/components/dashboard/hospital-owner-dashboard";
+import { 
+    NurseDashboard, 
+    LabTechnicianDashboard, 
+    PathologistDashboard, 
+    PharmacistDashboard, 
+    ManagerDashboard, 
+    AssistantManagerDashboard, 
+    FrontDeskDashboard 
+} from "@/components/dashboard/other-dashboards";
 
 function GenericDashboard({ name }: { name: string }) {
     return (
@@ -39,9 +47,6 @@ export default function ProfessionalDashboardPage() {
     return null;
   }
 
-  // Fallback for roles without a specific dashboard component yet
-  const professionalTitle = activeRole ? `${activeRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}` : 'Professional';
-
   switch (activeRole) {
     case 'doctor':
       return <DoctorDashboard user={user} />;
@@ -49,6 +54,20 @@ export default function ProfessionalDashboardPage() {
       return <RepDashboard user={user} />;
     case 'hospital_owner':
       return <HospitalOwnerDashboard user={user} />;
+    case 'nurse':
+      return <NurseDashboard user={user} />;
+    case 'lab_technician':
+        return <LabTechnicianDashboard user={user} />;
+    case 'pathologist':
+        return <PathologistDashboard user={user} />;
+    case 'pharmacist':
+        return <PharmacistDashboard user={user} />;
+    case 'manager':
+        return <ManagerDashboard user={user} />;
+    case 'assistant_manager':
+        return <AssistantManagerDashboard user={user} />;
+    case 'front_desk':
+        return <FrontDeskDashboard user={user} />;
     // The 'patient' case is handled by the guard clause above.
     // It's safe to have a default for other professional roles.
     default:
