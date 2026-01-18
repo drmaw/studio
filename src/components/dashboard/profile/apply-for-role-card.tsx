@@ -49,12 +49,18 @@ export function ApplyForRoleCard() {
         const updatedRoles = Array.from(new Set([...user.roles, selectedRole as Role]));
         
         let updateData: Partial<User> = { roles: updatedRoles };
+        const demoOrganizationId = 'org-1'; // Default demo hospital
         
-        // For organization owners, we create a mock organization ID for now
+        // For organization owners, we create a new mock organization ID
         if (selectedRole === 'organization_owner') {
              const organizationId = `org-${Date.now()}`;
              updateData.organizationId = organizationId;
              batch.update(patientRef, { organizationId: organizationId });
+        } 
+        // For doctors and nurses, assign them to the default demo hospital to make the feature functional
+        else if (selectedRole === 'doctor' || selectedRole === 'nurse') {
+            updateData.organizationId = demoOrganizationId;
+            batch.update(patientRef, { organizationId: demoOrganizationId });
         }
         
         batch.update(userRef, updateData);
