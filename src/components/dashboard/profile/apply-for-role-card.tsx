@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
-import type { Role, RoleApplication } from '@/lib/definitions';
+import type { Role, RoleApplication, RoleRemovalRequest } from '@/lib/definitions';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,14 @@ export function ApplyForRoleCard() {
   }, [user, firestore]);
 
   const { data: applications, isLoading: applicationsLoading } = useCollection<RoleApplication>(applicationsQuery);
+  
+  const removalRequestsQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, 'users', user.id, 'role_removal_requests');
+  }, [user, firestore]);
+
+  const { data: removalRequests, isLoading: removalRequestsLoading } = useCollection<RoleRemovalRequest>(removalRequestsQuery);
+
 
   const handleApply = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -95,36 +103,42 @@ export function ApplyForRoleCard() {
     }
   };
 
-  const handleDeleteRole = async (roleToDelete: Role) => {
-    if (!user || !firestore || roleToDelete === 'patient') return;
+  const handleRequestRoleRemoval = async (roleToDelete: Role) => {
+    if (!user || !firestore) return;
 
-    const professionalRoles = user.roles.filter(r => r !== 'patient');
-    if (professionalRoles.length < 1 || (professionalRoles.length === 1 && professionalRoles.includes(roleToDelete))) {
-        toast({
-            variant: "destructive",
-            title: "Action Not Allowed",
-            description: "You cannot remove your only professional role.",
-        });
+    // Prevent removing the essential 'patient' role
+    if (roleToDelete === 'patient') {
+        toast({ variant: "destructive", title: "Action Not Allowed", description: "The patient role cannot be removed."});
         return;
     }
 
-    const updatedRoles = user.roles.filter(r => r !== roleToDelete);
+    // Check if a removal request for this role is already pending.
+    const pendingRemoval = removalRequests?.find(req => req.roleToRemove === roleToDelete && req.status === 'pending');
+    if (pendingRemoval) {
+        toast({ title: "Request Already Pending", description: `A request to remove the ${roleToDelete.replace(/_/g, ' ')} role is already being reviewed.` });
+        return;
+    }
 
     try {
-        const userRef = doc(firestore, "users", user.id);
-        await updateDoc(userRef, { roles: updatedRoles });
-        
+        const removalRequestsRef = collection(firestore, 'users', user.id, 'role_removal_requests');
+        const newRemovalRequest = {
+            userId: user.id,
+            userName: user.name,
+            roleToRemove: roleToDelete,
+            status: 'pending' as const,
+            createdAt: serverTimestamp(),
+        };
+        await addDoc(removalRequestsRef, newRemovalRequest);
         toast({
-            title: "Role Removed",
-            description: `The ${roleToDelete.replace(/_/g, ' ')} role has been removed from your profile.`,
+            title: "Removal Request Submitted",
+            description: `Your request to remove the ${roleToDelete.replace(/_/g, ' ')} role is now pending admin review.`,
         });
-
     } catch (error) {
-        console.error("Failed to remove role:", error);
+        console.error("Failed to submit removal request:", error);
         toast({
             variant: "destructive",
-            title: "Update Failed",
-            description: "Could not remove the role from your profile.",
+            title: "Request Failed",
+            description: "Could not submit your role removal request.",
         });
     }
   };
@@ -299,7 +313,7 @@ export function ApplyForRoleCard() {
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     Your Verified Roles
                 </h3>
-                {userLoading ? (
+                {userLoading || removalRequestsLoading ? (
                      <div className="h-12 w-full bg-muted animate-pulse rounded-md" />
                 ) : (
                     <div className="space-y-2">
@@ -308,31 +322,40 @@ export function ApplyForRoleCard() {
                         ) : (
                             verifiedRoles.map(role => {
                                 const approvalInfo = applications?.find(app => app.requestedRole === role && app.status === 'approved');
+                                const removalPending = removalRequests?.find(req => req.roleToRemove === role && req.status === 'pending');
+                                
                                 return (
                                 <div key={role} className="flex items-center justify-between p-3 border rounded-lg bg-emerald-50 border-emerald-200">
                                     <div>
                                         <p className="font-medium capitalize">{role.replace(/_/g, ' ')}</p>
                                         <p className="text-xs text-muted-foreground">Verified: {approvalInfo?.reviewedAt ? format((approvalInfo.reviewedAt as any).toDate(), 'dd-MM-yyyy') : 'N/A'}</p>
                                     </div>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you sure you want to remove this role?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This will remove your access to the {role.replace(/_/g, ' ')} dashboard and its features. This action cannot be undone.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteRole(role as Role)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove Role</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+
+                                    {removalPending ? (
+                                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
+                                            Removal Pending
+                                        </Badge>
+                                    ) : (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Request Role Removal?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will submit a request to an administrator to remove your access to the {role.replace(/_/g, ' ')} dashboard. You will be notified once it's reviewed.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleRequestRoleRemoval(role as Role)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Request Removal</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
                                 </div>
                             )})
                         )}

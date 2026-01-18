@@ -115,6 +115,20 @@
         "reviewedAt": { "type": "object" }
       },
       "required": ["userId", "userName", "requestedRole", "status", "createdAt"]
+    },
+    "RoleRemovalRequest": {
+      "title": "RoleRemovalRequest",
+      "description": "Represents a user's request to have a professional role removed.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "roleToRemove": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "object" },
+        "reviewedAt": { "type": "object" }
+      },
+      "required": ["userId", "userName", "roleToRemove", "status", "createdAt"]
     }
   },
   "auth": {
@@ -129,6 +143,10 @@
       {
         "path": "/users/{userId}/role_applications/{applicationId}",
         "definition": { "schema": { "$ref": "#/entities/RoleApplication" }, "description": "Subcollection for a user's role applications." }
+      },
+      {
+        "path": "/users/{userId}/role_removal_requests/{requestId}",
+        "definition": { "schema": { "$ref": "#/entities/RoleRemovalRequest" }, "description": "Subcollection for a user's role removal requests." }
       },
       {
         "path": "/patients/{patientId}",

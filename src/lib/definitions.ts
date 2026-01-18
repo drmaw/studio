@@ -123,3 +123,13 @@ export type RoleApplication = {
   createdAt: FieldValue;
   reviewedAt?: FieldValue;
 };
+
+export type RoleRemovalRequest = {
+  id: string;
+  userId: string;
+  userName: string;
+  roleToRemove: Role;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: FieldValue;
+  reviewedAt?: FieldValue;
+};
