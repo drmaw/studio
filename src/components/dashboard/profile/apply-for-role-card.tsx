@@ -1,12 +1,10 @@
-
-
 'use client';
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import type { Role, RoleApplication } from '@/lib/definitions';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -14,7 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { UserPlus, IdCard, File, Building, Hash, MapPin, Loader2 } from "lucide-react";
+import { UserPlus, IdCard, File, Building, Hash, MapPin, Loader2, Clock, CheckCircle, Trash2 } from "lucide-react";
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 const availableRoles = [
@@ -24,7 +26,7 @@ const availableRoles = [
 ];
 
 export function ApplyForRoleCard() {
-  const { user } = useAuth();
+  const { user, loading: userLoading } = useAuth();
   const firestore = useFirestore();
   const [selectedRole, setSelectedRole] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,7 +67,6 @@ export function ApplyForRoleCard() {
         applicationDetails.organization = orgDetails;
     }
     // In a real app, you would handle file uploads for BMDC certs, etc.
-    // For now, we'll just submit the form data.
 
     try {
         const applicationsRef = collection(firestore, 'users', user.id, 'role_applications');
@@ -91,6 +92,40 @@ export function ApplyForRoleCard() {
         toast({ variant: "destructive", title: "Submission Failed", description: "Could not submit your application." });
     } finally {
         setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteRole = async (roleToDelete: Role) => {
+    if (!user || !firestore || roleToDelete === 'patient') return;
+
+    const professionalRoles = user.roles.filter(r => r !== 'patient');
+    if (professionalRoles.length < 1 || (professionalRoles.length === 1 && professionalRoles.includes(roleToDelete))) {
+        toast({
+            variant: "destructive",
+            title: "Action Not Allowed",
+            description: "You cannot remove your only professional role.",
+        });
+        return;
+    }
+
+    const updatedRoles = user.roles.filter(r => r !== roleToDelete);
+
+    try {
+        const userRef = doc(firestore, "users", user.id);
+        await updateDoc(userRef, { roles: updatedRoles });
+        
+        toast({
+            title: "Role Removed",
+            description: `The ${roleToDelete.replace(/_/g, ' ')} role has been removed from your profile.`,
+        });
+
+    } catch (error) {
+        console.error("Failed to remove role:", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not remove the role from your profile.",
+        });
     }
   };
   
@@ -152,18 +187,9 @@ export function ApplyForRoleCard() {
     }
   }
 
-  if (!user) return null;
-
-  const isApplyDisabled = isSubmitting || !selectedRole || user.roles.includes(selectedRole as Role) || !!applications?.find(app => app.requestedRole === selectedRole && app.status === 'pending');
-  
-  let buttonText = `Apply for ${selectedRole ? selectedRole.replace(/_/g, ' ') : ''} Role`;
-  if (selectedRole && user.roles.includes(selectedRole as Role)) {
-      buttonText = "You already have this role";
-  } else if (selectedRole && applications?.find(app => app.requestedRole === selectedRole && app.status === 'pending')) {
-      buttonText = "Application is Pending";
-  } else if (!selectedRole) {
-      buttonText = "Select a Role to Apply";
-  }
+  const pendingApplications = applications?.filter(app => app.status === 'pending');
+  const rejectedApplications = applications?.filter(app => app.status === 'rejected');
+  const verifiedRoles = user?.roles.filter(r => r !== 'patient') || [];
 
   return (
     <Card className="mt-6 bg-card">
@@ -186,6 +212,7 @@ export function ApplyForRoleCard() {
               </SelectTrigger>
               <SelectContent>
                 {availableRoles.map(roleInfo => {
+                    if (!user) return null;
                     const hasRole = user.roles.includes(roleInfo.value as Role);
                     const pendingApp = applications?.find(app => app.requestedRole === roleInfo.value && app.status === 'pending');
                     const isDisabled = hasRole || !!pendingApp;
@@ -216,12 +243,103 @@ export function ApplyForRoleCard() {
         </CardContent>
         {selectedRole && (
           <CardFooter>
-            <Button type="submit" disabled={isApplyDisabled} className="w-full">
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : buttonText}
+            <Button type="submit" disabled={isSubmitting || !!applications?.find(app => app.requestedRole === selectedRole && app.status === 'pending')} className="w-full">
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : `Submit Application for ${selectedRole.replace(/_/g, ' ')}`}
             </Button>
           </CardFooter>
         )}
       </form>
+
+      <Separator className="my-4" />
+
+        <CardContent className="space-y-6">
+            <div>
+                <h3 className="text-base font-semibold flex items-center gap-2 mb-4">
+                    <Clock className="h-5 w-5 text-primary" />
+                    Your Role Applications
+                </h3>
+                {applicationsLoading ? (
+                    <div className="space-y-2">
+                        <div className="h-12 w-full bg-muted animate-pulse rounded-md" />
+                        <div className="h-12 w-full bg-muted animate-pulse rounded-md" />
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {(!pendingApplications || pendingApplications.length === 0) && (!rejectedApplications || rejectedApplications.length === 0) ? (
+                            <p className="text-sm text-muted-foreground text-center py-4">No pending or denied applications.</p>
+                        ) : (
+                            <>
+                                {pendingApplications?.map(app => (
+                                    <div key={app.id} className="flex items-center justify-between p-3 border rounded-lg bg-background-soft">
+                                        <div>
+                                            <p className="font-medium capitalize">{app.requestedRole.replace(/_/g, ' ')}</p>
+                                            <p className="text-xs text-muted-foreground">Applied: {app.createdAt ? format((app.createdAt as any).toDate(), 'dd-MM-yyyy') : 'N/A'}</p>
+                                        </div>
+                                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">Pending</Badge>
+                                    </div>
+                                ))}
+                                {rejectedApplications?.map(app => (
+                                    <div key={app.id} className="flex items-center justify-between p-3 border rounded-lg bg-background-soft">
+                                        <div>
+                                            <p className="font-medium capitalize">{app.requestedRole.replace(/_/g, ' ')}</p>
+                                             <p className="text-xs text-muted-foreground">Applied: {app.createdAt ? format((app.createdAt as any).toDate(), 'dd-MM-yyyy') : 'N/A'}</p>
+                                             {app.reason && <p className="text-xs text-destructive/80 mt-1">Reason: {app.reason}</p>}
+                                        </div>
+                                        <Badge variant="destructive">Denied</Badge>
+                                    </div>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div>
+                <h3 className="text-base font-semibold flex items-center gap-2 mb-4">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    Your Verified Roles
+                </h3>
+                {userLoading ? (
+                     <div className="h-12 w-full bg-muted animate-pulse rounded-md" />
+                ) : (
+                    <div className="space-y-2">
+                        {verifiedRoles.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-4">You have no verified professional roles.</p>
+                        ) : (
+                            verifiedRoles.map(role => {
+                                const approvalInfo = applications?.find(app => app.requestedRole === role && app.status === 'approved');
+                                return (
+                                <div key={role} className="flex items-center justify-between p-3 border rounded-lg bg-emerald-50 border-emerald-200">
+                                    <div>
+                                        <p className="font-medium capitalize">{role.replace(/_/g, ' ')}</p>
+                                        <p className="text-xs text-muted-foreground">Verified: {approvalInfo?.reviewedAt ? format((approvalInfo.reviewedAt as any).toDate(), 'dd-MM-yyyy') : 'N/A'}</p>
+                                    </div>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure you want to remove this role?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This will remove your access to the {role.replace(/_/g, ' ')} dashboard and its features. This action cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteRole(role as Role)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove Role</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            )})
+                        )}
+                    </div>
+                )}
+            </div>
+        </CardContent>
     </Card>
   );
 }
