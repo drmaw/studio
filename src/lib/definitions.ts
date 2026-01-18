@@ -134,3 +134,35 @@ export type RoleRemovalRequest = {
   createdAt: FieldValue;
   reviewedAt?: FieldValue;
 };
+
+export type Day = 'Sat' | 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri';
+
+export type DoctorSchedule = {
+  id: string;
+  doctorId: string;
+  doctorName: string;
+  organizationId: string;
+  organizationName: string;
+  roomNumber: string;
+  fee: number;
+  days: Day[];
+  startTime: string; // "HH:MM" 24hr format
+  endTime: string; // "HH:MM" 24hr format
+  createdAt: FieldValue;
+};
+
+export type Appointment = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  organizationId: string;
+  organizationName: string;
+  scheduleId: string;
+  appointmentDate: string; // "YYYY-MM-DD"
+  appointmentTime: string; // e.g. "05:00 PM"
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  reason: string;
+  createdAt: FieldValue;
+};

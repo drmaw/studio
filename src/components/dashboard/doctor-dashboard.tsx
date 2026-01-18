@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from "react";
-import type { Patient, User } from "@/lib/definitions";
+import type { DoctorSchedule, Patient, User } from "@/lib/definitions";
 import {
   Card,
   CardContent,
@@ -21,14 +21,8 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { QrScannerDialog } from "./qr-scanner-dialog";
-import { collection, getDocs, query, where, limit, addDoc, serverTimestamp } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
-
-// This represents the different places a doctor might practice.
-const chamberSchedules = [
-    { id: 1, hospital: 'Digital Health Clinic', room: '302', days: 'Sat, Mon, Wed', time: '5 PM - 9 PM' },
-    { id: 2, hospital: 'City General Hospital', room: '501A', days: 'Sun, Tue', time: '6 PM - 10 PM' },
-]
+import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, collectionGroup } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 
 function PatientSearchResultCard({ patient }: { patient: Patient }) {
   const patientInitials = patient.name.split(' ').map(n => n[0]).join('');
@@ -94,6 +88,14 @@ export function DoctorDashboard({ user }: { user: User }) {
   const [searchResult, setSearchResult] = useState<Patient | null | 'not_found'>(null);
   const { toast } = useToast();
   const firestore = useFirestore();
+
+  const schedulesQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collectionGroup(firestore, 'schedules'), where('doctorId', '==', user.healthId));
+  }, [firestore, user]);
+  
+  const { data: chamberSchedules, isLoading: schedulesLoading } = useCollection<DoctorSchedule>(schedulesQuery);
+
 
   const handleSearch = async (id?: string) => {
     const finalQuery = id || searchQuery;
@@ -231,31 +233,40 @@ export function DoctorDashboard({ user }: { user: User }) {
           <Hospital />
           Your Chambers
         </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {chamberSchedules.map((schedule) => (
-                <Card key={schedule.id} className="bg-background-soft flex flex-col">
-                    <CardHeader>
-                        <CardTitle>{schedule.hospital}</CardTitle>
-                        <CardDescription>Room: {schedule.room}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-1">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <CalendarDays className="h-4 w-4"/>
-                            <span>{schedule.days}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                            <Clock className="h-4 w-4"/>
-                            <span>{schedule.time}</span>
-                        </div>
-                    </CardContent>
-                    <CardFooter>
-                       <Button variant="outline" className="w-full">
-                            View Appointments
-                       </Button>
-                    </CardFooter>
-                </Card>
-            ))}
-        </div>
+        {schedulesLoading ? (
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="bg-background-soft h-48 animate-pulse" />
+                <Card className="bg-background-soft h-48 animate-pulse" />
+            </div>
+        ) : chamberSchedules && chamberSchedules.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {chamberSchedules.map((schedule) => (
+                    <Card key={schedule.id} className="bg-background-soft flex flex-col">
+                        <CardHeader>
+                            <CardTitle>{schedule.organizationName}</CardTitle>
+                            <CardDescription>Room: {schedule.roomNumber}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <CalendarDays className="h-4 w-4"/>
+                                <span>{schedule.days.join(', ')}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                <Clock className="h-4 w-4"/>
+                                <span>{schedule.startTime} - {schedule.endTime}</span>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                           <Button asChild variant="outline" className="w-full">
+                                <Link href={`/dashboard/appointments/${schedule.id}`}>View Appointments</Link>
+                           </Button>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+        ) : (
+            <p className="text-muted-foreground">You have not been scheduled for any chambers yet.</p>
+        )}
       </div>
     </div>
   );

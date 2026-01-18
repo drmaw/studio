@@ -129,6 +129,43 @@
         "reviewedAt": { "type": "object" }
       },
       "required": ["userId", "userName", "roleToRemove", "status", "createdAt"]
+    },
+    "DoctorSchedule": {
+      "title": "DoctorSchedule",
+      "description": "Defines a doctor's schedule at a specific chamber in an organization.",
+      "type": "object",
+      "properties": {
+        "doctorId": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "organizationName": { "type": "string" },
+        "roomNumber": { "type": "string" },
+        "fee": { "type": "number" },
+        "days": { "type": "array", "items": { "type": "string" } },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" }
+      },
+      "required": ["doctorId", "doctorName", "organizationId", "organizationName", "roomNumber", "fee", "days", "startTime", "endTime"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Represents a scheduled appointment between a patient and a doctor.",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "organizationName": { "type": "string" },
+        "scheduleId": { "type": "string" },
+        "appointmentDate": { "type": "string", "format": "date" },
+        "appointmentTime": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled", "completed"] },
+        "reason": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["patientId", "patientName", "doctorId", "doctorName", "organizationId", "organizationName", "scheduleId", "appointmentDate", "status", "createdAt"]
     }
   },
   "auth": {
@@ -167,6 +204,14 @@
       {
         "path": "/patients/{patientId}/privacy_log/{logId}",
         "definition": { "schema": { "$ref": "#/entities/PrivacyLog" }, "description": "Subcollection for a patient's privacy audit trail." }
+      },
+      {
+        "path": "/organizations/{organizationId}/schedules/{scheduleId}",
+        "definition": { "schema": { "$ref": "#/entities/DoctorSchedule" }, "description": "Subcollection for an organization's doctor schedules." }
+      },
+      {
+        "path": "/appointments/{appointmentId}",
+        "definition": { "schema": { "$ref": "#/entities/Appointment" }, "description": "Top-level collection for all appointments." }
       }
     ]
   }

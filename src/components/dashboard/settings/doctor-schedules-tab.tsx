@@ -16,15 +16,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Calendar, DollarSign, Loader2, PlusCircle, Trash2, UserPlus, Users, X } from "lucide-react";
+import { Calendar, Clock, DollarSign, Loader2, PlusCircle, Trash2, UserPlus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore } from "@/firebase";
-import { getDocs, collection, query, where, limit } from "firebase/firestore";
-import type { User } from "@/lib/definitions";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { getDocs, collection, query, where, limit, doc, addDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
+import type { User, DoctorSchedule } from "@/lib/definitions";
 
 const weekDays = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
 
@@ -34,52 +34,43 @@ const formSchema = z.object({
   fee: z.coerce.number().positive({ message: "Fee must be a positive number." }),
   days: z.array(z.string()).refine(value => value.some(item => item), {
     message: "You have to select at least one day.",
-  })
+  }),
+  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:MM)"),
+  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:MM)"),
 });
 
-type DoctorSchedule = {
-    id: string;
-    doctorName: string;
-    doctorId: string;
-    roomNumber: string;
-    fee: number;
-    days: string[];
-}
-
-const initialSchedules: DoctorSchedule[] = [
-    {
-        id: 'sched-1',
-        doctorName: 'Dr. Dev',
-        doctorId: '1122334455',
-        roomNumber: '302',
-        fee: 800,
-        days: ['Sat', 'Mon', 'Wed']
-    }
-];
 
 export function DoctorSchedulesTab() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [schedules, setSchedules] = useState<DoctorSchedule[]>(initialSchedules);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user: hospitalOwner } = useAuth();
   const firestore = useFirestore();
+
+  const schedulesQuery = useMemoFirebase(() => {
+    if (!firestore || !hospitalOwner) return null;
+    return query(collection(firestore, 'organizations', hospitalOwner.organizationId, 'schedules'), where('organizationId', '==', hospitalOwner.organizationId));
+  }, [firestore, hospitalOwner]);
+
+  const { data: schedules, isLoading: schedulesLoading } = useCollection<DoctorSchedule>(schedulesQuery);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       healthId: "",
       roomNumber: "",
-      fee: 0,
-      days: []
+      fee: 1000,
+      days: [],
+      startTime: "17:00",
+      endTime: "21:00",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !firestore) return;
-    setIsLoading(true);
+    if (!hospitalOwner || !firestore) return;
+    setIsSubmitting(true);
     
     const usersRef = collection(firestore, 'users');
-    const q = query(usersRef, where('healthId', '==', values.healthId), where('roles', 'array-contains', 'doctor'), where('organizationId', '==', user.organizationId), limit(1));
+    const q = query(usersRef, where('healthId', '==', values.healthId), where('roles', 'array-contains', 'doctor'), limit(1));
 
     const querySnapshot = await getDocs(q);
 
@@ -87,34 +78,43 @@ export function DoctorSchedulesTab() {
         const doctorDoc = querySnapshot.docs[0];
         const doctorData = doctorDoc.data() as User;
         
-        const newSchedule: DoctorSchedule = {
-            id: `sched-${Date.now()}`,
-            doctorId: values.healthId,
+        const schedulesRef = collection(firestore, 'organizations', hospitalOwner.organizationId, 'schedules');
+
+        const newSchedule: Omit<DoctorSchedule, 'id'> = {
+            doctorId: doctorData.healthId,
             doctorName: doctorData.name,
+            organizationId: hospitalOwner.organizationId,
+            organizationName: "Digital Health Clinic", // This should be dynamic in a real app
             roomNumber: values.roomNumber,
             fee: values.fee,
-            days: values.days,
+            days: values.days as any,
+            startTime: values.startTime,
+            endTime: values.endTime,
+            createdAt: serverTimestamp()
         };
 
-        setSchedules(prev => [...prev, newSchedule]);
+        await addDoc(schedulesRef, newSchedule);
+
         toast({
             title: "Schedule Added",
             description: `A new chamber has been scheduled for ${doctorData.name}.`,
         });
-        form.reset({ healthId: "", roomNumber: "", fee: 0, days: [] });
+        form.reset();
     } else {
       toast({
         variant: "destructive",
         title: "Doctor Not Found",
-        description: "No doctor with that Health ID was found in your organization.",
+        description: "No doctor with that Health ID was found in your organization or they are not a doctor.",
       });
     }
 
-    setIsLoading(false);
+    setIsSubmitting(false);
   }
   
-  const handleDelete = (scheduleId: string) => {
-    setSchedules(prev => prev.filter(s => s.id !== scheduleId));
+  const handleDelete = async (scheduleId: string) => {
+    if (!hospitalOwner || !firestore) return;
+    const scheduleRef = doc(firestore, 'organizations', hospitalOwner.organizationId, 'schedules', scheduleId);
+    await deleteDoc(scheduleRef);
     toast({
       variant: "destructive",
       title: "Schedule Removed",
@@ -131,7 +131,7 @@ export function DoctorSchedulesTab() {
             </h3>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-lg">
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                          <FormField
                             control={form.control}
                             name="healthId"
@@ -169,6 +169,34 @@ export function DoctorSchedulesTab() {
                                         <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input type="number" placeholder="e.g., 1000" {...field} className="pl-7" />
                                     </div>
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="startTime"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Start Time (24h)</FormLabel>
+                                <FormControl>
+                                   <Input type="time" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="endTime"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>End Time (24h)</FormLabel>
+                                <FormControl>
+                                   <Input type="time" {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
@@ -222,8 +250,8 @@ export function DoctorSchedulesTab() {
                             </FormItem>
                         )}
                         />
-                    <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-                        {isLoading ? <Loader2 className="animate-spin" /> : "Add Schedule"}
+                    <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                        {isSubmitting ? <Loader2 className="animate-spin" /> : "Add Schedule"}
                     </Button>
                 </form>
             </Form>
@@ -242,34 +270,39 @@ export function DoctorSchedulesTab() {
                         <TableRow>
                             <TableHead>Doctor</TableHead>
                             <TableHead>Room</TableHead>
-                            <TableHead>Fee</TableHead>
+                            <TableHead>Time</TableHead>
                             <TableHead>Scheduled Days</TableHead>
                             <TableHead className="text-right">Action</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {schedules.map((schedule) => (
-                            <TableRow key={schedule.id}>
-                                <TableCell className="font-medium">{schedule.doctorName}</TableCell>
-                                <TableCell>{schedule.roomNumber}</TableCell>
-                                <TableCell className="font-mono">{schedule.fee.toFixed(2)}</TableCell>
-                                <TableCell>
-                                    <div className="flex flex-wrap gap-1">
-                                    {schedule.days.map(day => (
-                                        <Badge key={day} variant="secondary">{day}</Badge>
-                                    ))}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(schedule.id)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {schedulesLoading ? (
+                            <TableRow><TableCell colSpan={5} className="text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                        ) : schedules && schedules.length > 0 ? (
+                            schedules.map((schedule) => (
+                                <TableRow key={schedule.id}>
+                                    <TableCell className="font-medium">{schedule.doctorName}</TableCell>
+                                    <TableCell>{schedule.roomNumber}</TableCell>
+                                    <TableCell>{schedule.startTime} - {schedule.endTime}</TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-wrap gap-1">
+                                        {schedule.days.map(day => (
+                                            <Badge key={day} variant="secondary">{day}</Badge>
+                                        ))}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(schedule.id)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                             <TableRow><TableCell colSpan={5} className="text-center">No doctor schedules have been added yet.</TableCell></TableRow>
+                        )}
                     </TableBody>
                 </Table>
-                 {schedules.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No doctor schedules have been added yet.</p>}
             </div>
         </div>
     </div>

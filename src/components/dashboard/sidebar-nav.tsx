@@ -8,7 +8,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, Briefcase } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, Briefcase, CalendarCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -52,6 +52,12 @@ export function SidebarNav() {
       label: "Profile",
       icon: UserIcon,
       roles: ['patient'],
+    },
+    {
+        href: "/dashboard/my-appointments",
+        label: "My Appointments",
+        icon: CalendarCheck,
+        roles: ['patient'],
     },
     {
       href: "/dashboard/my-records",
