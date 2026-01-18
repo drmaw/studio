@@ -21,7 +21,7 @@ import { signOut } from "firebase/auth";
 import { Badge } from "../ui/badge";
 import { collection, doc, orderBy, query, writeBatch } from "firebase/firestore";
 import type { Notification } from "@/lib/definitions";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { ScrollArea } from "../ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 
@@ -89,7 +89,7 @@ function NotificationBell() {
                        <p className="font-semibold">{n.title}</p>
                        <p className="text-xs text-muted-foreground">{n.description}</p>
                        <p className="text-xs text-muted-foreground/80 self-end">
-                         {n.createdAt ? formatDistanceToNow((n.createdAt as any).toDate(), { addSuffix: true }) : ''}
+                         {n.createdAt ? format((n.createdAt as any).toDate(), 'dd-MM-yyyy, hh:mm a') : ''}
                        </p>
                     </Link>
                   </DropdownMenuItem>

@@ -121,7 +121,7 @@ export function BookAppointmentCalendar({ schedule }: { schedule: DoctorSchedule
             firestore,
             schedule.doctorId,
             'New Appointment Request',
-            `${user.name} has requested an appointment on ${format(date, 'PPP')} at ${selectedTime}.`,
+            `${user.name} has requested an appointment on ${format(date, 'dd-MM-yyyy')} at ${selectedTime}.`,
             `/dashboard/appointments/${schedule.id}`
         );
 
@@ -146,7 +146,7 @@ export function BookAppointmentCalendar({ schedule }: { schedule: DoctorSchedule
                 disabled={[{ dayOfWeek: disabledDays }, { before: new Date() }]}
             />
             <div className="flex-1">
-                <h4 className="font-semibold mb-2">Available Slots for {date ? format(date, 'PPP') : '...'}</h4>
+                <h4 className="font-semibold mb-2">Available Slots for {date ? format(date, 'dd-MM-yyyy') : '...'}</h4>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {timeSlots.map(slot => {
                         const isBooked = bookedSlots.includes(slot);
@@ -168,7 +168,7 @@ export function BookAppointmentCalendar({ schedule }: { schedule: DoctorSchedule
                         <DialogHeader>
                             <DialogTitle>Confirm Appointment</DialogTitle>
                             <DialogDescription>
-                                You are booking an appointment with {schedule.doctorName} at {schedule.organizationName} on {date ? format(date, 'PPP') : ''} at {selectedTime}.
+                                You are booking an appointment with {schedule.doctorName} at {schedule.organizationName} on {date ? format(date, 'dd-MM-yyyy') : ''} at {selectedTime}.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-2">

@@ -84,7 +84,7 @@ export default function MyAppointmentsPage() {
                                         <TableCell className="font-medium">{apt.doctorName}</TableCell>
                                         <TableCell>{apt.organizationName}</TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{format(parseISO(apt.appointmentDate), 'PPP')}</div>
+                                            <div className="font-medium">{format(parseISO(apt.appointmentDate), 'dd-MM-yyyy')}</div>
                                             <div className="text-sm text-muted-foreground">{apt.appointmentTime}</div>
                                         </TableCell>
                                         <TableCell>

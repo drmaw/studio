@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 export function GlobalAuditLog() {
     const firestore = useFirestore();
@@ -37,7 +37,7 @@ export function GlobalAuditLog() {
                              {isLoading ? <TableRow><TableCell colSpan={4} className="text-center h-24"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow> :
                              logs?.map(log => (
                                 <TableRow key={log.id}>
-                                    <TableCell>{log.timestamp ? formatDistanceToNow((log.timestamp as any).toDate(), { addSuffix: true }) : 'N/A'}</TableCell>
+                                    <TableCell>{log.timestamp ? format((log.timestamp as any).toDate(), 'dd-MM-yyyy, hh:mm a') : 'N/A'}</TableCell>
                                     <TableCell>{log.actorName} ({log.actorId})</TableCell>
                                     <TableCell><Badge variant="secondary" className="capitalize">{log.action}</Badge></TableCell>
                                     <TableCell>{log.patientId}</TableCell>
