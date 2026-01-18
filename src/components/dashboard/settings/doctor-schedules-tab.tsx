@@ -84,7 +84,7 @@ export function DoctorSchedulesTab() {
             doctorId: doctorData.healthId,
             doctorName: doctorData.name,
             organizationId: hospitalOwner.organizationId,
-            organizationName: "Digital Health Clinic", // This should be dynamic in a real app
+            organizationName: hospitalOwner.name ? `${hospitalOwner.name}'s Clinic` : "Digital Health Clinic",
             roomNumber: values.roomNumber,
             fee: values.fee,
             days: values.days as any,
