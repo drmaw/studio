@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { doc, writeBatch } from 'firebase/firestore';
 import type { Role, User } from '@/lib/definitions';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -28,7 +29,7 @@ export function ApplyForRoleCard() {
 
   const [orgDetails, setOrgDetails] = useState({ name: '', reg: '', tin: '', address: '' });
 
-  const handleApply = async (event: React.FormEvent) => {
+  const handleApply = (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedRole || !user || !firestore) {
       toast({
@@ -40,8 +41,17 @@ export function ApplyForRoleCard() {
     }
 
     setIsSubmitting(true);
+    setAppliedRole(selectedRole);
+    setApplicationStatus('submitted');
+
+    // Mock status progression
+    setTimeout(() => setApplicationStatus('waiting_for_approval'), 2000);
     
-    try {
+    setTimeout(() => {
+        setApplicationStatus('approved');
+        
+        if (!user || !firestore) return;
+
         const batch = writeBatch(firestore);
         const userRef = doc(firestore, "users", user.id);
         const patientRef = doc(firestore, "patients", user.id);
@@ -49,51 +59,34 @@ export function ApplyForRoleCard() {
         const updatedRoles = Array.from(new Set([...user.roles, selectedRole as Role]));
         
         let updateData: Partial<User> = { roles: updatedRoles };
-        const demoOrganizationId = 'org-1'; // Default demo hospital
+        const demoOrganizationId = 'org-1';
         
-        // For hospital owners, we create a new mock organization ID
         if (selectedRole === 'hospital_owner') {
              const organizationId = `org-${Date.now()}`;
              updateData.organizationId = organizationId;
              batch.update(patientRef, { organizationId: organizationId });
         } 
-        // For doctors and nurses, assign them to the default demo hospital to make the feature functional
         else if (selectedRole === 'doctor' || selectedRole === 'nurse') {
             updateData.organizationId = demoOrganizationId;
             batch.update(patientRef, { organizationId: demoOrganizationId });
         }
         
         batch.update(userRef, updateData);
-        await batch.commit();
         
-        // Mock API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        setAppliedRole(selectedRole);
-        setApplicationStatus('submitted');
-        
-        toast({
-          title: "Application Submitted",
-          description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is being processed.`,
-        });
-        
-        // Mock status progression
-        setTimeout(() => setApplicationStatus('waiting_for_approval'), 2000);
-        setTimeout(() => {
-            setApplicationStatus('approved');
+        batch.commit().then(() => {
              toast({
                 title: "Application Approved!",
-                description: `You now have the ${selectedRole.replace(/_/g, ' ')} role. Refresh to see changes.`,
+                description: `You now have the ${selectedRole.replace(/_/g, ' ')} role. Please refresh to see changes.`,
             });
-        }, 5000);
+             // Don't reset state here, so the "Approved" message persists
+        }).catch(error => {
+            console.error("Application submission failed:", error);
+            toast({ variant: "destructive", title: "Submission Failed", description: "Could not submit your application." });
+            setIsSubmitting(false);
+            setApplicationStatus(null); // Reset on failure
+        });
 
-    } catch (error) {
-        console.error("Application submission failed:", error);
-        toast({ variant: "destructive", title: "Submission Failed", description: "Could not submit your application." });
-    } finally {
-        setIsSubmitting(false);
-        setSelectedRole('');
-    }
+    }, 5000);
   };
   
   const renderRoleForm = () => {
