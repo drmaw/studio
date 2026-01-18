@@ -22,8 +22,6 @@ export type UserDemographics = {
   presentAddress?: string;
   permanentAddress?: string;
   mobileNumber?: string;
-  chronicConditions?: string[];
-  allergies?: string[];
   emergencyContacts?: EmergencyContact[];
 };
 
@@ -44,16 +42,6 @@ export type User = {
 
 export type Patient = {
   id: string; // This is the Firebase Auth UID
-  healthId: string; // This is the 10-digit user-facing ID
-  name: string;
-  userId: string;
-  organizationId: string;
-  demographics: {
-    dob: string;
-    gender: 'Male' | 'Female' | 'Other';
-    contact: string;
-    address: string;
-  };
   chronicConditions?: string[];
   allergies?: string[];
   redFlag?: {

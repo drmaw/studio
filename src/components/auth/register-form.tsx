@@ -21,7 +21,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import type { User, Patient } from "@/lib/definitions";
 
 const formSchema = z.object({
@@ -72,6 +72,7 @@ export function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
+      const batch = writeBatch(firestore);
       const userDocRef = doc(firestore, "users", firebaseUser.uid);
       const patientDocRef = doc(firestore, "patients", firebaseUser.uid);
       
@@ -96,21 +97,15 @@ export function RegisterForm() {
       };
 
       const newPatient: Omit<Patient, 'id'> = {
-          healthId: healthId,
-          userId: firebaseUser.uid,
-          name: isDevUser ? 'Dev' : values.name,
-          organizationId: orgId,
-          demographics: {
-              dob: isDevUser ? '01-01-1985' : '',
-              gender: isDevUser ? 'Male' : 'Other',
-              contact: values.mobileNumber,
-              address: isDevUser ? '123 Dev Lane' : ''
-          },
           createdAt: serverTimestamp(),
+          chronicConditions: [],
+          allergies: [],
       };
       
-      await setDoc(userDocRef, newUser);
-      await setDoc(patientDocRef, newPatient);
+      batch.set(userDocRef, newUser);
+      batch.set(patientDocRef, newPatient);
+      await batch.commit();
+
 
       toast({
         title: "Registration Successful",

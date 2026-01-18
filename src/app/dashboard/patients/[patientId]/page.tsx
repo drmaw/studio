@@ -8,33 +8,40 @@ import { MedicalRecordCard } from "@/components/dashboard/medical-record-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Cake, Home, Phone, User as UserIcon } from "lucide-react";
-import { useEffect, use } from "react";
+import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VitalsTracker } from "@/components/dashboard/vitals-tracker";
 import { RedBanner } from "@/components/dashboard/red-banner";
 import { useDoc, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { doc, collection, query, orderBy } from "firebase/firestore";
-import type { Patient, MedicalRecord, Vitals } from "@/lib/definitions";
+import type { Patient, MedicalRecord, Vitals, User } from "@/lib/definitions";
 
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
   const patientId = params.patientId;
-  const { user, loading, hasRole, activeRole } = useAuth();
+  const { user: currentUser, loading: currentUserLoading, hasRole, activeRole } = useAuth();
   const router = useRouter();
   const firestore = useFirestore();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!currentUserLoading && !currentUser) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [currentUser, currentUserLoading, router]);
+
+  const patientUserDocRef = useMemoFirebase(() => {
+    if (!firestore || !patientId) return null;
+    return doc(firestore, "users", patientId);
+  }, [firestore, patientId]);
+
+  const { data: patientUser, isLoading: isPatientUserLoading } = useDoc<User>(patientUserDocRef);
   
-  const patientDocRef = useMemoFirebase(() => {
+  const patientDataDocRef = useMemoFirebase(() => {
     if (!firestore || !patientId) return null;
     return doc(firestore, "patients", patientId);
   }, [firestore, patientId]);
 
-  const { data: patient, isLoading: isPatientLoading } = useDoc<Patient>(patientDocRef);
+  const { data: patientData, isLoading: isPatientDataLoading } = useDoc<Patient>(patientDataDocRef);
 
   const recordsQuery = useMemoFirebase(() => {
     if (!firestore || !patientId) return null;
@@ -49,8 +56,10 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   }, [firestore, patientId]);
 
   const { data: vitalsHistory, isLoading: areVitalsLoading } = useCollection<Vitals>(vitalsQuery);
-
-  if (isPatientLoading && !patient) {
+  
+  const pageIsLoading = currentUserLoading || isPatientUserLoading || isPatientDataLoading || areRecordsLoading || areVitalsLoading || !currentUser;
+  
+  if (pageIsLoading && !patientUser) {
      return <div className="space-y-6">
         <Skeleton className="h-48 w-full" />
         <Skeleton className="h-12 w-1/4" />
@@ -58,18 +67,17 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
     </div>
   }
   
-  if (!patient) {
+  if (!patientUser) {
     notFound();
   }
   
-  // Security check: only doctors can see any patient, patients can only see themselves.
-  if (!loading && hasRole('patient') && activeRole === 'patient') {
-    if (user?.id !== patient.userId) {
+  // Security check: patients can only see themselves.
+  if (!currentUserLoading && hasRole('patient') && activeRole === 'patient') {
+    if (currentUser?.id !== patientId) {
         notFound();
     }
   }
 
-  const pageIsLoading = loading || isPatientLoading || areRecordsLoading || areVitalsLoading || !user;
 
   if (pageIsLoading) {
     return <div className="space-y-6">
@@ -84,40 +92,40 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
       <Card className="bg-card">
         <CardHeader className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
           <Avatar className="h-24 w-24">
-            <AvatarImage src={`https://picsum.photos/seed/${patient.id}/100/100`} />
-            <AvatarFallback>{patient.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+            <AvatarImage src={patientUser.avatarUrl} />
+            <AvatarFallback>{patientUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
           </Avatar>
           <div>
-            <CardTitle className="text-3xl">{patient.name}</CardTitle>
+            <CardTitle className="text-3xl">{patientUser.name}</CardTitle>
             <CardDescription className="text-base">Patient Details</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-4 border-t pt-4">
-            <div className="flex items-center gap-2"><Cake className="h-4 w-4 text-muted-foreground" /> <strong>DOB:</strong> {patient.demographics.dob}</div>
-            <div className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-muted-foreground" /> <strong>Gender:</strong> {patient.demographics.gender}</div>
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> <strong>Contact:</strong> {patient.demographics.contact}</div>
-            <div className="flex items-center gap-2"><Home className="h-4 w-4 text-muted-foreground" /> <strong>Address:</strong> {patient.demographics.address}</div>
+            <div className="flex items-center gap-2"><Cake className="h-4 w-4 text-muted-foreground" /> <strong>DOB:</strong> {patientUser.demographics?.dob}</div>
+            <div className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-muted-foreground" /> <strong>Gender:</strong> {patientUser.demographics?.gender}</div>
+            <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> <strong>Contact:</strong> {patientUser.demographics?.mobileNumber}</div>
+            <div className="flex items-center gap-2"><Home className="h-4 w-4 text-muted-foreground" /> <strong>Address:</strong> {patientUser.demographics?.presentAddress}</div>
           </div>
         </CardContent>
       </Card>
       
-      {patient.redFlag && (
+      {patientData?.redFlag && (
         <RedBanner 
-          patientId={patient.id}
-          initialRedFlag={patient.redFlag}
+          patientId={patientId}
+          initialRedFlag={patientData.redFlag}
           currentUserRole={activeRole!}
         />
       )}
 
-      {vitalsHistory && <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} patientId={patient.id} organizationId={patient.organizationId} />}
+      {vitalsHistory && <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} patientId={patientId} organizationId={patientUser.organizationId} />}
 
       <div>
         <h2 className="text-2xl font-bold mb-4">Medical Records</h2>
         <div className="space-y-4">
           {records && records.length > 0 ? (
             records.map(record => (
-              <MedicalRecordCard key={record.id} record={record} currentUserRole={activeRole!} patientId={patient.id}/>
+              <MedicalRecordCard key={record.id} record={record} currentUserRole={activeRole!} patientId={patientId}/>
             ))
           ) : (
             <Card className="flex items-center justify-center p-8 bg-background-soft">

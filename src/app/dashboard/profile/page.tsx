@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
@@ -11,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { differenceInYears, parse, isValid, format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import type { UserDemographics, EmergencyContact, User } from "@/lib/definitions";
+import type { UserDemographics, EmergencyContact, User, Patient } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthIdCard } from "@/components/dashboard/health-id-card";
@@ -19,9 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { useFirestore } from "@/firebase";
-import { doc, getDocs, collection, query, where, limit, updateDoc } from "firebase/firestore";
-
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc, getDocs, collection, query, where, limit, writeBatch } from "firebase/firestore";
 
 const ProfileInfoRow = ({ icon: Icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | null, children?: React.ReactNode }) => {
   if (!value && !children) return null;
@@ -51,15 +51,26 @@ const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const genders = ['Male', 'Female', 'Other'];
 const maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed'];
 
+type ProfileFormData = Partial<UserDemographics> & {
+    chronicConditions?: string[];
+    allergies?: string[];
+};
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const firestore = useFirestore();
+
+  const patientDocRef = useMemoFirebase(() => {
+      if (!firestore || !user) return null;
+      return doc(firestore, "patients", user.id);
+  }, [firestore, user]);
+
+  const { data: patientData, isLoading: isPatientLoading } = useDoc<Patient>(patientDocRef);
   
   const [age, setAge] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Partial<UserDemographics>>({});
+  const [formData, setFormData] = useState<ProfileFormData>({});
   const [allergyInput, setAllergyInput] = useState('');
   
   // State for new emergency contact
@@ -70,12 +81,12 @@ export default function ProfilePage() {
   const [newContactMethod, setNewContactMethod] = useState('details');
 
   useEffect(() => {
-    if (user) {
-        const initialData = {
+    if (user && patientData) {
+        const initialData: ProfileFormData = {
             ...user.demographics,
-            chronicConditions: user.demographics?.chronicConditions || [],
-            allergies: user.demographics?.allergies || [],
             emergencyContacts: user.demographics?.emergencyContacts || [],
+            chronicConditions: patientData.chronicConditions || [],
+            allergies: patientData.allergies || [],
         };
         setFormData(initialData);
 
@@ -96,14 +107,14 @@ export default function ProfilePage() {
             setAge(null);
         }
     }
-  }, [user]);
+  }, [user, patientData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   }
 
-  const handleSelectChange = (name: keyof UserDemographics) => (value: string) => {
+  const handleSelectChange = (name: keyof ProfileFormData) => (value: string) => {
     setFormData(prev => ({...prev, [name]: value }));
   }
 
@@ -178,23 +189,23 @@ export default function ProfilePage() {
     if (!user || !firestore) return;
     
     try {
+        const batch = writeBatch(firestore);
         const userRef = doc(firestore, "users", user.id);
-        await updateDoc(userRef, { demographics: formData });
-        
-        // Also update the patient document with relevant info
         const patientRef = doc(firestore, "patients", user.id);
-        const patientUpdateData = {
-            'demographics.dob': formData.dob,
-            'demographics.gender': formData.gender,
-            'demographics.contact': formData.mobileNumber,
-            chronicConditions: formData.chronicConditions,
-            allergies: formData.allergies,
-        };
-        await updateDoc(patientRef, patientUpdateData);
+        
+        const { chronicConditions, allergies, ...demographicsData } = formData;
+
+        batch.update(userRef, { demographics: demographicsData });
+        batch.update(patientRef, {
+            chronicConditions: chronicConditions || [],
+            allergies: allergies || [],
+        });
+
+        await batch.commit();
 
         toast({
             title: "Profile Updated",
-            description: "Your personal information has been saved.",
+            description: "Your personal and medical information has been saved.",
         });
         setIsEditing(false);
     } catch (error) {
@@ -208,18 +219,18 @@ export default function ProfilePage() {
   }
 
   const handleCancel = () => {
-    if (user) {
+    if (user && patientData) {
       setFormData({
         ...user.demographics,
-        chronicConditions: user.demographics?.chronicConditions || [],
-        allergies: user.demographics?.allergies || [],
         emergencyContacts: user.demographics?.emergencyContacts || [],
+        chronicConditions: patientData.chronicConditions || [],
+        allergies: patientData.allergies || [],
       });
     }
     setIsEditing(false);
   }
 
-  if (loading || !user) {
+  if (loading || isPatientLoading || !user) {
     return (
       <div className="space-y-6">
           <Skeleton className="h-40 w-full" />

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -20,20 +21,30 @@
     },
     "Patient": {
       "title": "Patient",
-      "description": "Represents a patient's core record, linked to a user.",
+      "description": "Represents supplementary, patient-specific medical data linked to a user document.",
       "type": "object",
       "properties": {
-        "healthId": { "type": "string", "description": "A unique 10-digit user-facing identifier." },
-        "userId": { "type": "string", "description": "Links to the User document ID (Firebase UID)." },
-        "name": { "type": "string" },
-        "organizationId": { "type": "string" },
-        "demographics": { "type": "object" },
-        "chronicConditions": { "type": "array", "items": { "type": "string" } },
-        "allergies": { "type": "array", "items": { "type": "string" } },
-        "redFlag": { "type": "object" },
+        "chronicConditions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of chronic medical conditions."
+        },
+        "allergies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of known allergies."
+        },
+        "redFlag": {
+          "type": "object",
+          "description": "A critical medical alert for the patient.",
+          "properties": {
+            "title": { "type": "string" },
+            "comment": { "type": "string" }
+          }
+        },
         "createdAt": { "type": "object" }
       },
-      "required": ["healthId", "userId", "name", "organizationId", "createdAt"]
+      "required": ["createdAt"]
     },
      "Organization": {
       "title": "Organization",

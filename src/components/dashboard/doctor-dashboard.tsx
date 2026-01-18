@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from "react";
-import type { DoctorSchedule, Patient, User } from "@/lib/definitions";
+import type { Patient, User } from "@/lib/definitions";
 import {
   Card,
   CardContent,
@@ -21,25 +21,29 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { QrScannerDialog } from "./qr-scanner-dialog";
-import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, collectionGroup } from "firebase/firestore";
+import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, collectionGroup, doc, getDoc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { DoctorSchedule } from "@/lib/definitions";
 
-function PatientSearchResultCard({ patient }: { patient: Patient }) {
+
+type CombinedPatient = User & Partial<Patient>;
+
+function PatientSearchResultCard({ patient }: { patient: CombinedPatient }) {
   const patientInitials = patient.name.split(' ').map(n => n[0]).join('');
   return (
     <Card className="bg-background">
       <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-4">
          <Avatar className="h-20 w-20">
-            <AvatarImage src={`https://picsum.photos/seed/${patient.id}/100/100`} />
+            <AvatarImage src={patient.avatarUrl} />
             <AvatarFallback className="text-2xl">{patientInitials}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <CardTitle className="text-2xl">{patient.name}</CardTitle>
             <CardDescription className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm mt-2">
               <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {patient.healthId}</span>
-              <span className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {patient.demographics.contact}</span>
-              <span>DOB: {patient.demographics.dob}</span>
-              <span>{patient.demographics.gender}</span>
+              <span className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {patient.demographics?.mobileNumber}</span>
+              <span>DOB: {patient.demographics?.dob}</span>
+              <span>{patient.demographics?.gender}</span>
             </CardDescription>
           </div>
           <Button asChild variant="default" size="sm" className="self-start">
@@ -85,7 +89,7 @@ function PatientSearchResultCard({ patient }: { patient: Patient }) {
 export function DoctorDashboard({ user }: { user: User }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<Patient | null | 'not_found'>(null);
+  const [searchResult, setSearchResult] = useState<CombinedPatient | null | 'not_found'>(null);
   const { toast } = useToast();
   const firestore = useFirestore();
 
@@ -99,7 +103,7 @@ export function DoctorDashboard({ user }: { user: User }) {
 
   const handleSearch = async (id?: string) => {
     const finalQuery = id || searchQuery;
-    if (!finalQuery || !user) {
+    if (!finalQuery || !user || !firestore) {
         toast({
             variant: "destructive",
             title: "Search field is empty",
@@ -112,30 +116,38 @@ export function DoctorDashboard({ user }: { user: User }) {
     setSearchResult(null);
 
     try {
-        const patientsRef = collection(firestore, "patients");
+        const usersRef = collection(firestore, "users");
         const isHealthId = /^\d{10}$/.test(finalQuery); 
         
-        let q;
-        if(isHealthId) {
-            q = query(patientsRef, where("healthId", "==", finalQuery), limit(1));
-        } else {
-            q = query(patientsRef, where("demographics.contact", "==", finalQuery), limit(1));
-        }
+        const q = isHealthId 
+            ? query(usersRef, where("healthId", "==", finalQuery), limit(1))
+            : query(usersRef, where("demographics.mobileNumber", "==", finalQuery), limit(1));
 
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
-            const patientDoc = querySnapshot.docs[0];
-            const patientData = { id: patientDoc.id, ...patientDoc.data() } as Patient;
-            setSearchResult(patientData);
+            const userDoc = querySnapshot.docs[0];
+            const patientUser = { id: userDoc.id, ...userDoc.data() } as User;
+            
+            const patientDocRef = doc(firestore, "patients", patientUser.id);
+            const patientDocSnap = await getDoc(patientDocRef);
+            const patientData = patientDocSnap.exists() ? patientDocSnap.data() as Patient : null;
+
+            const combinedData: CombinedPatient = {
+                ...patientUser,
+                ...patientData,
+                id: patientUser.id,
+            };
+
+            setSearchResult(combinedData);
 
             // Log the search action
             try {
-                const logRef = collection(firestore, 'patients', patientData.id, 'privacy_log');
+                const logRef = collection(firestore, 'patients', combinedData.id, 'privacy_log');
                 const logEntry = {
                     actorId: user.healthId,
                     actorName: user.name,
                     actorAvatarUrl: user.avatarUrl,
-                    patientId: patientData.id,
+                    patientId: combinedData.id,
                     organizationId: user.organizationId,
                     action: 'search' as const,
                     timestamp: serverTimestamp(),
