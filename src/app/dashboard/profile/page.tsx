@@ -17,11 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthIdCard } from "@/components/dashboard/health-id-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { doc, getDocs, collection, query, where, limit, writeBatch } from "firebase/firestore";
+import { doc, writeBatch } from "firebase/firestore";
 import { ApplyForRoleCard } from "@/components/dashboard/profile/apply-for-role-card";
 
 const ProfileInfoRow = ({ icon: Icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | null, children?: React.ReactNode }) => {
@@ -78,8 +76,6 @@ export default function ProfilePage() {
   const [newContactName, setNewContactName] = useState('');
   const [newContactRelation, setNewContactRelation] = useState('');
   const [newContactNumber, setNewContactNumber] = useState('');
-  const [newContactHealthId, setNewContactHealthId] = useState('');
-  const [newContactMethod, setNewContactMethod] = useState('details');
 
   useEffect(() => {
     if (user && patientData) {
@@ -141,38 +137,22 @@ export default function ProfilePage() {
   };
 
   const handleAddEmergencyContact = async () => {
-    let newContact: EmergencyContact | null = null;
-    const common = { id: `ec-${Date.now()}`, relation: newContactRelation };
-
-    if (newContactMethod === 'details' && newContactName && newContactRelation && newContactNumber) {
-        newContact = { ...common, name: newContactName, contactNumber: newContactNumber };
-    } else if (newContactMethod === 'healthId' && newContactHealthId && newContactRelation) {
-        if (!firestore) {
-            toast({ variant: "destructive", title: "Database not available", description: "Cannot verify Health ID right now."});
-            return;
-        }
-        const usersRef = collection(firestore, 'users');
-        const userQuery = query(usersRef, where('healthId', '==', newContactHealthId), limit(1));
-        const contactUserSnapshot = await getDocs(userQuery);
-
-        if (contactUserSnapshot.empty) {
-            toast({ variant: "destructive", title: "User not found", description: "No user exists with that Health ID."});
-            return;
-        }
-        const contactUser = contactUserSnapshot.docs[0].data() as User;
-        newContact = { ...common, healthId: newContactHealthId, name: contactUser.name };
-    } else {
+    if (!newContactName || !newContactRelation || !newContactNumber) {
         toast({ variant: "destructive", title: "Incomplete Information", description: "Please fill all required fields for the new contact."});
         return;
     }
 
-    if (newContact) {
-        setFormData(prev => ({...prev, emergencyContacts: [...(prev.emergencyContacts || []), newContact!]}));
-        setNewContactName('');
-        setNewContactRelation('');
-        setNewContactNumber('');
-        setNewContactHealthId('');
-    }
+    const newContact: EmergencyContact = {
+      id: `ec-${Date.now()}`,
+      relation: newContactRelation,
+      name: newContactName,
+      contactNumber: newContactNumber
+    };
+    
+    setFormData(prev => ({...prev, emergencyContacts: [...(prev.emergencyContacts || []), newContact!]}));
+    setNewContactName('');
+    setNewContactRelation('');
+    setNewContactNumber('');
   };
 
   const handleRemoveEmergencyContact = (id: string) => {
@@ -388,24 +368,13 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                    ))}
-                                   <div className="p-4 border-2 border-dashed rounded-lg bg-background">
-                                       <Tabs value={newContactMethod} onValueChange={setNewContactMethod}>
-                                           <TabsList className="grid w-full grid-cols-2">
-                                               <TabsTrigger value="details">Add by Details</TabsTrigger>
-                                               <TabsTrigger value="healthId">Add by Health ID</TabsTrigger>
-                                           </TabsList>
-                                           <TabsContent value="details" className="pt-4 space-y-2">
-                                                <Input placeholder="Full Name" value={newContactName} onChange={(e) => setNewContactName(e.target.value)} autoComplete="name"/>
-                                                <Input placeholder="Relation (e.g., Mother)" value={newContactRelation} onChange={(e) => setNewContactRelation(e.target.value)} />
-                                                <Input placeholder="Contact Number" value={newContactNumber} onChange={(e) => setNewContactNumber(e.target.value)} />
-                                           </TabsContent>
-                                           <TabsContent value="healthId" className="pt-4 space-y-2">
-                                                <Input placeholder="Health ID" value={newContactHealthId} onChange={(e) => setNewContactHealthId(e.target.value)} />
-                                                <Input placeholder="Relation (e.g., Doctor)" value={newContactRelation} onChange={(e) => setNewContactRelation(e.target.value)} />
-                                           </TabsContent>
-                                       </Tabs>
-                                       <Button className="mt-2 w-full" type="button" onClick={handleAddEmergencyContact}><Plus className="mr-2 h-4 w-4" />Add Contact</Button>
-                                   </div>
+                                    <div className="p-4 border-2 border-dashed rounded-lg bg-background space-y-2">
+                                        <h4 className="text-sm font-medium text-center">Add New Emergency Contact</h4>
+                                        <Input placeholder="Full Name" value={newContactName} onChange={(e) => setNewContactName(e.target.value)} autoComplete="name"/>
+                                        <Input placeholder="Relation (e.g., Mother)" value={newContactRelation} onChange={(e) => setNewContactRelation(e.target.value)} />
+                                        <Input placeholder="Contact Number" value={newContactNumber} onChange={(e) => setNewContactNumber(e.target.value)} />
+                                        <Button className="w-full" type="button" onClick={handleAddEmergencyContact}><Plus className="mr-2 h-4 w-4" />Add Contact</Button>
+                                    </div>
                                 </div>
                             </>
                         ) : (
