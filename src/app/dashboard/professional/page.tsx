@@ -6,15 +6,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HospitalOwnerDashboard } from "@/components/dashboard/hospital-owner-dashboard";
-import { 
-    NurseDashboard, 
-    LabTechnicianDashboard, 
-    PathologistDashboard, 
-    PharmacistDashboard, 
-    ManagerDashboard, 
-    AssistantManagerDashboard, 
-    FrontDeskDashboard 
-} from "@/components/dashboard/other-dashboards";
+import { NurseDashboard } from "@/components/dashboard/nurse-dashboard";
+import { LabTechnicianDashboard } from "@/components/dashboard/lab-technician-dashboard";
+import { PathologistDashboard } from "@/components/dashboard/pathologist-dashboard";
+import { PharmacistDashboard } from "@/components/dashboard/pharmacist-dashboard";
+import { ManagerDashboard } from "@/components/dashboard/manager-dashboard";
+import { AssistantManagerDashboard } from "@/components/dashboard/assistant-manager-dashboard";
+import { FrontDeskDashboard } from "@/components/dashboard/front-desk-dashboard";
 
 function GenericDashboard({ name }: { name: string }) {
     return (
