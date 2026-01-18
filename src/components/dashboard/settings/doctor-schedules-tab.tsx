@@ -96,11 +96,13 @@ export function DoctorSchedulesTab() {
         }
         
         const schedulesRef = collection(firestore, 'organizations', hospitalOwner.organizationId, 'schedules');
+        
+        const doctorName = doctorData.name.startsWith('Dr.') ? doctorData.name : `Dr. ${doctorData.name}`;
 
         const newSchedule: Omit<DoctorSchedule, 'id'> = {
             doctorId: doctorData.healthId,
             doctorAuthId: doctorDoc.id,
-            doctorName: doctorData.name,
+            doctorName: doctorName,
             organizationId: hospitalOwner.organizationId,
             organizationName: organization.name,
             roomNumber: values.roomNumber,
@@ -115,7 +117,7 @@ export function DoctorSchedulesTab() {
 
         toast({
             title: "Schedule Added",
-            description: `A new chamber has been scheduled for ${doctorData.name}.`,
+            description: `A new chamber has been scheduled for ${doctorName}.`,
         });
         form.reset();
     } else {

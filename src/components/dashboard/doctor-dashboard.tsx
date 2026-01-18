@@ -18,7 +18,6 @@ import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { Textarea } from "../ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { QrScannerDialog } from "./qr-scanner-dialog";
 import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, collectionGroup, doc, getDoc } from "firebase/firestore";
@@ -57,9 +56,8 @@ function PatientSearchResultCard({ patient }: { patient: CombinedPatient }) {
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>{patient.redFlag.title}</AlertTitle>
-            <AlertDescription className="space-y-2">
+            <AlertDescription>
               <p>{patient.redFlag.comment}</p>
-              <Textarea placeholder="Add a note for this alert..." defaultValue="" />
             </AlertDescription>
           </Alert>
         )}

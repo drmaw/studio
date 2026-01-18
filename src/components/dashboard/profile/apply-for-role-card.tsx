@@ -13,12 +13,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { UserPlus, IdCard, File, Building, Hash, MapPin, Loader2, Clock, CheckCircle, Trash2 } from "lucide-react";
+import { UserPlus, IdCard, File, Building, Hash, MapPin, Loader2, Clock, CheckCircle, Trash2, Info } from "lucide-react";
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { FormattedDate } from '@/components/shared/formatted-date';
 import { applicationRoles, professionalRolesConfig } from '@/lib/roles';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 export function ApplyForRoleCard() {
@@ -102,7 +103,6 @@ export function ApplyForRoleCard() {
     if (selectedRole === 'hospital_owner') {
         applicationDetails.organization = orgDetails;
     }
-    // In a real app, you would handle file uploads for BMDC certs, etc.
 
     try {
         const applicationsRef = collection(firestore, 'users', user.id, 'role_applications');
@@ -176,32 +176,53 @@ export function ApplyForRoleCard() {
       case 'doctor':
         return (
           <div className="space-y-4">
+             <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Feature Coming Soon</AlertTitle>
+                <AlertDescription>
+                    Document uploads are not yet implemented. Your application will be submitted for review without attachments.
+                </AlertDescription>
+            </Alert>
              <div className="space-y-2">
               <Label htmlFor="bmdc" className="flex items-center gap-2"><IdCard className="h-4 w-4" /> BMDC Registration Number</Label>
               <Input id="bmdc" placeholder="Enter your BMDC number" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="doctor-photo" className="flex items-center gap-2"><File className="h-4 w-4" /> Your Picture</Label>
-              <Input id="doctor-photo" type="file" />
+              <Input id="doctor-photo" type="file" disabled />
             </div>
           </div>
         );
       case 'nurse':
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="nurse-reg" className="flex items-center gap-2"><IdCard className="h-4 w-4" /> Registration Number</Label>
-              <Input id="nurse-reg" placeholder="Enter your registration number" />
+            <div className="space-y-4">
+                <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Feature Coming Soon</AlertTitle>
+                    <AlertDescription>
+                        Document uploads are not yet implemented. Your application will be submitted for review without attachments.
+                    </AlertDescription>
+                </Alert>
+                <div className="space-y-2">
+                    <Label htmlFor="nurse-reg" className="flex items-center gap-2"><IdCard className="h-4 w-4" /> Registration Number</Label>
+                    <Input id="nurse-reg" placeholder="Enter your registration number" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="nurse-photo" className="flex items-center gap-2"><File className="h-4 w-4" /> Your Photo</Label>
+                    <Input id="nurse-photo" type="file" disabled />
+                </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="nurse-photo" className="flex items-center gap-2"><File className="h-4 w-4" /> Your Photo</Label>
-              <Input id="nurse-photo" type="file" />
-            </div>
-          </div>
         );
       case 'hospital_owner':
         return (
           <div className="space-y-4">
+            <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Feature Coming Soon</AlertTitle>
+                <AlertDescription>
+                    Document uploads are not yet implemented. Your application will be submitted for review without attachments.
+                </AlertDescription>
+            </Alert>
             <div className="space-y-2">
               <Label htmlFor="org-name" className="flex items-center gap-2"><Building className="h-4 w-4" /> Name of the Organization</Label>
               <Input id="org-name" placeholder="Enter organization name" value={orgDetails.name} onChange={e => setOrgDetails({...orgDetails, name: e.target.value})} />
@@ -220,7 +241,7 @@ export function ApplyForRoleCard() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="org-cert" className="flex items-center gap-2"><File className="h-4 w-4" /> Photo of Registration Certificate</Label>
-              <Input id="org-cert" type="file" />
+              <Input id="org-cert" type="file" disabled />
             </div>
           </div>
         );

@@ -4,7 +4,7 @@
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { addDoc, collection, doc, orderBy, query, updateDoc, where, serverTimestamp } from "firebase/firestore";
+import { collection, doc, orderBy, query, updateDoc, where } from "firebase/firestore";
 import type { Appointment, DoctorSchedule } from "@/lib/definitions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,18 +14,8 @@ import { Check, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormattedDate } from "@/components/shared/formatted-date";
-
-async function createNotification(firestore: any, userId: string, title: string, description: string, href?: string) {
-    const notificationsRef = collection(firestore, 'users', userId, 'notifications');
-    await addDoc(notificationsRef, {
-        userId,
-        title,
-        description,
-        href: href || '#',
-        isRead: false,
-        createdAt: serverTimestamp(),
-    });
-}
+import { createNotification } from "@/lib/notifications";
+import { format } from 'date-fns';
 
 export default function DoctorAppointmentsPage() {
     const params = useParams();
@@ -59,7 +49,9 @@ export default function DoctorAppointmentsPage() {
 
         // Notify patient
         const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Cancelled';
-        const description = `Your appointment with ${appointment.doctorName} on <FormattedDate date={appointment.appointmentDate} formatString="dd-MM-yyyy" /> has been ${status}.`;
+        const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
+        const description = `Your appointment with ${appointment.doctorName} on ${formattedDate} has been ${status}.`;
+        
         await createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
 
         toast({

@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useCollectionGroup } from '@/firebase';
-import { collection, collectionGroup, query, where, doc, writeBatch, serverTimestamp, addDoc, updateDoc, getDoc, orderBy } from 'firebase/firestore';
+import { collection, collectionGroup, query, where, doc, writeBatch, serverTimestamp, updateDoc, getDoc, orderBy } from 'firebase/firestore';
 import type { Role, RoleApplication, RoleRemovalRequest, User, Organization } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -23,18 +23,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { UserPlus, UserX, Loader2, Calendar, Building, Check, X, Trash2 } from 'lucide-react';
 import { FormattedDate } from '@/components/shared/formatted-date';
+import { createNotification } from '@/lib/notifications';
 
-async function createNotification(firestore: any, userId: string, title: string, description: string, href?: string) {
-    const notificationsRef = collection(firestore, 'users', userId, 'notifications');
-    await addDoc(notificationsRef, {
-        userId,
-        title,
-        description,
-        href: href || '#',
-        isRead: false,
-        createdAt: serverTimestamp(),
-    });
-}
 
 function RejectApplicationDialog({ application, onReject }: { application: RoleApplication, onReject: (app: RoleApplication, reason: string) => Promise<void> }) {
     const [isOpen, setIsOpen] = useState(false);

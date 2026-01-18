@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Shield, EyeOff, Sparkles, Trash2, Bell } from "lucide-react";
+import { Shield, EyeOff, Sparkles, Trash2, Bell, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,22 +27,60 @@ import { useRouter } from 'next/navigation';
 
 export function AccountSettingsTab() {
   const { toast } = useToast();
-  const [isVitalsVisible, setIsVitalsVisible] = useState(true);
-  const [isDiscoverable, setIsDiscoverable] = useState(true);
-  const [isPremium, setIsPremium] = useState(false);
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const firestore = useFirestore();
   const auth = useFirebaseAuth();
   const router = useRouter();
 
+  const [isVitalsVisible, setIsVitalsVisible] = useState(true);
+  const [isDiscoverable, setIsDiscoverable] = useState(true);
+  
+  useEffect(() => {
+    if (user?.demographics?.privacySettings) {
+        setIsVitalsVisible(user.demographics.privacySettings.vitalsVisible);
+        setIsDiscoverable(user.demographics.privacySettings.discoverable);
+    }
+  }, [user]);
 
-  const handleUpgrade = () => {
-    // Mock premium upgrade
-    setIsPremium(true);
-    toast({
-        title: "Congratulations!",
-        description: "You've been upgraded to a Premium account."
-    });
+  const handlePrivacyChange = async (key: 'vitalsVisible' | 'discoverable', value: boolean) => {
+    if (!user || !firestore) return;
+    
+    const newSettings = {
+        ...user.demographics?.privacySettings,
+        [key]: value
+    };
+
+    if (key === 'vitalsVisible') setIsVitalsVisible(value);
+    if (key === 'discoverable') setIsDiscoverable(value);
+
+    try {
+        const userRef = doc(firestore, 'users', user.id);
+        await updateDoc(userRef, {
+            'demographics.privacySettings': newSettings
+        });
+        toast({ title: 'Privacy setting updated.' });
+    } catch (error) {
+        console.error("Failed to update privacy setting:", error);
+        toast({ variant: 'destructive', title: 'Update Failed' });
+        // Revert UI on failure
+        if (key === 'vitalsVisible') setIsVitalsVisible(!value);
+        if (key === 'discoverable') setIsDiscoverable(!value);
+    }
+  };
+
+
+  const handleUpgrade = async () => {
+    if (!user || !firestore) return;
+    try {
+        const userRef = doc(firestore, 'users', user.id);
+        await updateDoc(userRef, { isPremium: true });
+        toast({
+            title: "Congratulations!",
+            description: "You've been upgraded to a Premium account."
+        });
+    } catch (error) {
+         toast({ variant: 'destructive', title: 'Upgrade Failed' });
+    }
   };
 
   const handleAccountDeletion = async () => {
@@ -58,6 +96,7 @@ export function AccountSettingsTab() {
     try {
         const userRef = doc(firestore, "users", user.id);
         await updateDoc(userRef, {
+            status: 'suspended',
             deletionScheduledAt: serverTimestamp()
         });
         
@@ -78,6 +117,10 @@ export function AccountSettingsTab() {
         });
     }
   };
+  
+  if (loading) {
+    return <Loader2 className="h-8 w-8 animate-spin" />
+  }
 
   return (
     <div className="space-y-6">
@@ -104,7 +147,7 @@ export function AccountSettingsTab() {
                     <Switch
                         id="vitals-visibility"
                         checked={isVitalsVisible}
-                        onCheckedChange={setIsVitalsVisible}
+                        onCheckedChange={(checked) => handlePrivacyChange('vitalsVisible', checked)}
                     />
                 </div>
                  <div className="flex items-center justify-between space-x-2 p-4 border rounded-lg">
@@ -117,7 +160,7 @@ export function AccountSettingsTab() {
                     <Switch
                         id="discoverable"
                         checked={isDiscoverable}
-                        onCheckedChange={setIsDiscoverable}
+                        onCheckedChange={(checked) => handlePrivacyChange('discoverable', checked)}
                     />
                 </div>
             </CardContent>
@@ -132,7 +175,7 @@ export function AccountSettingsTab() {
                 <CardDescription>Manage your Digi Health subscription plan.</CardDescription>
             </CardHeader>
             <CardContent>
-                {isPremium ? (
+                {user?.isPremium ? (
                     <div className="p-4 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200">
                         <h3 className="font-semibold">You are a Premium Member!</h3>
                         <p className="text-sm">Enjoy increased storage and exclusive features.</p>

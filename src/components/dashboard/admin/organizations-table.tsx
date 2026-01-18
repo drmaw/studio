@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { FormattedDate } from '@/components/shared/formatted-date';
+import Link from 'next/link';
 
 export function OrganizationsTable() {
     const firestore = useFirestore();
@@ -41,7 +42,11 @@ export function OrganizationsTable() {
                                     <TableCell>{org.ownerId}</TableCell>
                                     <TableCell><FormattedDate date={org.createdAt} formatString="dd-MM-yyyy" fallback="N/A" /></TableCell>
                                     <TableCell><Badge variant={org.status === 'suspended' ? 'destructive' : 'default'} className="capitalize">{org.status}</Badge></TableCell>
-                                    <TableCell className="text-right"><Button variant="outline" size="sm">Manage</Button></TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="outline" size="sm" asChild>
+                                            <Link href={`/dashboard/settings/hospital?orgId=${org.id}`}>Manage</Link>
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                              ))}
                         </TableBody>

@@ -4,8 +4,8 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
-import type { Appointment } from '@/lib/definitions';
+import { collection, query, where, orderBy, doc, updateDoc, getDoc } from 'firebase/firestore';
+import type { Appointment, DoctorSchedule } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { FormattedDate } from '@/components/shared/formatted-date';
+import { createNotification } from '@/lib/notifications';
 
 export default function MyAppointmentsPage() {
     const { user, loading: userLoading } = useAuth();
@@ -42,8 +43,29 @@ export default function MyAppointmentsPage() {
     const { data: appointments, isLoading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
     const handleCancelAppointment = async (appointmentId: string) => {
+        if (!firestore || !user) return;
         const appointmentRef = doc(firestore, 'appointments', appointmentId);
+        
+        const appointmentSnap = await getDoc(appointmentRef);
+        if (!appointmentSnap.exists()) return;
+        const appointment = appointmentSnap.data() as Appointment;
+
         await updateDoc(appointmentRef, { status: 'cancelled' });
+        
+        // Notify doctor
+        const scheduleRef = doc(firestore, 'organizations', appointment.organizationId, 'schedules', appointment.scheduleId);
+        const scheduleSnap = await getDoc(scheduleRef);
+        if (scheduleSnap.exists()) {
+            const schedule = scheduleSnap.data() as DoctorSchedule;
+            await createNotification(
+                firestore,
+                schedule.doctorAuthId,
+                'Appointment Cancelled',
+                `${user.name} has cancelled their appointment for ${appointment.appointmentDate}.`,
+                `/dashboard/appointments/${appointment.organizationId}/${appointment.scheduleId}`
+            );
+        }
+
         toast({
             variant: 'destructive',
             title: 'Appointment Cancelled',

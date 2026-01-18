@@ -23,6 +23,10 @@ export type UserDemographics = {
   permanentAddress?: string;
   mobileNumber?: string;
   emergencyContacts?: EmergencyContact[];
+  privacySettings?: {
+    vitalsVisible: boolean;
+    discoverable: boolean;
+  };
 };
 
 export type User = {
@@ -60,6 +64,7 @@ export type Organization = {
   ownerId: string;
   status: 'active' | 'suspended' | 'deleted';
   createdAt: FieldValue;
+  facilityImages?: string[];
 };
 
 export type MedicalRecord = {

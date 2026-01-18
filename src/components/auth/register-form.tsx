@@ -76,23 +76,26 @@ export function RegisterForm() {
       const userDocRef = doc(firestore, "users", firebaseUser.uid);
       const patientDocRef = doc(firestore, "patients", firebaseUser.uid);
       
-      const isDevUser = values.email === 'dev@digihealth.com';
-      const healthId = isDevUser ? '1122334455' : generateHealthId();
-      const orgId = isDevUser ? 'org-1' : `org-ind-${firebaseUser.uid}`;
+      const healthId = generateHealthId();
+      const orgId = `org-ind-${firebaseUser.uid}`;
       
       const newUser: Omit<User, 'id'> = {
           healthId: healthId,
-          name: isDevUser ? 'Dev' : values.name,
+          name: values.name,
           email: firebaseUser.email!,
-          roles: isDevUser ? ['admin', 'doctor', 'patient', 'hospital_owner', 'marketing_rep', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'] : ['patient'],
+          roles: ['patient'],
           organizationId: orgId,
           avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
           createdAt: serverTimestamp(),
           status: 'active',
           demographics: {
-              dob: isDevUser ? '01-01-1985' : '',
-              gender: isDevUser ? 'Male' : 'Other',
+              dob: '',
+              gender: 'Other',
               mobileNumber: values.mobileNumber,
+              privacySettings: {
+                discoverable: true,
+                vitalsVisible: true,
+              }
           }
       };
 
