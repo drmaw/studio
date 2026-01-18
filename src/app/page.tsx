@@ -56,8 +56,6 @@ export default function Home() {
             </Link>
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
                 <Link href="/" className="text-foreground font-semibold">Home</Link>
-                <Link href="#" className="text-foreground/80 hover:text-foreground">What We Treat</Link>
-                 <Link href="#" className="text-foreground/80 hover:text-foreground">About Us</Link>
             </nav>
             <div className="flex items-center gap-2">
                 <Button variant="ghost" asChild>
@@ -70,26 +68,35 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-1">
-        {/* Call to Action Section */}
-        <section className="py-16 md:py-24 bg-background-soft">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold">Ready to Get Started?</h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
-              Join Digi Health today and experience a new standard of healthcare.
+        {/* Hero Section */}
+        <section className="relative w-full h-[60vh] md:h-[75vh] flex items-center justify-center text-center text-white">
+          {heroImage && (
+            <>
+              <Image
+                src={heroImage.imageUrl}
+                alt={heroImage.description}
+                fill
+                className="object-cover -z-20 brightness-50"
+                priority
+              />
+              <div className="absolute inset-0 bg-green-900/60 -z-10"></div>
+            </>
+          )}
+          <div className="relative px-4 sm:px-6 lg:px-8 max-w-4xl">
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight text-primary-foreground">
+              Your Health, Connected. Your Records, Secure.
+            </h1>
+            <p className="mt-4 md:mt-6 text-lg md:text-xl max-w-3xl mx-auto">
+              Digi Health is a digital platform for Bangladesh, connecting patients and doctors seamlessly. Manage your personal health records and access care more efficiently than ever before.
             </p>
-            <div className="mt-8">
-              <Button asChild size="lg" className="text-base font-semibold">
-                <Link href="/register">Create an Account</Link>
-              </Button>
-            </div>
           </div>
         </section>
-
+        
         {/* What We Treat Section */}
         <section className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-2xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold">Care for your whole life</h2>
+              <h2 className="text-3xl md:text-4xl font-bold">Care for Your Whole Life</h2>
               <p className="mt-4 text-lg text-muted-foreground">
                 From everyday needs to specialized services, we're here to support your health journey at every step.
               </p>
@@ -110,29 +117,21 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Hero Section */}
-        <section className="relative w-full h-[60vh] md:h-[75vh] flex items-center justify-center text-center text-white">
-          {heroImage && (
-            <>
-              <Image
-                src={heroImage.imageUrl}
-                alt={heroImage.description}
-                fill
-                className="object-cover -z-20 brightness-50"
-                priority
-              />
-              <div className="absolute inset-0 bg-green-900/60 -z-10"></div>
-            </>
-          )}
-          <div className="relative px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight text-primary">
-              Exceptional primary care for all of you
-            </h1>
-            <p className="mt-4 md:mt-6 text-lg md:text-xl max-w-2xl mx-auto">
-              One Medical is a membership-based primary care practice on a mission to make getting quality care more affordable, accessible, and enjoyable for all.
+        {/* Call to Action Section */}
+        <section className="py-16 md:py-24 bg-background-soft">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold">Ready to Get Started?</h2>
+            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
+              Join Digi Health today and experience a new standard of healthcare.
             </p>
+            <div className="mt-8">
+              <Button asChild size="lg" className="text-base font-semibold">
+                <Link href="/register">Create an Account</Link>
+              </Button>
+            </div>
           </div>
         </section>
+
       </main>
 
       <footer className="py-8 bg-background border-t">
