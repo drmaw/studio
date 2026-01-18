@@ -36,8 +36,10 @@ service cloud.firestore {
     // User Profiles
     match /users/{userId} {
       allow create: if isSignedIn();
-      // User can read their own profile. Doctors can list users. Admin can do anything.
-      allow read: if isOwner(userId) || isRole('doctor') || isAdmin();
+      // A user can get their own profile. Doctors and Admins can also get any user profile.
+      allow get: if isOwner(userId) || isRole('doctor') || isAdmin();
+      // Any signed-in user can perform list queries (e.g. for Health ID search, finding doctors).
+      allow list: if isSignedIn();
       // User can update own profile. Admin can update anyone's profile.
       allow update: if isOwner(userId) || isAdmin();
     }
@@ -79,8 +81,8 @@ service cloud.firestore {
     match /patients/{patientId}/privacy_log/{logId} {
         // ONLY the patient can read their log.
         allow get, list: if isOwner(patientId);
-        // A doctor can create a log entry (when searching/viewing), but only for patients in their org.
-        allow create: if isRole('doctor') && isInOrg(getPatientOrgId(patientId));
+        // Any doctor can create a log entry.
+        allow create: if isRole('doctor');
     }
     
     // Organization Data
