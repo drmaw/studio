@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Stethoscope, HeartPulse, Brain, Zap, Baby, ShieldCheck, Search, Building } from "lucide-react";
 import Link from "next/link";
 import Image from 'next/image';
-import { cn } from "@/lib/utils";
 
 const featureCards = [
   {
@@ -39,14 +38,15 @@ const featureCards = [
   }
 ];
 
-export default function Home() {
-  const heroImage = {
-    id: "hero-background-bangladesh",
-    description: "A stylized green map of Bangladesh, representing the app's focus on healthcare in the region.",
-    imageUrl: "https://images.unsplash.com/photo-1590248446961-d6215c893273?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtYXAlMjBvZiUyMGJhbmdsYWRlc2h8ZW58MHx8fHwxNzE5NDI4Mjg3fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    imageHint: "map Bangladesh"
-  };
+const heroImage = {
+  id: "hero-background-bangladesh",
+  description: "A stylized green map of Bangladesh, representing the app's focus on healthcare in the region.",
+  imageUrl: "https://images.unsplash.com/photo-1590248446961-d6215c893273?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtYXAlMjBvZiUyMGJhbmdsYWRlc2h8ZW58MHx8fHwxNzE5NDI4Mjg3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+  imageHint: "map Bangladesh"
+};
 
+
+export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm">

@@ -5,8 +5,6 @@ import { DoctorDashboard } from "@/components/dashboard/doctor-dashboard";
 import { RepDashboard } from "@/components/dashboard/rep-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HospitalOwnerDashboard } from "@/components/dashboard/hospital-owner-dashboard";
 
@@ -25,17 +23,7 @@ function GenericDashboard({ name }: { name: string }) {
 
 export default function ProfessionalDashboardPage() {
   const { user, loading, activeRole, hasRole } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    // This effect ensures that if a user lands here who only has a 'patient' role,
-    // they are redirected to their main dashboard. This should only run *after* loading is complete.
-    if (!loading && user && user.roles?.length === 1 && hasRole('patient')) {
-        router.replace('/dashboard');
-    }
-  }, [user, loading, hasRole, router]);
-
-
+  
   if (loading || !user) {
     return (
         <div className="space-y-4">
@@ -45,7 +33,8 @@ export default function ProfessionalDashboardPage() {
     );
   }
   
-  // If the user only has a patient role, render nothing while the redirect happens.
+  // The root layout and sidebar navigation should prevent users with only the 'patient'
+  // role from reaching this page. If they do, render nothing until navigation corrects.
   if (user.roles?.length === 1 && hasRole('patient')) {
     return null;
   }
@@ -60,7 +49,7 @@ export default function ProfessionalDashboardPage() {
       return <RepDashboard user={user} />;
     case 'hospital_owner':
       return <HospitalOwnerDashboard user={user} />;
-    // The 'patient' case is handled by the redirect logic above.
+    // The 'patient' case is handled by the guard clause above.
     // It's safe to have a default for other professional roles.
     default:
       return <GenericDashboard name={user.name} />;
