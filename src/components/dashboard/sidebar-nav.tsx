@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -59,12 +60,6 @@ export function SidebarNav() {
         icon: CalendarCheck,
         roles: ['patient'],
     },
-    {
-        href: "/dashboard/book-appointment",
-        label: "Book Appointment",
-        icon: BookOpenCheck,
-        roles: ['patient'],
-    },
      {
         href: "/dashboard/privacy-log",
         label: "Privacy Log",
@@ -82,6 +77,12 @@ export function SidebarNav() {
       label: "Admin Dashboard",
       icon: Shield,
       roles: ['admin'],
+    },
+    {
+        href: "/dashboard/book-appointment",
+        label: "Book Appointment",
+        icon: BookOpenCheck,
+        roles: ['hospital_owner', 'manager'],
     },
     {
         href: "/dashboard/billing",

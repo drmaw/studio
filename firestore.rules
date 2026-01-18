@@ -36,7 +36,7 @@ service cloud.firestore {
     // User Profiles
     match /users/{userId} {
       allow create: if isSignedIn();
-      allow get: if isOwner(userId) || isRole('doctor') || isAdmin();
+      allow get: if isOwner(userId) || (isRole('doctor') && isInOrg(getUserOrgId(userId))) || isAdmin() || (isRole('hospital_owner') && isInOrg(getUserOrgId(userId))) || (isRole('manager') && isInOrg(getUserOrgId(userId)));
       // Admins are the only ones who should be listing all users.
       allow list: if isAdmin();
       // Allow user to update their own profile, or admin, or a hospital owner to update a user in their org.
@@ -46,7 +46,7 @@ service cloud.firestore {
 
     // Patient Records
     match /patients/{patientId} {
-      allow get: if isOwner(patientId) || (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
+      allow get: if isOwner(patientId) || (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin() || (isRole('hospital_owner') && isInOrg(getUserOrgId(patientId))) || (isRole('manager') && isInOrg(getUserOrgId(patientId)));
       allow update: if isOwner(patientId) || (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
       allow create: if isOwner(patientId);
     }
@@ -70,7 +70,7 @@ service cloud.firestore {
 
     match /patients/{patientId}/privacy_log/{logId} {
         allow get, list: if isOwner(patientId);
-        allow create: if isRole('doctor');
+        allow create: if isRole('doctor') || isRole('hospital_owner') || isRole('manager');
     }
     
     // Organization Data
@@ -78,7 +78,7 @@ service cloud.firestore {
         // Allow any signed-in user to read orgs (for appointment booking)
         allow read: if isSignedIn();
         // Allow owners to create their own individual org, and admins to write anything
-        allow write: if (request.method == 'create' && isOwner(request.resource.data.ownerId)) || isAdmin();
+        allow write: if (request.method == 'create' && isOwner(request.resource.data.ownerId)) || isAdmin() || (isRole('hospital_owner') && orgId == getUserData().organizationId);
     }
     
     match /organizations/{orgId}/{collection}/{docId} {
@@ -89,8 +89,8 @@ service cloud.firestore {
     
     // Appointments
     match /appointments/{appointmentId} {
-        allow create: if isOwner(request.resource.data.patientId);
-        allow read, update: if isOwner(resource.data.patientId) || (isRole('doctor') && request.auth.uid == resource.data.doctorAuthId) || isAdmin();
+        allow create: if (isRole('hospital_owner') || isRole('manager')) && isInOrg(request.resource.data.organizationId);
+        allow read, update: if isOwner(resource.data.patientId) || (isRole('doctor') && request.auth.uid == resource.data.doctorAuthId) || isAdmin() || ((isRole('hospital_owner') || isRole('manager')) && isInOrg(resource.data.organizationId));
         allow list: if isSignedIn();
     }
     

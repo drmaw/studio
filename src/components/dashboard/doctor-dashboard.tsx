@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState } from "react";
@@ -138,23 +139,25 @@ export function DoctorDashboard({ user }: { user: User }) {
 
             setSearchResult(combinedData);
 
-            // Log the search action
-            try {
-                const logRef = collection(firestore, 'patients', combinedData.id, 'privacy_log');
-                const logEntry = {
-                    actorId: user.healthId,
-                    actorName: user.name,
-                    actorAvatarUrl: user.avatarUrl,
-                    patientId: combinedData.id,
-                    organizationId: user.organizationId,
-                    action: 'search' as const,
-                    timestamp: serverTimestamp(),
-                };
-                await addDoc(logRef, logEntry);
-            } catch (logError) {
-                console.error("Failed to write privacy log:", logError);
+            // Log the search action for doctors/managers/owners
+            const validSearcherRoles = ['doctor', 'hospital_owner', 'manager'];
+            if (user.roles.some(role => validSearcherRoles.includes(role))) {
+                try {
+                    const logRef = collection(firestore, 'patients', combinedData.id, 'privacy_log');
+                    const logEntry = {
+                        actorId: user.healthId,
+                        actorName: user.name,
+                        actorAvatarUrl: user.avatarUrl,
+                        patientId: combinedData.id,
+                        organizationId: user.organizationId,
+                        action: 'search' as const,
+                        timestamp: serverTimestamp(),
+                    };
+                    await addDoc(logRef, logEntry);
+                } catch (logError) {
+                    console.error("Failed to write privacy log:", logError);
+                }
             }
-
         } else {
             setSearchResult('not_found');
         }
