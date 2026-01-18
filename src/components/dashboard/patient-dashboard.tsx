@@ -104,7 +104,7 @@ export function PatientDashboard({ user }: { user: User }) {
 
   return (
     <div className="space-y-6">
-      {user && <HealthIdCard user={user} />}
+      {user && <HealthIdCard user={user} patient={patient} />}
       
       {patient?.redFlag && (
         <RedBanner

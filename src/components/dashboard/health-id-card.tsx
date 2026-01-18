@@ -3,7 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { type User } from "@/lib/definitions";
+import { type User, type Patient } from "@/lib/definitions";
 import { Camera, QrCode, ShieldCheck, Phone, Cake, HeartPulse, Siren, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
@@ -15,7 +15,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore } from "@/firebase";
 
-export function HealthIdCard({ user }: { user: User }) {
+export function HealthIdCard({ user, patient }: { user: User, patient: Patient | null }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
     const [age, setAge] = useState<number | null>(null);
@@ -137,19 +137,19 @@ export function HealthIdCard({ user }: { user: User }) {
 
                 <div className="flex items-center gap-6">
                     <div className="flex flex-col gap-3">
-                        {user.demographics?.chronicConditions && user.demographics.chronicConditions.length > 0 && (
+                        {patient?.chronicConditions && patient.chronicConditions.length > 0 && (
                             <div className="flex items-center gap-2">
                                 <HeartPulse className="h-5 w-5 text-primary" />
                                 <div className="flex flex-wrap gap-1">
-                                    {user.demographics.chronicConditions.map(c => <Badge key={c} variant="outline" className="capitalize">{c}</Badge>)}
+                                    {patient.chronicConditions.map(c => <Badge key={c} variant="outline" className="capitalize">{c}</Badge>)}
                                 </div>
                             </div>
                         )}
-                        {user.demographics?.allergies && user.demographics.allergies.length > 0 && (
+                        {patient?.allergies && patient.allergies.length > 0 && (
                              <div className="flex items-center gap-2">
                                 <Siren className="h-5 w-5 text-destructive" />
                                 <div className="flex flex-wrap gap-1">
-                                    {user.demographics.allergies.map(a => <Badge key={a} variant="destructive" className="capitalize bg-destructive/10 text-destructive-foreground border-destructive/20">{a}</Badge>)}
+                                    {patient.allergies.map(a => <Badge key={a} variant="destructive" className="capitalize bg-destructive/10 text-destructive-foreground border-destructive/20">{a}</Badge>)}
                                 </div>
                             </div>
                         )}
