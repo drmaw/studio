@@ -4,21 +4,19 @@
 import { useState } from "react";
 import type { Patient, User } from "@/lib/definitions";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock, ShieldCheck, HeartPulse, Siren, UserX, Loader2 } from "lucide-react";
+import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock, ShieldCheck, HeartPulse, Siren, UserX, Loader2, Hospital } from "lucide-react";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { ScrollArea } from "../ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +24,7 @@ import { QrScannerDialog } from "./qr-scanner-dialog";
 import { collection, getDocs, query, where, limit, addDoc, serverTimestamp } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 
+// This represents the different places a doctor might practice.
 const chamberSchedules = [
     { id: 1, hospital: 'Digital Health Clinic', room: '302', days: 'Sat, Mon, Wed', time: '5 PM - 9 PM' },
     { id: 2, hospital: 'City General Hospital', room: '501A', days: 'Sun, Tue', time: '6 PM - 10 PM' },
@@ -176,7 +175,7 @@ export function DoctorDashboard({ user }: { user: User }) {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Welcome, {user.name}</h1>
-        <p className="text-muted-foreground">Here's your schedule and patient overview for today.</p>
+        <p className="text-muted-foreground">Search for patients and manage your chamber schedules.</p>
       </div>
 
       {/* Patient Search */}
@@ -226,66 +225,38 @@ export function DoctorDashboard({ user }: { user: User }) {
         </CardContent>
       </Card>
       
-      {/* Upcoming Appointments Section */}
+      {/* Chambers Section */}
       <div>
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-          <CalendarDays />
-          Upcoming Appointments
+          <Hospital />
+          Your Chambers
         </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {chamberSchedules.map((schedule) => (
-                <Card key={schedule.id} className="bg-background-softer">
+                <Card key={schedule.id} className="bg-background-soft flex flex-col">
                     <CardHeader>
-                        <CardTitle className="flex justify-between items-start">
-                            <span>{schedule.hospital}</span>
-                             <Badge variant="secondary">0 Patients</Badge>
-                        </CardTitle>
-                         <CardDescription className="flex items-center gap-2 pt-1">
-                            <Clock className="h-4 w-4"/>
-                            <span>{schedule.days} &bull; {schedule.time}</span>
-                        </CardDescription>
+                        <CardTitle>{schedule.hospital}</CardTitle>
+                        <CardDescription>Room: {schedule.room}</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="h-48 flex items-center justify-center text-muted-foreground">
-                            <p>No appointments scheduled yet.</p>
+                    <CardContent className="flex-1">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <CalendarDays className="h-4 w-4"/>
+                            <span>{schedule.days}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                            <Clock className="h-4 w-4"/>
+                            <span>{schedule.time}</span>
                         </div>
                     </CardContent>
+                    <CardFooter>
+                       <Button variant="outline" className="w-full">
+                            View Appointments
+                       </Button>
+                    </CardFooter>
                 </Card>
             ))}
         </div>
       </div>
-      
-      {/* Chamber Schedules */}
-      <Card className="bg-card">
-        <CardHeader>
-          <CardTitle>Your Chamber Schedules</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Hospital</TableHead>
-                <TableHead>Schedule</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {chamberSchedules.map((schedule) => (
-                <TableRow key={schedule.id}>
-                  <TableCell>
-                      <div className="font-medium">{schedule.hospital}</div>
-                      <div className="text-xs text-muted-foreground">Room: {schedule.room}</div>
-                  </TableCell>
-                  <TableCell>
-                      <div>{schedule.days}</div>
-                      <div className="text-xs text-muted-foreground">{schedule.time}</div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
     </div>
   );
 }
