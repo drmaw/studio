@@ -22,9 +22,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { getDocs, collection, query, where, limit, doc, addDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
-import type { User, DoctorSchedule } from "@/lib/definitions";
+import type { User, DoctorSchedule, Organization } from "@/lib/definitions";
 
 const weekDays = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
 
@@ -43,8 +43,15 @@ const formSchema = z.object({
 export function DoctorSchedulesTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { user: hospitalOwner } = useAuth();
+  const { user: hospitalOwner, loading: ownerLoading } = useAuth();
   const firestore = useFirestore();
+
+  const organizationDocRef = useMemoFirebase(() => {
+    if (!firestore || !hospitalOwner) return null;
+    return doc(firestore, 'organizations', hospitalOwner.organizationId);
+  }, [firestore, hospitalOwner]);
+
+  const { data: organization, isLoading: orgLoading } = useDoc<Organization>(organizationDocRef);
 
   const schedulesQuery = useMemoFirebase(() => {
     if (!firestore || !hospitalOwner) return null;
@@ -66,7 +73,7 @@ export function DoctorSchedulesTab() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!hospitalOwner || !firestore) return;
+    if (!hospitalOwner || !firestore || !organization) return;
     setIsSubmitting(true);
     
     const usersRef = collection(firestore, 'users');
@@ -94,7 +101,7 @@ export function DoctorSchedulesTab() {
             doctorId: doctorData.healthId,
             doctorName: doctorData.name,
             organizationId: hospitalOwner.organizationId,
-            organizationName: hospitalOwner.name ? `${hospitalOwner.name}'s Clinic` : "Digital Health Clinic",
+            organizationName: organization.name,
             roomNumber: values.roomNumber,
             fee: values.fee,
             days: values.days as any,
@@ -114,7 +121,7 @@ export function DoctorSchedulesTab() {
       toast({
         variant: "destructive",
         title: "Doctor Not Found",
-        description: "No doctor with that Health ID was found in your organization or they are not a doctor.",
+        description: "No doctor with that Health ID was found.",
       });
     }
 
@@ -132,6 +139,8 @@ export function DoctorSchedulesTab() {
     });
   }
 
+  const isFormDisabled = isSubmitting || orgLoading || ownerLoading;
+
   return (
     <div className="space-y-8">
         <div>
@@ -140,129 +149,131 @@ export function DoctorSchedulesTab() {
                 Add New Schedule
             </h3>
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-lg">
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                         <FormField
-                            control={form.control}
-                            name="healthId"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Doctor's Health ID</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="e.g., 1122334455" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="roomNumber"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Room Number</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="e.g., 401-B" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <fieldset disabled={isFormDisabled} className="space-y-4 p-4 border rounded-lg">
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="healthId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Doctor's Health ID</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., 1122334455" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="roomNumber"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Room Number</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., 401-B" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="fee"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Consultation Fee</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input type="number" placeholder="e.g., 1000" {...field} className="pl-7" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="startTime"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Start Time (24h)</FormLabel>
+                                    <FormControl>
+                                    <Input type="time" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="endTime"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>End Time (24h)</FormLabel>
+                                    <FormControl>
+                                    <Input type="time" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <FormField
                             control={form.control}
-                            name="fee"
-                            render={({ field }) => (
+                            name="days"
+                            render={() => (
                                 <FormItem>
-                                <FormLabel>Consultation Fee</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input type="number" placeholder="e.g., 1000" {...field} className="pl-7" />
+                                    <div className="mb-4">
+                                        <FormLabel className="text-base">Chamber Days</FormLabel>
                                     </div>
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="startTime"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Start Time (24h)</FormLabel>
-                                <FormControl>
-                                   <Input type="time" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="endTime"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>End Time (24h)</FormLabel>
-                                <FormControl>
-                                   <Input type="time" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                     <FormField
-                        control={form.control}
-                        name="days"
-                        render={() => (
-                            <FormItem>
-                                <div className="mb-4">
-                                    <FormLabel className="text-base">Chamber Days</FormLabel>
-                                </div>
-                                <div className="flex flex-wrap gap-4">
-                                {weekDays.map((day) => (
-                                    <FormField
-                                    key={day}
-                                    control={form.control}
-                                    name="days"
-                                    render={({ field }) => {
-                                        return (
-                                        <FormItem
-                                            key={day}
-                                            className="flex flex-row items-start space-x-3 space-y-0"
-                                        >
-                                            <FormControl>
-                                            <Checkbox
-                                                checked={field.value?.includes(day)}
-                                                onCheckedChange={(checked) => {
-                                                return checked
-                                                    ? field.onChange([...(field.value || []), day])
-                                                    : field.onChange(
-                                                        field.value?.filter(
-                                                        (value) => value !== day
+                                    <div className="flex flex-wrap gap-4">
+                                    {weekDays.map((day) => (
+                                        <FormField
+                                        key={day}
+                                        control={form.control}
+                                        name="days"
+                                        render={({ field }) => {
+                                            return (
+                                            <FormItem
+                                                key={day}
+                                                className="flex flex-row items-start space-x-3 space-y-0"
+                                            >
+                                                <FormControl>
+                                                <Checkbox
+                                                    checked={field.value?.includes(day)}
+                                                    onCheckedChange={(checked) => {
+                                                    return checked
+                                                        ? field.onChange([...(field.value || []), day])
+                                                        : field.onChange(
+                                                            field.value?.filter(
+                                                            (value) => value !== day
+                                                            )
                                                         )
-                                                    )
-                                                }}
-                                            />
-                                            </FormControl>
-                                            <FormLabel className="font-normal">
-                                            {day}
-                                            </FormLabel>
-                                        </FormItem>
-                                        )
-                                    }}
-                                    />
-                                ))}
-                                </div>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                    <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-                        {isSubmitting ? <Loader2 className="animate-spin" /> : "Add Schedule"}
-                    </Button>
+                                                    }}
+                                                />
+                                                </FormControl>
+                                                <FormLabel className="font-normal">
+                                                {day}
+                                                </FormLabel>
+                                            </FormItem>
+                                            )
+                                        }}
+                                        />
+                                    ))}
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                        <Button type="submit" disabled={isFormDisabled} className="w-full sm:w-auto">
+                            {isFormDisabled ? <Loader2 className="animate-spin" /> : "Add Schedule"}
+                        </Button>
+                    </fieldset>
                 </form>
             </Form>
         </div>
