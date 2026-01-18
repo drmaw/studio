@@ -35,7 +35,7 @@ export type User = {
   avatarUrl: string;
   demographics?: UserDemographics;
   isPremium?: boolean;
-  status?: 'active' | 'suspended';
+  status: 'active' | 'suspended';
   createdAt: FieldValue;
   deletionScheduledAt?: FieldValue | null;
 };

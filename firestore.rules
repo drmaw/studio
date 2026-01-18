@@ -17,8 +17,8 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function getPatientOrgId(patientId) {
-        return get(/databases/$(database)/documents/patients/$(patientId)).data.organizationId;
+    function getUserOrgId(userId) {
+        return get(/databases/$(database)/documents/users/$(userId)).data.organizationId;
     }
     
     function isRole(role) {
@@ -44,25 +44,25 @@ service cloud.firestore {
 
     // Patient Records
     match /patients/{patientId} {
-      allow get: if isOwner(patientId) || (isRole('doctor') && isInOrg(resource.data.organizationId)) || isAdmin();
-      allow update: if isOwner(patientId) || (isRole('doctor') && isInOrg(resource.data.organizationId)) || isAdmin();
+      allow get: if isOwner(patientId) || (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
+      allow update: if isOwner(patientId) || (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
       allow create: if isOwner(patientId);
     }
     
     // Patient Subcollections
     match /patients/{patientId}/medical_records/{recordId} {
-        allow get, list: if isOwner(patientId) || (isRole('doctor') && isInOrg(getPatientOrgId(patientId))) || isAdmin();
-        allow create, update: if isRole('doctor') && isInOrg(getPatientOrgId(patientId));
+        allow get, list: if isOwner(patientId) || (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
+        allow create, update: if isRole('doctor') && isInOrg(getUserOrgId(patientId));
     }
 
     match /patients/{patientId}/record_files/{fileId} {
         allow read, write: if isOwner(patientId);
-        allow get, list: if isRole('doctor') && isInOrg(getPatientOrgId(patientId));
+        allow get, list: if (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
     }
 
     match /patients/{patientId}/vitals/{vitalId} {
         allow create, get, list: if isOwner(patientId);
-        allow get, list: if isRole('doctor') && isInOrg(getPatientOrgId(patientId));
+        allow get, list: if (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
         allow update, delete: if false;
     }
 

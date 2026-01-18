@@ -17,10 +17,9 @@ export default function HospitalSettingsPage() {
                 <p className="text-muted-foreground">Manage your organization's staff, services, and schedules.</p>
             </div>
             <Tabs defaultValue="general">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="general">General</TabsTrigger>
                     <TabsTrigger value="staff">Staff Management</TabsTrigger>
-                    <TabsTrigger value="billing">Billing & Fees</TabsTrigger>
                     <TabsTrigger value="schedules">Doctor Schedules</TabsTrigger>
                     <TabsTrigger value="facilities">Facility Management</TabsTrigger>
                 </TabsList>
@@ -43,22 +42,6 @@ export default function HospitalSettingsPage() {
                         </CardHeader>
                         <CardContent>
                             <StaffManagementTab />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="billing">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Billing & Fees</CardTitle>
-                            <CardDescription>Manage the price chart for various services offered at your hospital.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex flex-col items-center justify-center text-center p-12">
-                           <p className="text-muted-foreground mb-4">Billing management has been moved to its own dedicated page, accessible by both Hospital Owners and Managers.</p>
-                           <Button asChild>
-                               <Link href="/dashboard/billing">
-                                    Go to Billing & Fees <ArrowRight className="ml-2 h-4 w-4" />
-                               </Link>
-                           </Button>
                         </CardContent>
                     </Card>
                 </TabsContent>

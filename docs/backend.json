@@ -171,9 +171,10 @@
         "fee": { "type": "number" },
         "days": { "type": "array", "items": { "type": "string" } },
         "startTime": { "type": "string" },
-        "endTime": { "type": "string" }
+        "endTime": { "type": "string" },
+        "createdAt": { "type": "object" }
       },
-      "required": ["doctorId", "doctorName", "organizationId", "organizationName", "roomNumber", "fee", "days", "startTime", "endTime"]
+      "required": ["doctorId", "doctorName", "organizationId", "organizationName", "roomNumber", "fee", "days", "startTime", "endTime", "createdAt"]
     },
     "Appointment": {
       "title": "Appointment",
