@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Trash2, Loader2, Image as ImageIcon, MoreHorizontal, Download } from 'lucide-react';
+import { UploadCloud, Trash2, Loader2, Image as ImageIcon, MoreHorizontal, Download, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,7 @@ import { RecordViewer } from '@/components/dashboard/record-viewer';
 import type { RecordFile } from '@/lib/definitions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { useFirestore, useCollection, useMemoFirebase, addDocument, deleteDocument, commitBatch, updateDocument } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, addDocument, deleteDocument, commitBatch } from '@/firebase';
 import { collection, serverTimestamp, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -325,7 +325,13 @@ export default function MyHealthRecordsPage() {
                                         />
                                     </div>
                                     <CardContent className="p-0 cursor-pointer" onClick={() => openRecordViewer(index)}>
-                                        <RecordViewer.Preview record={record} />
+                                        <div className="aspect-video bg-muted flex items-center justify-center">
+                                            {record.fileType === 'image' ? (
+                                                <Image src={record.url} alt={record.name} width={400} height={300} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <FileText className="w-16 h-16 text-muted-foreground" />
+                                            )}
+                                        </div>
                                     </CardContent>
                                     <div className="p-4 border-t flex flex-col flex-1">
                                         <div className="flex justify-between items-start">
@@ -347,7 +353,9 @@ export default function MyHealthRecordsPage() {
                                             <Badge variant="outline" className="capitalize">{record.recordType}</Badge>
                                         </div>
                                         <div className="flex-1" />
-                                        <RecordViewer.Footer record={record} />
+                                        <p className="text-xs text-muted-foreground mt-4">
+                                            <FormattedDate date={record.createdAt} formatString="dd-MM-yyyy, hh:mm a" fallback="N/A" />
+                                        </p>
                                     </div>
                                 </Card>
                             ))}

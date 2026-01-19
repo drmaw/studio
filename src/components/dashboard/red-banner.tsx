@@ -14,27 +14,26 @@ import { ConfirmationDialog } from "../shared/confirmation-dialog";
 
 type RedBannerProps = {
     patientId: string;
-    initialRedFlag: { title: string; comment: string };
+    initialRedFlag: { title: string; comment: string } | null;
     currentUserRole: Role;
 };
 
 export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBannerProps) {
     const { toast } = useToast();
     const [redFlag, setRedFlag] = useState(initialRedFlag);
-    const [comment, setComment] = useState(initialRedFlag.comment);
+    const [comment, setComment] = useState(initialRedFlag?.comment || '');
     const [isEditing, setIsEditing] = useState(false);
-    const [isVisible, setIsVisible] = useState(true);
     const firestore = useFirestore();
 
     const handleSave = async () => {
-        if (!patientId || !firestore) return;
+        if (!patientId || !firestore || !redFlag) return;
         const patientRef = doc(firestore, 'patients', patientId);
         const updateData = { redFlag: { title: redFlag.title, comment: comment } };
         
         const success = await updateDocument(patientRef, updateData);
         
         if (success) {
-            setRedFlag(prev => ({ ...prev, comment }));
+            setRedFlag(prev => prev ? ({ ...prev, comment }) : null);
             setIsEditing(false);
             toast({
                 title: "Alert Saved",
@@ -51,7 +50,7 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
         const success = await updateDocument(patientRef, updateData);
         
         if (success) {
-            setIsVisible(false);
+            setRedFlag(null);
             toast({
                 title: "Alert Removed",
                 description: "The critical alert has been removed for this patient.",
@@ -59,7 +58,7 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
         }
     };
 
-    if (!isVisible) {
+    if (!redFlag) {
         return null;
     }
 

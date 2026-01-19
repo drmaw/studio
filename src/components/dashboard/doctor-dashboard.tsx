@@ -36,7 +36,7 @@ export function DoctorDashboard({ user }: { user: User }) {
 
   const schedulesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return query(collectionGroup(firestore, 'schedules'), where('doctorId', '==', user.healthId));
+    return query(collectionGroup(firestore, 'schedules'), where('doctorAuthId', '==', user.id));
   }, [firestore, user]);
   
   const { data: chamberSchedules, isLoading: schedulesLoading } = useCollectionGroup<DoctorSchedule>(schedulesQuery);
@@ -45,12 +45,12 @@ export function DoctorDashboard({ user }: { user: User }) {
       return null;
   }
   
-  const displayName = user.roles.includes('doctor') ? `Dr. ${user.name}` : user.name;
+  const displayName = user.name;
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title={`Welcome, ${displayName}`}
+        title={<>Welcome, <span className="text-primary">Dr. {displayName}</span></>}
         description="Search for patients and manage your chamber schedules."
       />
 

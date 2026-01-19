@@ -47,22 +47,24 @@ export default function MyAppointmentsPage() {
 
         if (success) {
             // Notify doctor
-            const scheduleRef = doc(firestore, 'organizations', appointment.organizationId, 'schedules', appointment.scheduleId);
-            const scheduleSnap = await getDoc(scheduleRef);
-            if (scheduleSnap.exists()) {
-                const schedule = scheduleSnap.data() as DoctorSchedule;
-                const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
-                await createNotification(
-                    firestore,
-                    schedule.doctorAuthId,
-                    'Appointment Cancelled',
-                    `${user.name} has cancelled their appointment for ${formattedDate}.`,
-                    `/dashboard/appointments/${appointment.organizationId}/${appointment.scheduleId}`
-                );
+            if (appointment.organizationId && appointment.scheduleId) {
+                const scheduleRef = doc(firestore, 'organizations', appointment.organizationId, 'schedules', appointment.scheduleId);
+                const scheduleSnap = await getDoc(scheduleRef);
+                if (scheduleSnap.exists()) {
+                    const schedule = scheduleSnap.data() as DoctorSchedule;
+                    const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
+                    await createNotification(
+                        firestore,
+                        schedule.doctorAuthId,
+                        'Appointment Cancelled',
+                        `${user.name} has cancelled their appointment for ${formattedDate}.`,
+                        `/dashboard/appointments/${appointment.organizationId}/${appointment.scheduleId}`
+                    );
+                }
             }
 
+
             toast({
-                variant: 'destructive',
                 title: 'Appointment Cancelled',
                 description: 'Your appointment has been successfully cancelled.',
             });

@@ -129,10 +129,15 @@ export function RegisterForm() {
       
     } catch (error: any) {
       console.error("Registration failed:", error);
+      // The default firebase error messages are user-friendly enough
+      const message = error.code === 'auth/email-already-in-use' 
+        ? 'An account with this email address already exists.'
+        : 'Could not create account. Please try again.';
+
       toast({
         variant: "destructive",
         title: "Registration Failed",
-        description: error.message || "Could not create account. Please try again.",
+        description: message,
       });
     } finally {
         setIsLoading(false);

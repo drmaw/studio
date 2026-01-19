@@ -21,17 +21,6 @@ import { Loader2, PlusCircle, Hospital, Bed, DollarSign, Pencil, Trash2 } from "
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -45,6 +34,8 @@ import { useFirestore, useCollection, useMemoFirebase, addDocument, updateDocume
 import type { Facility } from "@/lib/definitions";
 import { collection, serverTimestamp, doc } from "firebase/firestore";
 import { useSearchParams } from "next/navigation";
+import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
+import { CurrencyInput } from "@/components/shared/currency-input";
 
 const formSchema = z.object({
   type: z.enum(['ward', 'cabin'], { required_error: "Facility type is required." }),
@@ -197,10 +188,7 @@ export function FacilityManagementTab() {
                         <FormItem>
                         <FormLabel>Cost per Day (BDT)</FormLabel>
                         <FormControl>
-                            <div className="relative">
-                                <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input type="number" placeholder="e.g., 1500" {...field} className="pl-7" />
-                            </div>
+                            <CurrencyInput placeholder="e.g., 1500" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -248,25 +236,17 @@ export function FacilityManagementTab() {
                     <TableCell className="font-mono">{facility.cost.toFixed(2)}</TableCell>
                     <TableCell className="text-right space-x-1">
                       <EditFacilityDialog item={facility} onSave={handleUpdate} />
-                      <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                  <Trash2 className="h-4 w-4" />
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete the facility.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(facility.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
+                      <ConfirmationDialog
+                            trigger={
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            }
+                            title="Are you absolutely sure?"
+                            description="This action cannot be undone. This will permanently delete the facility."
+                            onConfirm={() => handleDelete(facility.id)}
+                            confirmText="Delete"
+                        />
                     </TableCell>
                   </TableRow>
                 ))
@@ -362,10 +342,7 @@ function EditFacilityDialog({
                                 <FormItem>
                                 <FormLabel>Cost per Day (BDT)</FormLabel>
                                 <FormControl>
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input type="number" {...field} className="pl-7" />
-                                    </div>
+                                    <CurrencyInput type="number" {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>

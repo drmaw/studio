@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -36,10 +37,9 @@ export function useCollectionGroup<T = any>(
 
   useEffect(() => {
     if (!memoizedTargetQuery) {
-      setData(null);
-      setIsLoading(false);
-      setError(null);
-      return;
+        // Do not set loading to false here, as the query might just be in the process of being created.
+        // This prevents UI flicker from a "no data" state to a "loading" state.
+        return;
     }
 
     setIsLoading(true);

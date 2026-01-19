@@ -1,6 +1,7 @@
+
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -24,6 +25,10 @@ type VitalsTrackerProps = {
 };
 
 const chartConfig = {
+  rbs: {
+    label: "RBS",
+    color: "hsl(var(--chart-4))",
+  },
   bp: {
     label: "BP",
     color: "hsl(var(--chart-1))",
@@ -35,10 +40,6 @@ const chartConfig = {
   weight: {
     label: "Weight",
     color: "hsl(var(--chart-3))",
-  },
-  rbs: {
-    label: "RBS",
-    color: "hsl(var(--chart-4))",
   },
   sCreatinine: {
     label: "S.Creatinine",

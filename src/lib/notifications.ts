@@ -2,8 +2,6 @@
 'use server';
 
 import { addDoc, collection, serverTimestamp, type Firestore } from "firebase/firestore";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 
 export async function createNotification(
     firestore: Firestore, 
@@ -24,10 +22,12 @@ export async function createNotification(
         createdAt: serverTimestamp(),
     };
     
-    addDoc(notificationsRef, newNotification)
-        .catch(async (serverError) => {
-            console.error("Failed to create notification:", serverError);
-            // We can't use the standard error emitter here as this is a server-side function.
-            // Logging to console is the best we can do.
-        });
+    try {
+        await addDoc(notificationsRef, newNotification);
+    } catch(serverError) {
+        // This is a server-side function, so we can't use the global error emitter.
+        // We also don't want to throw an error that would crash the server function.
+        // Logging to the console is the most appropriate action.
+        console.error("Failed to create notification:", serverError);
+    }
 }

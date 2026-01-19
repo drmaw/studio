@@ -106,7 +106,7 @@ export function DoctorSchedulesTab() {
         const newSchedule: Omit<DoctorSchedule, 'id'> = {
             doctorId: doctorData.healthId,
             doctorAuthId: doctorDoc.id,
-            doctorName: `Dr. ${doctorData.name}`,
+            doctorName: doctorData.name,
             organizationId: orgId,
             organizationName: organization.name,
             roomNumber: values.roomNumber,
@@ -122,7 +122,7 @@ export function DoctorSchedulesTab() {
         if (docRef) {
           toast({
               title: "Schedule Added",
-              description: `A new chamber has been scheduled for ${doctorData.name}.`,
+              description: `A new chamber has been scheduled for Dr. ${doctorData.name}.`,
           });
           form.reset();
         }
@@ -145,7 +145,6 @@ export function DoctorSchedulesTab() {
 
     if (success) {
       toast({
-        variant: "destructive",
         title: "Schedule Removed",
         description: "The doctor's schedule has been removed.",
       });
@@ -315,7 +314,7 @@ export function DoctorSchedulesTab() {
                         ) : schedules && schedules.length > 0 ? (
                             schedules.map((schedule) => (
                                 <TableRow key={schedule.id}>
-                                    <TableCell className="font-medium">{schedule.doctorName}</TableCell>
+                                    <TableCell className="font-medium">Dr. {schedule.doctorName}</TableCell>
                                     <TableCell>{schedule.roomNumber}</TableCell>
                                     <TableCell>{schedule.startTime} - {schedule.endTime}</TableCell>
                                     <TableCell>

@@ -119,13 +119,15 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
         );
 
         // Notify the patient that an appointment was booked for them
-        await createNotification(
-            firestore,
-            patient.id,
-            'New Appointment Booked',
-            `An appointment with ${schedule.doctorName} on ${formattedDate} at ${values.appointmentTime} has been booked for you. It is pending confirmation.`,
-            '/dashboard/my-appointments'
-        );
+        if (patient.id !== schedule.doctorAuthId) { // Avoid self-notification
+            await createNotification(
+                firestore,
+                patient.id,
+                'New Appointment Booked',
+                `An appointment with ${schedule.doctorName} on ${formattedDate} at ${values.appointmentTime} has been booked for you. It is pending confirmation.`,
+                '/dashboard/my-appointments'
+            );
+        }
 
         toast({
             title: "Appointment Requested!",

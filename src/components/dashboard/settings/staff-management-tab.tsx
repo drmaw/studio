@@ -82,59 +82,50 @@ export function StaffManagementTab() {
     if (!orgId || !firestore) return;
     setIsLoading(true);
 
-    try {
-      const usersRef = collection(firestore, 'users');
-      // Find the user by their unique Health ID
-      const userSearchQuery = query(usersRef, where('healthId', '==', values.healthId), limit(1));
-      const userSnapshot = await getDocs(userSearchQuery);
+    const usersRef = collection(firestore, 'users');
+    // Find the user by their unique Health ID
+    const userSearchQuery = query(usersRef, where('healthId', '==', values.healthId), limit(1));
+    const userSnapshot = await getDocs(userSearchQuery);
 
-      if (!userSnapshot.empty) {
-          const userDoc = userSnapshot.docs[0];
-          const userToAdd = userDoc.data() as User;
-          
-          if (userToAdd.organizationId !== orgId && !userToAdd.organizationId.startsWith('org-ind-')) {
-            toast({
-                variant: "destructive",
-                title: "User Belongs to Another Organization",
-                description: `${userToAdd.name} is already a member of another hospital. They must be removed from their current organization before they can be hired.`,
-                duration: 6000,
-            });
-            setIsLoading(false);
-            return;
-          }
-
-          const batch = writeBatch(firestore);
-          
-          const userDocRef = doc(firestore, 'users', userDoc.id);
-          const updatedRoles = Array.from(new Set([...userToAdd.roles, values.role]));
-          batch.update(userDocRef, { 
-              organizationId: orgId,
-              roles: updatedRoles
+    if (!userSnapshot.empty) {
+        const userDoc = userSnapshot.docs[0];
+        const userToAdd = userDoc.data() as User;
+        
+        if (userToAdd.organizationId !== orgId && !userToAdd.organizationId.startsWith('org-ind-')) {
+          toast({
+              variant: "destructive",
+              title: "User Belongs to Another Organization",
+              description: `${userToAdd.name} is already a member of another hospital. They must be removed from their current organization before they can be hired.`,
+              duration: 6000,
           });
+          setIsLoading(false);
+          return;
+        }
 
-          const success = await commitBatch(batch, `add staff ${userToAdd.id} to org ${orgId}`);
+        const batch = writeBatch(firestore);
+        
+        const userDocRef = doc(firestore, 'users', userDoc.id);
+        const updatedRoles = Array.from(new Set([...userToAdd.roles, values.role]));
+        batch.update(userDocRef, { 
+            organizationId: orgId,
+            roles: updatedRoles
+        });
 
-          if (success) {
-            toast({
-                title: "Staff Added",
-                description: `${userToAdd.name} has been assigned the ${values.role.replace(/_/g, ' ')} role in your organization.`,
-            });
-            form.reset();
-          }
-      } else {
-        toast({
-          variant: "destructive",
-          title: "User Not Found",
-          description: "No user found with that Health ID.",
-        });
-      }
-    } catch(e) {
-         console.error("Error adding staff:", e);
-         toast({
-            variant: "destructive",
-            title: "Error",
-            description: "An error occurred while adding staff.",
-        });
+        const success = await commitBatch(batch, `add staff ${userToAdd.id} to org ${orgId}`);
+
+        if (success) {
+          toast({
+              title: "Staff Added",
+              description: `${userToAdd.name} has been assigned the ${values.role.replace(/_/g, ' ')} role in your organization.`,
+          });
+          form.reset();
+        }
+    } else {
+      toast({
+        variant: "destructive",
+        title: "User Not Found",
+        description: "No user found with that Health ID.",
+      });
     }
 
     setIsLoading(false);
@@ -148,30 +139,21 @@ export function StaffManagementTab() {
         return;
     }
 
-    try {
-        const userDocRef = doc(firestore, 'users', staffMember.id);
-        
-        // Revert user to a standard patient role and their personal organization
-        const newRoles = ['patient'];
-        const personalOrgId = `org-ind-${staffMember.id}`;
+    const userDocRef = doc(firestore, 'users', staffMember.id);
+    
+    // Revert user to a standard patient role and their personal organization
+    const newRoles = ['patient'];
+    const personalOrgId = `org-ind-${staffMember.id}`;
 
-        const success = await updateDocument(userDocRef, {
-            roles: newRoles,
-            organizationId: personalOrgId,
-        });
+    const success = await updateDocument(userDocRef, {
+        roles: newRoles,
+        organizationId: personalOrgId,
+    });
 
-        if (success) {
-            toast({
-                title: "Staff Removed",
-                description: `${staffMember.name} has been removed from your organization.`,
-            });
-        }
-    } catch (e) {
-        console.error("Error removing staff:", e);
+    if (success) {
         toast({
-            variant: "destructive",
-            title: "Error",
-            description: "An error occurred while removing the staff member.",
+            title: "Staff Removed",
+            description: `${staffMember.name} has been removed from your organization.`,
         });
     }
   };

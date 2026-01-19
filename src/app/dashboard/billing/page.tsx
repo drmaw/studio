@@ -6,7 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, TestTube, Bed, StethoscopeIcon, Pencil, Loader2 } from "lucide-react";
+import { PlusCircle, TestTube, Bed, StethoscopeIcon, Pencil, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -293,7 +293,6 @@ export default function BillingPage() {
 
         if (success) {
             toast({
-                variant: "destructive",
                 title: 'Item Removed',
                 description: 'The item has been removed.',
             });

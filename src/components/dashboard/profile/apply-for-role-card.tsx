@@ -104,33 +104,27 @@ export function ApplyForRoleCard() {
         applicationDetails.organization = orgDetails;
     }
 
-    try {
-        const applicationsRef = collection(firestore, 'users', user.id, 'role_applications');
-        
-        const newApplication: Omit<RoleApplication, 'id' | 'reason'> = {
-            userId: user.id,
-            userName: user.name,
-            requestedRole: selectedRole as Role,
-            status: 'pending',
-            details: applicationDetails,
-            createdAt: serverTimestamp(),
-        };
+    const applicationsRef = collection(firestore, 'users', user.id, 'role_applications');
+    
+    const newApplication: Omit<RoleApplication, 'id' | 'reason'> = {
+        userId: user.id,
+        userName: user.name,
+        requestedRole: selectedRole as Role,
+        status: 'pending',
+        details: applicationDetails,
+        createdAt: serverTimestamp(),
+    };
 
-        const docRef = await addDocument(applicationsRef, newApplication);
+    const docRef = await addDocument(applicationsRef, newApplication);
 
-        if (docRef) {
-            toast({
-                title: "Application Submitted",
-                description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is now pending review.`,
-            });
-        }
-
-    } catch (error) {
-        console.error("Application submission failed:", error);
-        toast({ variant: "destructive", title: "Submission Failed", description: "Could not submit your application." });
-    } finally {
-        setIsSubmitting(false);
+    if (docRef) {
+        toast({
+            title: "Application Submitted",
+            description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is now pending review.`,
+        });
     }
+
+    setIsSubmitting(false);
   };
 
   const handleRequestRoleRemoval = async (roleToDelete: Role) => {

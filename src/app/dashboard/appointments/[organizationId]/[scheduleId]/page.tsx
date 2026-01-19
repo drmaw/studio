@@ -55,7 +55,7 @@ export default function DoctorAppointmentsPage() {
             const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
             const description = `Your appointment with ${appointment.doctorName} on ${formattedDate} has been ${status}.`;
             
-            createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
+            await createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
 
             toast({
                 title: `Appointment ${status}`,

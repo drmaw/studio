@@ -2,8 +2,8 @@
 'use client'
 
 import { useState } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useCollectionGroup, commitBatch, updateDocument } from '@/firebase';
-import { collection, collectionGroup, query, where, doc, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
+import { useFirestore, useCollectionGroup, useMemoFirebase, commitBatch, updateDocument } from '@/firebase';
+import { collectionGroup, query, where, doc, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { Role, RoleApplication, RoleRemovalRequest, User, Organization } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -85,7 +85,7 @@ function ApplicationCard({ application, onApprove, onReject }: { application: Ro
             <CardContent>
                 <div className="text-sm space-y-2">
                     <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> <span>Applied: <FormattedDate date={application.createdAt} formatString="dd-MM-yyyy, hh:mm a" fallback="N/A" /></span></div>
-                    {application.requestedRole === 'hospital_owner' && (
+                    {application.requestedRole === 'hospital_owner' && application.details?.organization && (
                         <Card className="p-3 bg-background-soft">
                             <h4 className="font-semibold text-xs mb-2 flex items-center gap-2"><Building className="h-4 w-4" /> Proposed Organization</h4>
                             <p className="text-xs"><span className="font-medium">Name:</span> {application.details.organization.name}</p>
@@ -139,14 +139,14 @@ export function RoleManagementTab() {
         return query(collectionGroup(firestore, 'role_applications'), where('status', '==', 'pending'));
     }, [firestore]);
 
-    const { data: applications, isLoading: appsLoading } = useCollection<RoleApplication>(applicationsQuery);
+    const { data: applications, isLoading: appsLoading } = useCollectionGroup<RoleApplication>(applicationsQuery);
 
     const removalsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collectionGroup(firestore, 'role_removal_requests'), where('status', '==', 'pending'));
     }, [firestore]);
 
-    const { data: removalRequests, isLoading: removalsLoading } = useCollection<RoleRemovalRequest>(removalsQuery);
+    const { data: removalRequests, isLoading: removalsLoading } = useCollectionGroup<RoleRemovalRequest>(removalsQuery);
     
     const handleApproveApplication = async (app: RoleApplication) => {
         if (!firestore) return;
@@ -165,7 +165,7 @@ export function RoleManagementTab() {
             batch.update(userRef, { roles: newRoles });
 
              // If approving a hospital owner, create the organization
-            if (app.requestedRole === 'hospital_owner') {
+            if (app.requestedRole === 'hospital_owner' && app.details?.organization) {
                 const orgCollectionRef = collection(firestore, 'organizations');
                 const orgRef = doc(orgCollectionRef); // Auto-generate ID
                 const newOrg: Omit<Organization, 'id'> = {

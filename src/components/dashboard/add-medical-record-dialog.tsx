@@ -46,7 +46,7 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
         doctorId: doctor.healthId,
         doctorName: `Dr. ${doctor.name}`,
         organizationId: doctor.organizationId,
-        date: format(new Date(), 'dd-MM-yyyy'),
+        date: new Date().toISOString(),
         diagnosis,
         notes,
         createdAt: serverTimestamp(),
