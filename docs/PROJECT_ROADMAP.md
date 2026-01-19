@@ -93,7 +93,7 @@ This foundational phase established the core multi-tenant architecture required 
 
 *   **Step 6.3: Build Advanced Reporting & Analytics Engine**:
     *   **Data Flow**: Backend process aggregates data from `invoices`, `admissions`, etc. → Saves aggregated data to a new `reports` collection → Dashboard UI reads from `reports`.
-    *   **Task 6.3.1: Create Financial Reports Dashboard**: Create a new "Reports" page showing key financial metrics like revenue over time and outstanding balances.
+    *   **[✓] Task 6.3.1: Create Financial Reports Dashboard**: Create a new "Reports" page showing key financial metrics like revenue over time and outstanding balances.
     *   **Task 6.3.2: Create Operational Reports Dashboard**: Add operational metrics to the "Reports" page, such as bed occupancy rates and average patient length of stay.
 
 *   **Step 6.4: Implement Advanced Financial Controls**:
