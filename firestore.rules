@@ -16,6 +16,10 @@ service cloud.firestore {
     function getMembership(orgId) {
       return get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
     }
+
+    function getPatientMembership(orgId, patientId) {
+        return get(/databases/$(database)/documents/organizations/$(orgId)/members/$(patientId));
+    }
     
     function hasRoleInOrg(orgId, role) {
       return isSignedIn() && getMembership(orgId).data.roles.hasAny([role, 'hospital_owner', 'manager', 'admin']);
@@ -24,6 +28,13 @@ service cloud.firestore {
     function isMemberOfOrg(orgId) {
       return isSignedIn() && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
     }
+
+    function hasPatientConsent(orgId, patientId) {
+        // Patients implicitly consent to their own data.
+        // For professionals, check the consent flag on the patient's membership doc for that org.
+        return isOwner(patientId) || getPatientMembership(orgId, patientId).data.consent.shareRecords == true;
+    }
+
 
     // --- GLOBAL COLLECTIONS ---
 
@@ -72,17 +83,21 @@ service cloud.firestore {
       allow update: if isOwner(resource.data.ownerId);
     }
 
-    // Membership defines a user's role within an org. Can only be managed by an org owner.
+    // Membership defines a user's role within an org.
+    // Patients can update their own consent. Org owners can manage other fields.
     match /organizations/{orgId}/members/{userId} {
       allow read: if isMemberOfOrg(orgId);
-      allow write: if hasRoleInOrg(orgId, 'hospital_owner');
+      allow create: if hasRoleInOrg(orgId, 'hospital_owner');
+      allow update: if (hasRoleInOrg(orgId, 'hospital_owner') && request.resource.data.keys().hasOnly(['roles', 'status', 'userName', 'userId']))
+                      || (isOwner(userId) && request.resource.data.keys().hasOnly(['consent']));
+      allow delete: if hasRoleInOrg(orgId, 'hospital_owner');
     }
 
     // Medical records are created BY an organization FOR a patient.
-    // Patient can read their records from any org.
-    // Only doctors within THAT org can create/update records.
+    // Patients can always read their own records from any org.
+    // Professionals can only read if the patient has given consent for that org.
     match /organizations/{orgId}/medical_records/{patientId}/records/{recordId} {
-      allow read: if isOwner(patientId) || hasRoleInOrg(orgId, 'doctor');
+      allow read: if isOwner(patientId) || (hasRoleInOrg(orgId, 'doctor') && hasPatientConsent(orgId, patientId));
       allow write: if hasRoleInOrg(orgId, 'doctor');
     }
 

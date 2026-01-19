@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Shield, Sparkles, Loader2 } from "lucide-react";
+import { Shield, Sparkles, Loader2, Share2, Building } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore, useAuth as useFirebaseAuth, updateDocument } from '@/firebase';
@@ -19,7 +19,7 @@ import { UpgradeToPremiumButton } from '../shared/upgrade-to-premium-button';
 
 export function AccountSettingsTab() {
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading, memberships } = useAuth();
   const firestore = useFirestore();
   const auth = useFirebaseAuth();
   const router = useRouter();
@@ -38,7 +38,6 @@ export function AccountSettingsTab() {
   const handlePrivacyChange = (key: 'vitalsVisible' | 'discoverable', value: boolean) => {
     if (!user || !firestore) return;
     
-    // Optimistically update UI
     if (key === 'vitalsVisible') setIsVitalsVisible(value);
     if (key === 'discoverable') setIsDiscoverable(value);
 
@@ -53,13 +52,26 @@ export function AccountSettingsTab() {
     }, () => {
         toast({ title: 'Privacy setting updated.' });
     }, () => {
-        // Revert UI on error
         if (key === 'vitalsVisible') setIsVitalsVisible(!value);
         if (key === 'discoverable') setIsDiscoverable(!value);
         toast({
             variant: 'destructive',
             title: 'Update Failed',
             description: 'Your privacy settings could not be saved.',
+        });
+    });
+  };
+  
+  const handleConsentChange = (orgId: string, value: boolean) => {
+    if (!user || !firestore) return;
+    const memberRef = doc(firestore, 'organizations', orgId, 'members', user.id);
+    updateDocument(memberRef, { 'consent.shareRecords': value }, () => {
+        toast({ title: 'Consent setting updated.' });
+    }, () => {
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: 'Your consent setting could not be saved.',
         });
     });
   };
@@ -86,7 +98,7 @@ export function AccountSettingsTab() {
         });
 
         await signOut(auth);
-        router.push('/'); // Force redirect to home page after logout.
+        router.push('/');
     }, () => {
         setIsDeleting(false);
         toast({
@@ -113,7 +125,7 @@ export function AccountSettingsTab() {
                     <Shield className="h-5 w-5 text-primary" />
                     Privacy Settings
                 </CardTitle>
-                <CardDescription>Control who can see your information.</CardDescription>
+                <CardDescription>Control who can see your personal profile information.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="flex items-center justify-between space-x-2 p-4 border rounded-lg">
@@ -142,6 +154,39 @@ export function AccountSettingsTab() {
                         onCheckedChange={(checked) => handlePrivacyChange('discoverable', checked)}
                     />
                 </div>
+            </CardContent>
+        </Card>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Share2 className="h-5 w-5 text-primary" />
+                    Data Sharing Consent
+                </CardTitle>
+                <CardDescription>Give hospitals permission to access your clinical records created by other organizations.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {memberships.filter(m => !m.orgId.startsWith('org-ind-')).length > 0 ? (
+                    memberships.filter(m => !m.orgId.startsWith('org-ind-')).map(member => (
+                        <div key={member.orgId} className="flex items-center justify-between space-x-2 p-4 border rounded-lg">
+                             <div className='space-y-0.5'>
+                                <Label htmlFor={`consent-${member.orgId}`} className="text-base flex items-center gap-2">
+                                    <Building className="h-4 w-4" /> {member.orgName}
+                                </Label>
+                                <p className="text-sm text-muted-foreground">
+                                   Allow staff at this hospital to view your complete medical history.
+                                </p>
+                            </div>
+                            <Switch
+                                id={`consent-${member.orgId}`}
+                                defaultChecked={member.consent?.shareRecords}
+                                onCheckedChange={(checked) => handleConsentChange(member.orgId, checked)}
+                            />
+                        </div>
+                    ))
+                ) : (
+                    <p className="text-sm text-center text-muted-foreground py-4">You have not interacted with any hospitals yet. Your consent settings will appear here once you do.</p>
+                )}
             </CardContent>
         </Card>
 

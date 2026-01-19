@@ -33,7 +33,7 @@ This foundational phase established the core multi-tenant architecture required 
     *   **[✓] Task 2.1.1**: Define `Invoice` and `InvoiceItem` entities in `backend.json` and `definitions.ts`.
     *   **[✓] Task 2.1.2**: Implement the main Invoicing Dashboard for creating draft invoices.
     *   **[✓] Task 2.1.3**: Build the Invoice Detail page to manage line items and invoice status.
-    *   **[✓] Task**: Integrate admission and discharge events with the billing module.
+    *   **[✓] Task 2.1.4**: Integrate admission and discharge events with the billing module.
 
 *   **[✓] Step 2.2: Implement In-Patient Management (ADT - Admission, Discharge, Transfer)**:
     *   **[✓] Task 2.2.1**: Update `backend.json`, `definitions.ts`, and `firestore.rules` with the `Admission` entity and security.
@@ -46,13 +46,14 @@ This foundational phase established the core multi-tenant architecture required 
 
 **Goal**: Empower patients with greater control and a comprehensive view of their health data.
 
-*   **Step 3.1: Create a Unified Health Record View**:
-    *   **Task**: Build a central view where a patient can see a complete, chronological timeline of their medical history, aggregating records from every organization they have visited.
+*   **[✓] Step 3.1: Create a Unified Health Record View**:
+    *   **[✓] Task**: Build a central view where a patient can see a complete, chronological timeline of their medical history, aggregating records from every organization they have visited.
 
 *   **Step 3.2: Implement Consent Management**:
     *   **Task**: Create a "Data & Privacy" settings page where patients can manage data sharing permissions on a per-organization basis, giving them granular control over who can access their records.
 
 ---
+
 
 
 

@@ -68,7 +68,14 @@
             "userId": { "type": "string" },
             "userName": { "type": "string" },
             "roles": { "type": "array", "items": { "type": "string" } },
-            "status": { "type": "string", "enum": ["active", "pending", "inactive"] }
+            "status": { "type": "string", "enum": ["active", "pending", "inactive"] },
+            "consent": {
+                "type": "object",
+                "description": "Patient's consent settings for this organization.",
+                "properties": {
+                    "shareRecords": { "type": "boolean", "description": "If true, the patient allows professionals from this organization to view their clinical records." }
+                }
+            }
         },
         "required": ["userId", "userName", "roles", "status"]
     },

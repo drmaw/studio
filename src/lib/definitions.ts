@@ -75,6 +75,9 @@ export type Membership = {
     userName: string;
     roles: Role[];
     status: 'active' | 'pending' | 'inactive';
+    consent?: {
+        shareRecords: boolean;
+    };
 };
 
 export type DetailedMembership = Membership & {
