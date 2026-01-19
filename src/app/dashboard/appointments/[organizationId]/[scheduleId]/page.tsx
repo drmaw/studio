@@ -1,12 +1,12 @@
 
 'use client'
 
-import { useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { useCollection, useDoc, useFirestore, useMemoFirebase, commitBatch, writeBatch } from "@/firebase";
-import { collection, doc, orderBy, query, where, serverTimestamp } from "firebase/firestore";
+import { useDoc, useFirestore, useMemoFirebase, commitBatch, writeBatch } from "@/firebase";
+import { collection, doc, orderBy, query, where, serverTimestamp, getDocs, limit, startAfter, type DocumentSnapshot } from "firebase/firestore";
 import type { Appointment, DoctorSchedule } from "@/lib/definitions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ import { createNotification } from "@/lib/notifications";
 import { format } from 'date-fns';
 import { useAuth } from "@/hooks/use-auth";
 
+const PAGE_SIZE = 15;
+
 export default function DoctorAppointmentsPage() {
     const params = useParams();
     const { user: currentUser } = useAuth();
@@ -27,16 +29,11 @@ export default function DoctorAppointmentsPage() {
     const { toast } = useToast();
     const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-    const { data: appointments, isLoading: appointmentsLoading } = useCollection<Appointment>(
-        useMemoFirebase(() => {
-            if (!firestore || !scheduleId || !organizationId) return null;
-            return query(
-                collection(firestore, 'organizations', organizationId, 'appointments'),
-                where('scheduleId', '==', scheduleId),
-                orderBy('appointmentDate', 'desc')
-            );
-        }, [firestore, organizationId, scheduleId])
-    );
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+    const [appointmentsLoading, setAppointmentsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
 
     const { data: schedule, isLoading: scheduleLoading } = useDoc<DoctorSchedule>(
         useMemoFirebase(() => {
@@ -44,6 +41,44 @@ export default function DoctorAppointmentsPage() {
             return doc(firestore, 'organizations', organizationId, 'schedules', scheduleId);
         }, [firestore, organizationId, scheduleId])
     );
+
+     const fetchAppointments = async (loadMore = false) => {
+        if (!firestore || !organizationId || !scheduleId) return;
+
+        if (loadMore) setIsLoadingMore(true); else setAppointmentsLoading(true);
+
+        const appointmentsRef = collection(firestore, 'organizations', organizationId, 'appointments');
+        let q;
+        const queryConstraints = [
+            where('scheduleId', '==', scheduleId),
+            orderBy('appointmentDate', 'desc'),
+            limit(PAGE_SIZE)
+        ];
+
+        if (loadMore && lastVisible) {
+            q = query(appointmentsRef, ...queryConstraints, startAfter(lastVisible));
+        } else {
+            q = query(appointmentsRef, ...queryConstraints);
+        }
+
+        try {
+            const documentSnapshots = await getDocs(q);
+            const newAppointments = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+            
+            setHasMore(newAppointments.length === PAGE_SIZE);
+            setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length-1]);
+            setAppointments(prev => loadMore ? [...prev, ...newAppointments] : newAppointments);
+        } catch (error) {
+            console.error("Error fetching appointments: ", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not fetch appointments." });
+        } finally {
+            if(loadMore) setIsLoadingMore(false); else setAppointmentsLoading(false);
+        }
+    };
+    
+    useEffect(() => {
+        fetchAppointments();
+    }, [firestore, organizationId, scheduleId]);
 
     const handleStatusChange = (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
         if (!firestore || !organizationId || !currentUser) return;
@@ -81,6 +116,7 @@ export default function DoctorAppointmentsPage() {
                 title: `Appointment ${status}`,
                 description: `The appointment has been ${status}.`
             });
+            setAppointments(prev => prev.map(a => a.id === appointment.id ? { ...a, status } : a));
             setUpdatingId(null);
         }, (error) => {
             console.error('Failed to update appointment status:', error);
@@ -126,7 +162,7 @@ export default function DoctorAppointmentsPage() {
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
-                                <TableRow><TableCell colSpan={4} className="text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                                <TableRow><TableCell colSpan={4} className="text-center h-24"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                             ) : appointments && appointments.length > 0 ? (
                                 appointments.map(apt => (
                                     <TableRow key={apt.id}>
@@ -157,11 +193,18 @@ export default function DoctorAppointmentsPage() {
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow><TableCell colSpan={4} className="text-center">No appointments found for this schedule.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={4} className="text-center h-24">No appointments found for this schedule.</TableCell></TableRow>
                             )}
                         </TableBody>
                     </Table>
                 </CardContent>
+                 <CardFooter className="justify-center py-4">
+                    {hasMore && (
+                        <Button onClick={() => fetchAppointments(true)} disabled={isLoadingMore}>
+                            {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
+                        </Button>
+                    )}
+                </CardFooter>
             </Card>
         </div>
     );

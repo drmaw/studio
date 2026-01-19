@@ -2,10 +2,10 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useCollectionGroup, useFirestore, useMemoFirebase, updateDocument } from '@/firebase';
-import { collectionGroup, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
-import type { Appointment, DoctorSchedule } from '@/lib/definitions';
-import { Card, CardContent } from '@/components/ui/card';
+import { useFirestore, updateDocument } from '@/firebase';
+import { collectionGroup, query, where, orderBy, doc, getDoc, getDocs, limit, startAfter, type DocumentSnapshot } from 'firebase/firestore';
+import type { Appointment } from '@/lib/definitions';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,9 @@ import { createNotification } from '@/lib/notifications';
 import { format } from 'date-fns';
 import { PageHeader } from '@/components/shared/page-header';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+const PAGE_SIZE = 10;
 
 export default function MyAppointmentsPage() {
     const { user, loading: userLoading } = useAuth();
@@ -24,16 +26,51 @@ export default function MyAppointmentsPage() {
     const { toast } = useToast();
     const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-    const appointmentsQuery = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return query(
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+
+    const fetchAppointments = async (loadMore = false) => {
+        if (!user || !firestore) return;
+
+        if (loadMore) setIsLoadingMore(true); else setIsLoading(true);
+
+        const baseQuery = [
             collectionGroup(firestore, 'appointments'),
             where('patientId', '==', user.id),
-            orderBy('appointmentDate', 'desc')
-        );
-    }, [firestore, user]);
+            orderBy('appointmentDate', 'desc'),
+            limit(PAGE_SIZE)
+        ];
 
-    const { data: appointments, isLoading: appointmentsLoading } = useCollectionGroup<Appointment>(appointmentsQuery);
+        let q;
+        if (loadMore && lastVisible) {
+            q = query(...baseQuery, startAfter(lastVisible));
+        } else {
+            q = query(...baseQuery);
+        }
+
+        try {
+            const documentSnapshots = await getDocs(q);
+            const newAppointments = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+            
+            setHasMore(newAppointments.length === PAGE_SIZE);
+            setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length-1]);
+            setAppointments(prev => loadMore ? [...prev, ...newAppointments] : newAppointments);
+        } catch (error) {
+            console.error("Error fetching appointments: ", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not fetch appointments." });
+        } finally {
+            if(loadMore) setIsLoadingMore(false); else setIsLoading(false);
+        }
+    };
+    
+    useEffect(() => {
+        if (user && firestore) {
+            fetchAppointments();
+        }
+    }, [user, firestore]);
 
     const handleCancelAppointment = (appointment: Appointment) => {
         if (!firestore || !user) return;
@@ -60,6 +97,7 @@ export default function MyAppointmentsPage() {
                 title: 'Appointment Cancelled',
                 description: 'Your appointment has been successfully cancelled.',
             });
+            setAppointments(prev => prev.map(a => a.id === appointment.id ? { ...a, status: 'cancelled' } : a));
             setCancellingId(null);
         }, () => {
             setCancellingId(null);
@@ -71,7 +109,7 @@ export default function MyAppointmentsPage() {
         });
     };
     
-    const isLoading = userLoading || appointmentsLoading;
+    const pageIsLoading = userLoading || isLoading;
 
     return (
         <div className="space-y-6">
@@ -93,7 +131,7 @@ export default function MyAppointmentsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isLoading ? (
+                            {pageIsLoading ? (
                                 <TableRow><TableCell colSpan={5} className="text-center h-24"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                             ) : appointments && appointments.length > 0 ? (
                                 appointments.map(apt => (
@@ -132,6 +170,13 @@ export default function MyAppointmentsPage() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                <CardFooter className="justify-center py-4">
+                    {hasMore && (
+                        <Button onClick={() => fetchAppointments(true)} disabled={isLoadingMore}>
+                            {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
+                        </Button>
+                    )}
+                </CardFooter>
             </Card>
         </div>
     )

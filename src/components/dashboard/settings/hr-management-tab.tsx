@@ -9,14 +9,13 @@ import { format } from "date-fns";
 
 // Firebase and auth hooks
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore, useCollection, useMemoFirebase, updateDocument } from '@/firebase';
-import { collection, query, where, getDocs, doc } from 'firebase/firestore';
+import { useFirestore, updateDocument, getDocs, collection, query, orderBy, limit, startAfter, type DocumentSnapshot, doc } from '@/firebase';
 import type { User, Role, Membership, EmployeeDetails } from '@/lib/definitions';
 import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
 // UI Components
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -28,11 +27,12 @@ import { CurrencyInput } from '@/components/shared/currency-input';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { DutyRoster } from './hr/duty-roster';
+import { CardFooter } from '@/components/ui/card';
 
 // Icons
 import { Loader2, Users, Edit, Save, CalendarIcon } from 'lucide-react';
 
-type StaffMember = User & { memberRoles: Role[], employeeDetails?: EmployeeDetails };
+type StaffMember = Membership;
 
 // Validation Schema for HR Details
 const hrDetailsSchema = z.object({
@@ -42,7 +42,7 @@ const hrDetailsSchema = z.object({
   bankName: z.string().optional(),
 });
 
-function EditHrDetailsDialog({ staffMember, orgId, isOpen, setIsOpen }: { staffMember: StaffMember; orgId: string; isOpen: boolean; setIsOpen: (open: boolean) => void; }) {
+function EditHrDetailsDialog({ member, orgId, isOpen, setIsOpen, onUpdate }: { member: StaffMember; orgId: string; isOpen: boolean; setIsOpen: (open: boolean) => void; onUpdate: (updatedMember: StaffMember) => void; }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isSaving, setIsSaving] = useState(false);
@@ -50,10 +50,10 @@ function EditHrDetailsDialog({ staffMember, orgId, isOpen, setIsOpen }: { staffM
   const form = useForm<z.infer<typeof hrDetailsSchema>>({
     resolver: zodResolver(hrDetailsSchema),
     defaultValues: {
-      joiningDate: staffMember.employeeDetails?.joiningDate ? new Date(staffMember.employeeDetails.joiningDate) : undefined,
-      salary: staffMember.employeeDetails?.salary || 0,
-      bankAccountNumber: staffMember.employeeDetails?.bankAccountNumber || '',
-      bankName: staffMember.employeeDetails?.bankName || '',
+      joiningDate: member.employeeDetails?.joiningDate ? new Date(member.employeeDetails.joiningDate) : undefined,
+      salary: member.employeeDetails?.salary || 0,
+      bankAccountNumber: member.employeeDetails?.bankAccountNumber || '',
+      bankName: member.employeeDetails?.bankName || '',
     },
   });
 
@@ -61,14 +61,15 @@ function EditHrDetailsDialog({ staffMember, orgId, isOpen, setIsOpen }: { staffM
     if (!firestore) return;
     setIsSaving(true);
     
-    const memberRef = doc(firestore, 'organizations', orgId, 'members', staffMember.id);
-    const updatedDetails = {
+    const memberRef = doc(firestore, 'organizations', orgId, 'members', member.id);
+    const updatedDetails: EmployeeDetails = {
         ...values,
         joiningDate: values.joiningDate ? format(values.joiningDate, 'yyyy-MM-dd') : undefined,
     };
 
     updateDocument(memberRef, { employeeDetails: updatedDetails }, () => {
-      toast({ title: 'Success', description: `${staffMember.name}'s details have been updated.` });
+      toast({ title: 'Success', description: `${member.userName}'s details have been updated.` });
+      onUpdate({ ...member, employeeDetails: updatedDetails });
       setIsSaving(false);
       setIsOpen(false);
     }, () => {
@@ -81,7 +82,7 @@ function EditHrDetailsDialog({ staffMember, orgId, isOpen, setIsOpen }: { staffM
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit HR Details for {staffMember.name}</DialogTitle>
+          <DialogTitle>Edit HR Details for {member.userName}</DialogTitle>
           <DialogDescription>Update contractual and payment information for this employee.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -127,6 +128,7 @@ function EditHrDetailsDialog({ staffMember, orgId, isOpen, setIsOpen }: { staffM
   );
 }
 
+const PAGE_SIZE = 10;
 
 export function HrManagementTab() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -135,57 +137,62 @@ export function HrManagementTab() {
   const { hasRole } = useAuth();
   const firestore = useFirestore();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
+
+  const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
   const adminOrgId = searchParams.get('orgId');
   const orgId = hasRole('admin') && adminOrgId ? adminOrgId : useAuth().user?.organizationId;
 
-  const membersQuery = useMemoFirebase(() => {
-    if (!firestore || !orgId) return null;
-    return collection(firestore, 'organizations', orgId, 'members');
-  }, [firestore, orgId]);
+  const fetchMembers = async (loadMore = false) => {
+    if (!firestore || !orgId) return;
 
-  const { data: members, isLoading: membersLoading } = useCollection<Membership>(membersQuery);
-  
-  useEffect(() => {
-    if (!members || !firestore) {
-      setStaff([]);
-      return;
+    if (loadMore) setIsLoadingMore(true); else setIsLoading(true);
+    
+    const membersRef = collection(firestore, 'organizations', orgId, 'members');
+    let q;
+    const queryConstraints = [orderBy('userName'), limit(PAGE_SIZE)];
+
+    if (loadMore && lastVisible) {
+        q = query(membersRef, ...queryConstraints, startAfter(lastVisible));
+    } else {
+        q = query(membersRef, ...queryConstraints);
     }
     
-    const fetchStaffDetails = async () => {
-        if(members.length === 0) {
-            setStaff([]);
-            return;
-        }
-
-        const userIds = members.map(m => m.userId);
-        if (userIds.length === 0) return;
+    try {
+        const documentSnapshots = await getDocs(q);
+        const newMembers = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as StaffMember));
         
-        const usersRef = collection(firestore, 'users');
-        const usersQuery = query(usersRef, where('__name__', 'in', userIds));
-        const userSnapshots = await getDocs(usersQuery);
-        
-        const usersById = new Map(userSnapshots.docs.map(d => [d.id, { ...d.data() as User, id: d.id }]));
-
-        const combinedStaff = members.map(member => {
-            const user = usersById.get(member.userId);
-            return {
-                ...(user || {}),
-                id: member.userId,
-                memberRoles: member.roles,
-                employeeDetails: member.employeeDetails,
-            } as StaffMember;
-        }).filter(s => s.id && s.name);
-
-        setStaff(combinedStaff);
+        setHasMore(newMembers.length === PAGE_SIZE);
+        setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1]);
+        setStaff(prev => loadMore ? [...prev, ...newMembers] : newMembers);
+    } catch (error) {
+        console.error("Error fetching staff members:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch staff members.' });
+    } finally {
+        if (loadMore) setIsLoadingMore(false); else setIsLoading(false);
     }
-    fetchStaffDetails();
-  }, [members, firestore]);
+  };
+  
+  useEffect(() => {
+    if (orgId) {
+        fetchMembers();
+    }
+  }, [orgId]);
 
   const handleEditClick = (staffMember: StaffMember) => {
     setSelectedStaff(staffMember);
     setIsDialogOpen(true);
   };
+  
+  const handleDetailsUpdate = (updatedMember: StaffMember) => {
+    setStaff(prev => prev.map(m => m.id === updatedMember.id ? updatedMember : m));
+  };
+  
+  const staffWithProfessionalRoles = staff.filter(member => member.roles.some(r => r !== 'patient'));
 
   return (
     <>
@@ -207,15 +214,15 @@ export function HrManagementTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {membersLoading ? (
+                {isLoading ? (
                   <TableRow><TableCell colSpan={5} className="text-center h-24"><Loader2 className="h-6 w-6 animate-spin mx-auto"/></TableCell></TableRow>
-                ) : staff.length > 0 ? (
-                  staff.map((member) => (
+                ) : staffWithProfessionalRoles.length > 0 ? (
+                  staffWithProfessionalRoles.map((member) => (
                     <TableRow key={member.id}>
-                      <TableCell className="font-medium">{member.name}</TableCell>
+                      <TableCell className="font-medium">{member.userName}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {member.memberRoles.filter(r => r !== 'patient').map(role => (
+                          {member.roles.filter(r => r !== 'patient').map(role => (
                             <Badge key={role} variant="secondary" className="capitalize">{role.replace(/_/g, ' ')}</Badge>
                           ))}
                         </div>
@@ -238,17 +245,25 @@ export function HrManagementTab() {
                 )}
               </TableBody>
             </Table>
+             <CardFooter className="justify-center py-4">
+                {hasMore && (
+                    <Button onClick={() => fetchMembers(true)} disabled={isLoadingMore}>
+                        {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
+                    </Button>
+                )}
+            </CardFooter>
           </div>
         </div>
         <Separator />
-        <DutyRoster staff={staff} />
+        <DutyRoster staff={staffWithProfessionalRoles} />
       </div>
       {selectedStaff && orgId && (
         <EditHrDetailsDialog 
-            staffMember={selectedStaff}
+            member={selectedStaff}
             orgId={orgId}
             isOpen={isDialogOpen}
             setIsOpen={setIsDialogOpen}
+            onUpdate={handleDetailsUpdate}
         />
       )}
     </>

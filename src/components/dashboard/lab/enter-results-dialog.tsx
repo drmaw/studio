@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState } from 'react'
@@ -23,7 +24,7 @@ import { createNotification } from '@/lib/notifications'
 
 type ResultsState = { [testName: string]: { value: string; comments: string } };
 
-export function EnterResultsDialog({ order, currentUser }: { order: LabTestOrder, currentUser: User }) {
+export function EnterResultsDialog({ order, currentUser, onResultsSaved }: { order: LabTestOrder, currentUser: User, onResultsSaved: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -100,7 +101,8 @@ export function EnterResultsDialog({ order, currentUser }: { order: LabTestOrder
         } else {
              console.warn(`Could not find doctor with healthId ${order.doctorId} to send notification.`)
         }
-
+        
+        onResultsSaved();
         setIsOpen(false);
         toast({
             title: 'Results Saved',

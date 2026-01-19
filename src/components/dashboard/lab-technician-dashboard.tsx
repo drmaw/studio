@@ -1,33 +1,76 @@
 
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useAuth } from "@/hooks/use-auth"
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
-import { collection, query, where, orderBy } from "firebase/firestore"
+import { useFirestore } from "@/firebase"
+import { collection, query, where, orderBy, getDocs, limit, startAfter, type DocumentSnapshot } from "firebase/firestore"
 import type { LabTestOrder, User } from "@/lib/definitions"
 import { PageHeader } from "@/components/shared/page-header"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { FlaskConical, Loader2 } from "lucide-react"
 import { FormattedDate } from "@/components/shared/formatted-date"
 import { Badge } from "@/components/ui/badge"
 import { EnterResultsDialog } from "./lab/enter-results-dialog"
 import { MyUpcomingShifts } from "./my-upcoming-shifts"
+import { useToast } from '@/hooks/use-toast'
+import { Button } from '../ui/button'
+
+const PAGE_SIZE = 10;
 
 export function LabTechnicianDashboard({ user }: { user: User }) {
     const { organizationId } = useAuth();
     const firestore = useFirestore();
+    const { toast } = useToast();
 
-    const pendingOrdersQuery = useMemoFirebase(() => {
-        if (!firestore || !organizationId) return null;
-        return query(
-            collection(firestore, 'organizations', organizationId, 'lab_test_orders'),
+    const [pendingOrders, setPendingOrders] = useState<LabTestOrder[]>([]);
+    const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+
+    const fetchOrders = async (loadMore = false) => {
+        if (!firestore || !organizationId) return;
+
+        if (loadMore) setIsLoadingMore(true); else setIsLoading(true);
+
+        const ordersRef = collection(firestore, 'organizations', organizationId, 'lab_test_orders');
+        let q;
+        const queryConstraints = [
             where('status', '==', 'pending'),
-            orderBy('createdAt', 'asc')
-        );
+            orderBy('createdAt', 'asc'),
+            limit(PAGE_SIZE)
+        ];
+
+        if (loadMore && lastVisible) {
+            q = query(ordersRef, ...queryConstraints, startAfter(lastVisible));
+        } else {
+            q = query(ordersRef, ...queryConstraints);
+        }
+
+        try {
+            const documentSnapshots = await getDocs(q);
+            const newOrders = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as LabTestOrder));
+            
+            setHasMore(newOrders.length === PAGE_SIZE);
+            setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length-1]);
+            setPendingOrders(prev => loadMore ? [...prev, ...newOrders] : newOrders);
+        } catch (error) {
+            console.error("Error fetching lab orders: ", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not fetch lab orders." });
+        } finally {
+            if(loadMore) setIsLoadingMore(false); else setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchOrders();
     }, [firestore, organizationId]);
 
-    const { data: pendingOrders, isLoading } = useCollection<LabTestOrder>(pendingOrdersQuery);
+    const handleResultsSaved = (orderId: string) => {
+        setPendingOrders(prev => prev.filter(o => o.id !== orderId));
+    };
 
     return (
         <div className="space-y-6">
@@ -80,7 +123,7 @@ export function LabTechnicianDashboard({ user }: { user: User }) {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <EnterResultsDialog order={order} currentUser={user} />
+                                                <EnterResultsDialog order={order} currentUser={user} onResultsSaved={() => handleResultsSaved(order.id)} />
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -95,6 +138,13 @@ export function LabTechnicianDashboard({ user }: { user: User }) {
                         </Table>
                     </div>
                 </CardContent>
+                <CardFooter className="justify-center py-4">
+                    {hasMore && (
+                        <Button onClick={() => fetchOrders(true)} disabled={isLoadingMore}>
+                            {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
+                        </Button>
+                    )}
+                </CardFooter>
             </Card>
         </div>
     )

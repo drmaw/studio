@@ -27,22 +27,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Loader2, UserPlus, Users, UserX } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { User, Role, Membership } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase, deleteDocument, setDocument, commitBatch, writeBatch } from "@/firebase";
-import { collection, query, where, getDocs, doc, limit, getDoc, collectionGroup } from "firebase/firestore";
+import { useFirestore, deleteDocument, setDocument, getDocs, collection, query, where, doc, limit, getDoc, collectionGroup, orderBy, startAfter, type DocumentSnapshot } from "@/firebase";
 import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
 import { useSearchParams } from "next/navigation";
+import { CardFooter } from "@/components/ui/card";
 
 const formSchema = z.object({
   healthId: z.string().min(1, { message: "Health ID is required." }),
   role: z.enum(['doctor', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'], { required_error: "You must select a role." }),
 });
+
+const PAGE_SIZE = 10;
 
 export function StaffManagementTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,16 +54,54 @@ export function StaffManagementTab() {
   const firestore = useFirestore();
   const searchParams = useSearchParams();
 
+  const [members, setMembers] = useState<Membership[]>([]);
+  const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+  const [membersLoading, setMembersLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
   const adminOrgId = searchParams.get('orgId');
   const isAdminView = hasRole('admin') && !!adminOrgId;
   const orgId = isAdminView ? adminOrgId : hospitalOwner?.organizationId;
 
-  const membersQuery = useMemoFirebase(() => {
-    if (!firestore || !orgId) return null;
-    return query(collection(firestore, 'organizations', orgId, 'members'));
-  }, [firestore, orgId]);
+  const fetchMembers = async (loadMore = false) => {
+    if (!firestore || !orgId) return;
 
-  const { data: members, isLoading: membersLoading } = useCollection<Membership>(membersQuery);
+    if (loadMore) setIsLoadingMore(true); else setMembersLoading(true);
+
+    const membersRef = collection(firestore, 'organizations', orgId, 'members');
+    let q;
+    const queryConstraints = [
+        orderBy('userName'),
+        limit(PAGE_SIZE)
+    ];
+
+    if (loadMore && lastVisible) {
+        q = query(membersRef, ...queryConstraints, startAfter(lastVisible));
+    } else {
+        q = query(membersRef, ...queryConstraints);
+    }
+
+    try {
+        const documentSnapshots = await getDocs(q);
+        const newMembers = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Membership));
+        
+        setHasMore(newMembers.length === PAGE_SIZE);
+        setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length-1]);
+        setMembers(prev => loadMore ? [...prev, ...newMembers] : newMembers);
+    } catch (error) {
+        console.error("Error fetching staff members: ", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not fetch staff members." });
+    } finally {
+        if(loadMore) setIsLoadingMore(false); else setMembersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (orgId) {
+        fetchMembers();
+    }
+  }, [orgId]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -127,6 +167,7 @@ export function StaffManagementTab() {
             title: "Staff Added",
             description: `${userToAdd.name} has been assigned the ${values.role.replace(/_/g, ' ')} role in your organization.`,
         });
+        fetchMembers(); // Refetch to show the new member
         form.reset();
         setIsSubmitting(false);
     }, () => {
@@ -151,6 +192,7 @@ export function StaffManagementTab() {
             title: "Staff Removed",
             description: `${member.userName} has been removed from your organization.`,
         });
+        setMembers(prev => prev.filter(m => m.id !== member.id));
         setRemovingId(null);
     }, () => {
         setRemovingId(null);
@@ -229,7 +271,7 @@ export function StaffManagementTab() {
                     <TableBody>
                         {membersLoading && (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center">
+                                <TableCell colSpan={4} className="text-center h-24">
                                     <Loader2 className="mx-auto h-6 w-6 animate-spin"/>
                                 </TableCell>
                             </TableRow>
@@ -277,6 +319,13 @@ export function StaffManagementTab() {
                     </TableBody>
                 </Table>
                  {!membersLoading && members?.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No staff members found in your organization.</p>}
+                 <CardFooter className="justify-center py-4">
+                    {hasMore && (
+                        <Button onClick={() => fetchMembers(true)} disabled={isLoadingMore}>
+                            {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
+                        </Button>
+                    )}
+                </CardFooter>
             </div>
         </div>
     </div>

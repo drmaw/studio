@@ -1,20 +1,67 @@
 
 'use client';
 
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { useFirestore, getDocs, collection, query, orderBy, limit, startAfter, type DocumentSnapshot } from '@/firebase';
 import type { Organization } from '@/lib/definitions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { FormattedDate } from '@/components/shared/formatted-date';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+
+const PAGE_SIZE = 10;
 
 export function OrganizationsTable() {
     const firestore = useFirestore();
-    const { data: organizations, isLoading } = useCollection<Organization>(useMemoFirebase(() => firestore ? collection(firestore, 'organizations') : null, [firestore]));
+    const { toast } = useToast();
+
+    const [organizations, setOrganizations] = useState<Organization[]>([]);
+    const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+
+    const fetchOrganizations = async (loadMore = false) => {
+        if (!firestore) return;
+
+        if (loadMore) setIsLoadingMore(true); else setIsLoading(true);
+
+        const orgsRef = collection(firestore, 'organizations');
+        let q;
+        const queryConstraints = [
+            orderBy('createdAt', 'desc'),
+            limit(PAGE_SIZE)
+        ];
+
+        if (loadMore && lastVisible) {
+            q = query(orgsRef, ...queryConstraints, startAfter(lastVisible));
+        } else {
+            q = query(orgsRef, ...queryConstraints);
+        }
+
+        try {
+            const documentSnapshots = await getDocs(q);
+            const newOrgs = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Organization));
+            
+            setHasMore(newOrgs.length === PAGE_SIZE);
+            setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length-1]);
+            setOrganizations(prev => loadMore ? [...prev, ...newOrgs] : newOrgs);
+        } catch (error) {
+            console.error("Error fetching organizations: ", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not fetch organizations." });
+        } finally {
+            if(loadMore) setIsLoadingMore(false); else setIsLoading(false);
+        }
+    };
+    
+    useEffect(() => {
+        fetchOrganizations();
+    }, [firestore]);
+
 
     return (
         <Card className="mt-4">
@@ -53,6 +100,13 @@ export function OrganizationsTable() {
                     </Table>
                 </div>
             </CardContent>
+            <CardFooter className="justify-center py-4">
+                {hasMore && (
+                    <Button onClick={() => fetchOrganizations(true)} disabled={isLoadingMore}>
+                        {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
+                    </Button>
+                )}
+            </CardFooter>
         </Card>
     );
 }

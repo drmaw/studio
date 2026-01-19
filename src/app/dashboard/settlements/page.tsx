@@ -1,16 +1,15 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore, useCollection, useDoc, useMemoFirebase, addDocument, updateDocument } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc } from 'firebase/firestore';
+import { useFirestore, useDoc, addDocument, updateDocument, getDocs, collection, query, orderBy, serverTimestamp, doc, limit, startAfter, type DocumentSnapshot } from '@/firebase';
 import type { Settlement, Organization } from '@/lib/definitions';
 import { PageHeader } from '@/components/shared/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,35 +20,70 @@ import { CurrencyInput } from '@/components/shared/currency-input';
 import { FormattedDate } from '@/components/shared/formatted-date';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 
+const PAGE_SIZE = 10;
+
 const settlementSchema = z.object({
   amount: z.coerce.number().positive({ message: "Amount must be greater than zero." }),
 });
 
 export default function SettlementsPage() {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, organizationId } = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const organizationId = user?.organizationId;
+  
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  const orgDocRef = useMemoFirebase(() => {
-    if(!firestore || !organizationId) return null;
-    return doc(firestore, 'organizations', organizationId);
-  }, [firestore, organizationId]);
-  const { data: organization, isLoading: isOrgLoading } = useDoc<Organization>(orgDocRef);
+  const orgDocRef = useDoc(doc(firestore, 'organizations', organizationId!));
+  const organization = orgDocRef.data as Organization;
+  const isOrgLoading = orgDocRef.isLoading;
 
   const form = useForm<z.infer<typeof settlementSchema>>({
     resolver: zodResolver(settlementSchema),
     defaultValues: { amount: 0 },
   });
 
-  const settlementsQuery = useMemoFirebase(() => {
-    if (!firestore || !organizationId) return null;
-    return query(collection(firestore, 'organizations', organizationId, 'settlements'), orderBy('initiatedAt', 'desc'));
-  }, [firestore, organizationId]);
+  const fetchSettlements = async (loadMore = false) => {
+    if (!firestore || !organizationId) return;
 
-  const { data: settlements, isLoading: isSettlementsLoading } = useCollection<Settlement>(settlementsQuery);
+    if(loadMore) setIsLoadingMore(true); else setIsLoading(true);
+
+    const settlementsRef = collection(firestore, 'organizations', organizationId, 'settlements');
+    let q;
+    const queryConstraints = [orderBy('initiatedAt', 'desc'), limit(PAGE_SIZE)];
+    
+    if (loadMore && lastVisible) {
+        q = query(settlementsRef, ...queryConstraints, startAfter(lastVisible));
+    } else {
+        q = query(settlementsRef, ...queryConstraints);
+    }
+
+    try {
+        const documentSnapshots = await getDocs(q);
+        const newSettlements = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Settlement));
+        
+        setHasMore(newSettlements.length === PAGE_SIZE);
+        setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length-1]);
+        setSettlements(prev => loadMore ? [...prev, ...newSettlements] : newSettlements);
+    } catch (error) {
+        console.error("Error fetching settlements: ", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not fetch settlements." });
+    } finally {
+        if(loadMore) setIsLoadingMore(false); else setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (organizationId) {
+        fetchSettlements();
+    }
+  }, [organizationId]);
+
 
   const onSubmit = (values: z.infer<typeof settlementSchema>) => {
     if (!user || !organizationId || !firestore || !organization) return;
@@ -76,6 +110,7 @@ export default function SettlementsPage() {
     addDocument(settlementsRef, newSettlement, 
       () => {
         toast({ title: 'Settlement Initiated', description: `A settlement request for BDT ${values.amount.toFixed(2)} has been sent to the owner.` });
+        fetchSettlements(); // Refetch to show the new settlement
         form.reset();
         setIsSubmitting(false);
       },
@@ -97,6 +132,7 @@ export default function SettlementsPage() {
 
     updateDocument(settlementRef, updateData, () => {
         toast({ title: 'Settlement Confirmed', description: 'The cash hand-off has been reconciled.' });
+        setSettlements(prev => prev.map(s => s.id === settlement.id ? { ...s, ...updateData, status: 'confirmed' } : s));
         setConfirmingId(null);
     }, () => {
         toast({ variant: 'destructive', title: 'Confirmation Failed' });
@@ -104,7 +140,7 @@ export default function SettlementsPage() {
     });
 };
 
-  const isLoading = isSettlementsLoading || isOrgLoading;
+  const pageIsLoading = isLoading || isOrgLoading;
 
   return (
     <div className="space-y-6">
@@ -162,7 +198,7 @@ export default function SettlementsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {pageIsLoading ? (
                 <TableRow><TableCell colSpan={hasRole('hospital_owner') ? 6 : 5} className="text-center h-24"><Loader2 className="h-6 w-6 animate-spin mx-auto"/></TableCell></TableRow>
               ) : settlements && settlements.length > 0 ? (
                 settlements.map(settlement => (
@@ -205,6 +241,13 @@ export default function SettlementsPage() {
             </TableBody>
           </Table>
         </CardContent>
+         <CardFooter className="justify-center py-4">
+            {hasMore && (
+                <Button onClick={() => fetchSettlements(true)} disabled={isLoadingMore}>
+                    {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
+                </Button>
+            )}
+        </CardFooter>
       </Card>
     </div>
   );

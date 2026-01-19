@@ -1,15 +1,15 @@
 
 'use client'
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BedDouble, Loader2, Search, UserX, PlusCircle } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase, commitBatch, writeBatch } from "@/firebase";
-import { collection, query, where, orderBy, doc, serverTimestamp, getDocs, limit } from "firebase/firestore";
+import { useFirestore, commitBatch, writeBatch } from "@/firebase";
+import { collection, query, where, orderBy, doc, serverTimestamp, getDocs, limit, startAfter, type DocumentSnapshot } from "firebase/firestore";
 import type { Admission, Invoice } from "@/lib/definitions";
 import { PageHeader } from "@/components/shared/page-header";
 import { usePatientSearch } from "@/hooks/use-patient-search";
@@ -19,6 +19,8 @@ import { FormattedDate } from "@/components/shared/formatted-date";
 import { AdmitPatientDialog } from "@/components/dashboard/admissions/admit-patient-dialog";
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
 import { useToast } from "@/hooks/use-toast";
+
+const PAGE_SIZE = 10;
 
 export default function AdmissionsPage() {
     const { user: currentUser } = useAuth();
@@ -35,16 +37,51 @@ export default function AdmissionsPage() {
     
     const firestore = useFirestore();
 
-    const admissionsQuery = useMemoFirebase(() => {
-        if (!currentUser || !firestore) return null;
-        return query(
-            collection(firestore, 'organizations', currentUser.organizationId, 'admissions'),
-            where('status', '==', 'admitted'),
-            orderBy('admissionDate', 'desc')
-        );
-    }, [currentUser, firestore]);
+    const [admissions, setAdmissions] = useState<Admission[]>([]);
+    const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
 
-    const { data: admissions, isLoading: admissionsLoading } = useCollection<Admission>(admissionsQuery);
+    const fetchAdmissions = async (loadMore = false) => {
+        if (!currentUser || !firestore) return;
+
+        if (loadMore) setIsLoadingMore(true); else setIsLoading(true);
+
+        const admissionsRef = collection(firestore, 'organizations', currentUser.organizationId, 'admissions');
+        let q;
+        const queryConstraints = [
+            where('status', '==', 'admitted'),
+            orderBy('admissionDate', 'desc'),
+            limit(PAGE_SIZE)
+        ];
+
+        if (loadMore && lastVisible) {
+            q = query(admissionsRef, ...queryConstraints, startAfter(lastVisible));
+        } else {
+            q = query(admissionsRef, ...queryConstraints);
+        }
+
+        try {
+            const documentSnapshots = await getDocs(q);
+            const newAdmissions = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Admission));
+
+            setHasMore(newAdmissions.length === PAGE_SIZE);
+            setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1]);
+            setAdmissions(prev => loadMore ? [...prev, ...newAdmissions] : newAdmissions);
+        } catch (error) {
+            console.error("Error fetching admissions: ", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not fetch admissions." });
+        } finally {
+            if (loadMore) setIsLoadingMore(false); else setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (currentUser && firestore) {
+            fetchAdmissions();
+        }
+    }, [currentUser, firestore]);
     
     const searchedPatient = searchResult !== 'not_found' ? searchResult : null;
 
@@ -116,6 +153,7 @@ export default function AdmissionsPage() {
                     title: 'Patient Discharged',
                     description: `${admission.patientName} has been discharged and final billing has been calculated.`,
                 });
+                setAdmissions(prev => prev.filter(a => a.id !== admission.id));
                 setDischargingId(null);
             }, (error) => {
                 console.error('Discharge commit failed:', error);
@@ -187,7 +225,7 @@ export default function AdmissionsPage() {
                 <PatientInfoCard 
                     patient={searchedPatient}
                     actionSlot={
-                        <AdmitPatientDialog patient={searchedPatient} organizationId={currentUser.organizationId} />
+                        <AdmitPatientDialog patient={searchedPatient} organizationId={currentUser.organizationId} onAdmitSuccess={() => fetchAdmissions()} />
                     }
                 />
             )}
@@ -209,7 +247,7 @@ export default function AdmissionsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {admissionsLoading ? (
+                            {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center h-24">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
@@ -245,6 +283,13 @@ export default function AdmissionsPage() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                 <CardFooter className="justify-center py-4">
+                    {hasMore && (
+                        <Button onClick={() => fetchAdmissions(true)} disabled={isLoadingMore}>
+                            {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
+                        </Button>
+                    )}
+                </CardFooter>
             </Card>
         </div>
     );

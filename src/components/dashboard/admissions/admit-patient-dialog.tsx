@@ -23,6 +23,7 @@ import { createNotification } from '@/lib/notifications';
 interface AdmitPatientDialogProps {
   patient: User;
   organizationId: string;
+  onAdmitSuccess?: () => void;
 }
 
 interface SelectedBedInfo {
@@ -32,7 +33,7 @@ interface SelectedBedInfo {
     costPerDay: number;
 }
 
-export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDialogProps) {
+export function AdmitPatientDialog({ patient, organizationId, onAdmitSuccess }: AdmitPatientDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAdmitting, setIsAdmitting] = useState(false);
   const [selectedBedInfo, setSelectedBedInfo] = useState<SelectedBedInfo | null>(null);
@@ -139,6 +140,7 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
             title: 'Patient Admitted',
             description: `${patient.name} has been admitted and an admission charge has been added to their invoice.`,
         });
+        onAdmitSuccess?.();
         setIsOpen(false);
         setIsAdmitting(false);
     }, () => {
