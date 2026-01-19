@@ -6,7 +6,8 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "patientId", "order": "ASCENDING" },
-        { "fieldPath": "appointmentDate", "order": "DESCENDING" }
+        { "fieldPath": "appointmentDate", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
       ]
     },
     {
