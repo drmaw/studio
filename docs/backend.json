@@ -148,6 +148,7 @@
             "patientId": { "type": "string" },
             "organizationId": { "type": "string" },
             "action": { "type": "string" },
+            "details": { "type": "string" },
             "timestamp": { "type": "object" }
         },
         "required": ["actorId", "actorName", "patientId", "organizationId", "action", "timestamp"]

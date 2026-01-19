@@ -75,6 +75,7 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
         patientId: patient.id,
         organizationId: doctor.organizationId,
         action: 'add_record' as const,
+        details: `Diagnosis: ${diagnosis}`,
         timestamp: serverTimestamp(),
     };
     batch.set(logRef, logEntry);

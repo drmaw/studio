@@ -139,8 +139,9 @@ export type PrivacyLogEntry = {
     actorAvatarUrl: string;
     patientId: string;
     organizationId: string;
-    action: 'search' | 'view_record' | 'add_record' | 'edit_record' | 'update_red_flag' | 'remove_red_flag';
-    timestamp: FieldValue; // ISO 8601 string
+    action: 'search' | 'view_record' | 'add_record' | 'edit_record' | 'update_red_flag' | 'remove_red_flag' | 'update_appointment_status';
+    details?: string;
+    timestamp: FieldValue;
 };
 
 export type RoleApplication = {

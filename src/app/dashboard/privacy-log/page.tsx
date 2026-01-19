@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { History, Search, Eye, FilePlus, Loader2, Edit, ShieldAlert } from "lucide-react";
+import { History, Search, Eye, FilePlus, Loader2, Edit, ShieldAlert, CalendarCheck } from "lucide-react";
 import type { PrivacyLogEntry } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
@@ -24,6 +25,7 @@ function LogEntry({ log }: { log: PrivacyLogEntry }) {
         edit_record: { icon: Edit, text: "edited a medical record" },
         update_red_flag: { icon: ShieldAlert, text: "updated a critical alert" },
         remove_red_flag: { icon: ShieldAlert, text: "removed a critical alert" },
+        update_appointment_status: { icon: CalendarCheck, text: "updated an appointment" },
     };
 
     const { icon: Icon, text } = actionMap[log.action] || { icon: History, text: log.action };
@@ -36,6 +38,7 @@ function LogEntry({ log }: { log: PrivacyLogEntry }) {
             </Avatar>
             <div className="flex-1">
                 <p className="font-semibold">{log.actorName} <span className="font-normal text-muted-foreground">{text}.</span></p>
+                {log.details && <p className="text-xs text-muted-foreground italic">Details: {log.details}</p>}
                 <p className="text-xs text-muted-foreground">Health ID: {log.actorId}</p>
             </div>
             <div className="text-right text-xs text-muted-foreground">
@@ -98,7 +101,7 @@ export default function PrivacyLogPage() {
     const searchLogs = useMemo(() => allLogs?.filter(log => log.action === 'search') || [], [allLogs]);
 
     const recordActivityLogs = useMemo(() => {
-        const actions: PrivacyLogEntry['action'][] = ['view_record', 'add_record', 'edit_record'];
+        const actions: PrivacyLogEntry['action'][] = ['view_record', 'add_record', 'edit_record', 'update_appointment_status'];
         const logs = allLogs?.filter(log => actions.includes(log.action)) || [];
         return logs;
     }, [allLogs]);

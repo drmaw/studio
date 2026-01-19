@@ -3,8 +3,8 @@
 
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { useCollection, useDoc, useFirestore, useMemoFirebase, updateDocument } from "@/firebase";
-import { collection, doc, orderBy, query, where } from "firebase/firestore";
+import { useCollection, useDoc, useFirestore, useMemoFirebase, commitBatch, writeBatch } from "@/firebase";
+import { collection, doc, orderBy, query, where, serverTimestamp } from "firebase/firestore";
 import type { Appointment, DoctorSchedule } from "@/lib/definitions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,9 +16,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FormattedDate } from "@/components/shared/formatted-date";
 import { createNotification } from "@/lib/notifications";
 import { format } from 'date-fns';
+import { useAuth } from "@/hooks/use-auth";
 
 export default function DoctorAppointmentsPage() {
     const params = useParams();
+    const { user: currentUser } = useAuth();
     const scheduleId = params.scheduleId as string;
     const organizationId = params.organizationId as string;
     const firestore = useFirestore();
@@ -44,12 +46,30 @@ export default function DoctorAppointmentsPage() {
     );
 
     const handleStatusChange = (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
-        if (!firestore || !organizationId) return;
+        if (!firestore || !organizationId || !currentUser) return;
         setUpdatingId(appointment.id);
-        const appointmentRef = doc(firestore, 'organizations', organizationId, 'appointments', appointment.id);
-        const updateData = { status };
         
-        updateDocument(appointmentRef, updateData, () => {
+        const batch = writeBatch(firestore);
+
+        // 1. Update appointment status
+        const appointmentRef = doc(firestore, 'organizations', organizationId, 'appointments', appointment.id);
+        batch.update(appointmentRef, { status });
+
+        // 2. Create privacy log entry
+        const logRef = doc(collection(firestore, 'patients', appointment.patientId, 'privacy_log'));
+        const logEntry = {
+            actorId: currentUser.healthId,
+            actorName: currentUser.name,
+            actorAvatarUrl: currentUser.avatarUrl,
+            patientId: appointment.patientId,
+            organizationId: organizationId,
+            action: 'update_appointment_status' as const,
+            details: `Status changed to ${status}`,
+            timestamp: serverTimestamp(),
+        };
+        batch.set(logRef, logEntry);
+
+        commitBatch(batch, `update appointment ${appointment.id} status to ${status}`, () => {
             // Notify patient
             const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Cancelled';
             const formattedDate = format(new Date(appointment.appointmentDate), 'PPP');
@@ -62,7 +82,8 @@ export default function DoctorAppointmentsPage() {
                 description: `The appointment has been ${status}.`
             });
             setUpdatingId(null);
-        }, () => {
+        }, (error) => {
+            console.error('Failed to update appointment status:', error);
             setUpdatingId(null);
             toast({
                 variant: 'destructive',

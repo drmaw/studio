@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { Button } from "@/components/ui/button"
@@ -47,6 +48,7 @@ export function EditNoteDialog({ record, patientId, doctor }: { record: MedicalR
         patientId: patientId,
         organizationId: doctor.organizationId,
         action: 'edit_record' as const,
+        details: `For record with diagnosis: ${record.diagnosis}`,
         timestamp: serverTimestamp(),
     });
 

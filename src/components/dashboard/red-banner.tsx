@@ -44,6 +44,7 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
             patientId: patientId,
             organizationId: currentUser.organizationId,
             action: 'update_red_flag' as const,
+            details: `Title: ${redFlag.title}`,
             timestamp: serverTimestamp(),
         });
         
