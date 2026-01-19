@@ -1,0 +1,59 @@
+
+# Digi Health: Project Roadmap
+
+This document outlines the phased development plan to build Digi Health into a full-featured, multi-tenant Hospital Information System (HIS) and Personal Health Record (PHR) platform. This serves as our persistent guide to ensure a structured and resumable development process.
+
+---
+
+### **Phase 0: Architectural Foundation (✓ Complete)**
+
+This foundational phase established the core multi-tenant architecture required for scalability and security.
+
+*   **[✓] Redesigned the Data Model**: Shifted from a user-centric to an organization-centric model in `docs/backend.json`. This introduced the concept of `Memberships` and ensures all clinical data is siloed under the creating organization.
+*   **[✓] Rewrote Security Rules**: Overhauled `firestore.rules` to enforce the new organization-centric data access model.
+*   **[✓] Updated Project Documentation**: Updated `README.md` to reflect the new architecture.
+
+---
+
+### **Phase 1: Adapt UI to the New Architecture (Current Phase)**
+
+**Goal**: Make the existing application functional again by aligning the UI with the new, organization-centric data model.
+
+*   **Step 1.1: Implement Active Organization Context**: A user can belong to multiple organizations, so the UI must know which one they are currently acting within.
+    *   **Task**: Update the `useAuth` hook to manage an "active organization" in the user's session.
+    *   **Task**: Add a UI element (e.g., a dropdown in the `UserNav`) to allow users to switch between their organizations.
+
+*   **Step 1.2: Refactor All Data Queries**: Update all components to fetch data using the new, efficient, organization-scoped queries.
+    *   **Task**: Refactor `DoctorDashboard`, `BookAppointmentPage`, `HospitalSettings`, and other professional views to query data from within the active organization's sub-collections.
+
+*   **Step 1.3: Refactor Patient-Facing Views**: Update patient-facing pages to aggregate data from across all organizations they have interacted with.
+    *   **Task**: Refactor the "My Appointments" page to query and display a unified list of appointments from all relevant organizations.
+
+---
+
+### **Phase 2: Build Core HIS Modules**
+
+**Goal**: Build the essential modules that a hospital needs to operate effectively.
+
+*   **Step 2.1: Develop Billing & Invoicing Module**:
+    *   **Task**: Update `backend.json` and `definitions.ts` with `Invoice` and `InvoiceItem` entities.
+    *   **Task**: Implement UI for billing staff to generate and manage patient invoices.
+
+*   **Step 2.2: Implement In-Patient Management (ADT - Admission, Discharge, Transfer)**:
+    *   **Task**: Update `backend.json` and `definitions.ts` with an `Admission` entity.
+    *   **Task**: Create an "Admissions Dashboard" to manage the patient lifecycle from admission to discharge.
+    *   **Task**: Implement workflows for admitting a patient to a specific facility/bed and for discharging them, linking these actions to the billing cycle.
+
+---
+
+### **Phase 3: Enhance Data Control & Patient Experience**
+
+**Goal**: Empower patients with greater control and a comprehensive view of their health data.
+
+*   **Step 3.1: Create a Unified Health Record View**:
+    *   **Task**: Build a central view where a patient can see a complete, chronological timeline of their medical history, aggregating records from every organization they have visited.
+
+*   **Step 3.2: Implement Consent Management**:
+    *   **Task**: Create a "Data & Privacy" settings page where patients can manage data sharing permissions on a per-organization basis, giving them granular control over who can access their records.
+
+---
