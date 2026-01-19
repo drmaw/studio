@@ -1,15 +1,15 @@
 
 'use client'
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BedDouble, Loader2, Search, UserX, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase, updateDocument } from "@/firebase";
+import { collection, query, where, orderBy, doc, serverTimestamp } from "firebase/firestore";
 import type { Admission } from "@/lib/definitions";
 import { PageHeader } from "@/components/shared/page-header";
 import { usePatientSearch } from "@/hooks/use-patient-search";
@@ -17,9 +17,13 @@ import { PatientInfoCard } from "@/components/shared/patient-info-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FormattedDate } from "@/components/shared/formatted-date";
 import { AdmitPatientDialog } from "@/components/dashboard/admissions/admit-patient-dialog";
+import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdmissionsPage() {
     const { user: currentUser } = useAuth();
+    const { toast } = useToast();
+    const [dischargingId, setDischargingId] = useState<string | null>(null);
 
     const {
         searchQuery,
@@ -43,6 +47,33 @@ export default function AdmissionsPage() {
     const { data: admissions, isLoading: admissionsLoading } = useCollection<Admission>(admissionsQuery);
     
     const searchedPatient = searchResult !== 'not_found' ? searchResult : null;
+
+    const handleDischarge = (admission: Admission) => {
+        if (!currentUser || !firestore) return;
+
+        setDischargingId(admission.id);
+
+        const admissionRef = doc(firestore, 'organizations', currentUser.organizationId, 'admissions', admission.id);
+        const updateData = {
+            status: 'discharged' as const,
+            dischargeDate: serverTimestamp(),
+        };
+
+        updateDocument(admissionRef, updateData, () => {
+            toast({
+                title: 'Patient Discharged',
+                description: `${admission.patientName} has been discharged.`,
+            });
+            setDischargingId(null);
+        }, () => {
+            toast({
+                variant: 'destructive',
+                title: 'Discharge Failed',
+                description: 'The patient could not be discharged. Please try again.',
+            });
+            setDischargingId(null);
+        });
+    };
 
     return (
         <div className="space-y-6">
@@ -126,9 +157,17 @@ export default function AdmissionsPage() {
                                         <TableCell><FormattedDate date={admission.admissionDate} formatString="dd-MM-yyyy, hh:mm a" /></TableCell>
                                         <TableCell>{admission.facilityName}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="outline" size="sm">
-                                                Discharge
-                                            </Button>
+                                            <ConfirmationDialog
+                                                trigger={
+                                                    <Button variant="outline" size="sm" disabled={dischargingId === admission.id}>
+                                                         {dischargingId === admission.id ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Discharge'}
+                                                    </Button>
+                                                }
+                                                title={`Discharge ${admission.patientName}?`}
+                                                description="This will mark the patient as discharged and free up their assigned bed. This action cannot be undone."
+                                                onConfirm={() => handleDischarge(admission)}
+                                                confirmText="Confirm Discharge"
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 ))

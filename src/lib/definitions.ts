@@ -240,14 +240,14 @@ export type InvoiceItem = {
 };
 
 export type Admission = {
-    id: string;
-    patientId: string;
-    patientName: string;
-    organizationId: string;
-    facilityId: string;
-    facilityName: string;
-    admissionDate: FieldValue;
-    dischargeDate?: FieldValue;
-    status: 'admitted' | 'discharged';
-    createdAt: FieldValue;
+  id: string;
+  patientId: string;
+  patientName: string;
+  organizationId: string;
+  facilityId: string;
+  facilityName: string;
+  admissionDate: FieldValue;
+  dischargeDate?: FieldValue;
+  status: 'admitted' | 'discharged';
+  createdAt: FieldValue;
 };
