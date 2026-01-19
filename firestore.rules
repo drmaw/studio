@@ -195,5 +195,11 @@ service cloud.firestore {
       allow read: if hasRoleInOrg(orgId, 'manager') || hasRoleInOrg(orgId, 'hospital_owner');
       allow update: if hasRoleInOrg(orgId, 'hospital_owner');
     }
+
+    // Duty Roster
+    match /organizations/{orgId}/rosters/{rosterId} {
+      allow write: if hasRoleInOrg(orgId, 'manager');
+      allow read: if hasRoleInOrg(orgId, 'manager') || isOwner(resource.data.userId);
+    }
   }
 }

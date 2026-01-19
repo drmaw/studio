@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useAuth } from "@/hooks/use-auth"
@@ -11,6 +12,7 @@ import { FlaskConical, Loader2 } from "lucide-react"
 import { FormattedDate } from "@/components/shared/formatted-date"
 import { Badge } from "@/components/ui/badge"
 import { EnterResultsDialog } from "./lab/enter-results-dialog"
+import { MyUpcomingShifts } from "./my-upcoming-shifts"
 
 export function LabTechnicianDashboard({ user }: { user: User }) {
     const { organizationId } = useAuth();
@@ -33,6 +35,8 @@ export function LabTechnicianDashboard({ user }: { user: User }) {
                 title={<><FlaskConical className="h-8 w-8" /> Lab Dashboard</>}
                 description={`Welcome, ${user.name}. View and process pending laboratory test orders.`}
             />
+
+            <MyUpcomingShifts />
 
             <Card>
                 <CardHeader>

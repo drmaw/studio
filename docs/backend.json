@@ -390,6 +390,20 @@
         "confirmedAt": { "type": "object" }
       },
       "required": ["organizationId", "managerId", "managerName", "ownerId", "amount", "status", "initiatedAt"]
+    },
+    "DutyRoster": {
+      "title": "DutyRoster",
+      "description": "Represents a single shift assignment for a staff member on a specific date.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "shiftType": { "type": "string", "enum": ["Morning", "Evening", "Night"] },
+        "dutyArea": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["userId", "userName", "date", "shiftType", "dutyArea", "createdAt"]
     }
   },
   "auth": {
@@ -484,6 +498,10 @@
       {
         "path": "/organizations/{organizationId}/settlements/{settlementId}",
         "definition": { "schema": { "$ref": "#/entities/Settlement" }, "description": "Collection for tracking cash settlements between staff and owners." }
+      },
+      {
+        "path": "/organizations/{organizationId}/rosters/{rosterId}",
+        "definition": { "schema": { "$ref": "#/entities/DutyRoster" }, "description": "Subcollection for storing individual staff shift assignments." }
       }
     ]
   }

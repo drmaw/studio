@@ -1,3 +1,4 @@
+
 import type { User } from "@/lib/definitions";
 import {
   Card,
@@ -9,6 +10,7 @@ import {
 import { Button } from "../ui/button";
 import { Users, Activity, Settings } from "lucide-react";
 import Link from "next/link";
+import { MyUpcomingShifts } from "./my-upcoming-shifts";
 
 export function HospitalOwnerDashboard({ user }: { user: User }) {
   return (
@@ -16,12 +18,14 @@ export function HospitalOwnerDashboard({ user }: { user: User }) {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Welcome, {user.name}</h1>
         <Button asChild>
-          <Link href="/dashboard/settings">
+          <Link href="/dashboard/settings/hospital">
             <Settings className="mr-2 h-4 w-4" />
             Hospital Settings
           </Link>
         </Button>
       </div>
+
+      <MyUpcomingShifts />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
         <Card className="bg-background-soft">

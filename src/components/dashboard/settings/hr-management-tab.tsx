@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -25,6 +26,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { CurrencyInput } from '@/components/shared/currency-input';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
+import { DutyRoster } from './hr/duty-roster';
 
 // Icons
 import { Loader2, Users, Edit, Save, CalendarIcon } from 'lucide-react';
@@ -237,6 +240,8 @@ export function HrManagementTab() {
             </Table>
           </div>
         </div>
+        <Separator />
+        <DutyRoster staff={staff} />
       </div>
       {selectedStaff && orgId && (
         <EditHrDetailsDialog 

@@ -354,3 +354,13 @@ export type Settlement = {
   initiatedAt: FieldValue;
   confirmedAt?: FieldValue;
 };
+
+export type DutyRoster = {
+  id: string;
+  userId: string;
+  userName: string;
+  date: string; // YYYY-MM-DD format
+  shiftType: 'Morning' | 'Evening' | 'Night';
+  dutyArea: string;
+  createdAt: FieldValue;
+};

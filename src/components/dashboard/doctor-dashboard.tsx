@@ -22,6 +22,7 @@ import { QrScannerDialog } from "./qr-scanner-dialog";
 import { usePatientSearch } from "@/hooks/use-patient-search";
 import { EmptyState } from "../shared/empty-state";
 import { PatientInfoCard } from "../shared/patient-info-card";
+import { MyUpcomingShifts } from "./my-upcoming-shifts";
 
 export function DoctorDashboard({ user }: { user: User }) {
   const {
@@ -53,6 +54,8 @@ export function DoctorDashboard({ user }: { user: User }) {
         title={<>Welcome, <span className="text-primary">Dr. {displayName}</span></>}
         description="Search for patients and manage your chamber schedules."
       />
+
+      <MyUpcomingShifts />
 
       {/* Patient Search */}
       <Card className="bg-card">
