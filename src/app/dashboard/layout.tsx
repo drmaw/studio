@@ -71,16 +71,18 @@ export default function DashboardLayout({
     <SidebarProvider>
       <div className={cn("min-h-screen w-full flex")}>
         <Sidebar>
-            <SidebarHeader>
-                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-lg text-sidebar-primary-foreground">
-                    <Stethoscope className="h-6 w-6" />
-                    <span>Digi Health</span>
-                </Link>
-            </SidebarHeader>
-            <SidebarContent>
-                <SidebarNav />
-            </SidebarContent>
-            <SidebarFooter className="mt-auto">
+            <div className="flex flex-1 flex-col min-h-0">
+                <SidebarHeader>
+                    <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-lg text-sidebar-primary-foreground">
+                        <Stethoscope className="h-6 w-6" />
+                        <span>Digi Health</span>
+                    </Link>
+                </SidebarHeader>
+                <SidebarContent>
+                    <SidebarNav />
+                </SidebarContent>
+            </div>
+            <SidebarFooter>
               <Button variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
