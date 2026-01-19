@@ -51,6 +51,12 @@ service cloud.firestore {
       match /notifications/{notificationId} {
         allow read, write: if isOwner(userId);
       }
+      match /role_applications/{applicationId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      match /role_removal_requests/{requestId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
     }
 
     match /patients/{patientId} {
@@ -157,15 +163,6 @@ service cloud.firestore {
     match /{path=**}/schedules/{scheduleId} {
         allow read: if isSignedIn();
         allow write: if hasRoleInOrg(path[1], 'hospital_owner');
-    }
-    
-    // Secure messaging rules using collection group
-    match /{path=**}/conversations/{convoId} {
-      allow read, write: if request.auth.uid in resource.data.participants;
-      match /messages/{messageId} {
-        allow read: if request.auth.uid in get(parent(messageId)).data.participants;
-        allow create: if request.auth.uid == request.resource.data.senderId && request.auth.uid in get(parent(messageId)).data.participants;
-      }
     }
     
     // Role Applications are global for admins, but also private to the user

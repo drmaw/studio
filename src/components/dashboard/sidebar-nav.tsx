@@ -65,12 +65,6 @@ export function SidebarNav() {
         roles: ['patient'],
     },
     {
-        href: "/dashboard/messages",
-        label: "Messages",
-        icon: MessageSquare,
-        roles: ['patient', ...professionalRoleHierarchy],
-    },
-    {
         href: "/dashboard/privacy-log",
         label: "Privacy Log",
         icon: History,
@@ -87,12 +81,6 @@ export function SidebarNav() {
       label: "Admin Dashboard",
       icon: Shield,
       roles: ['admin'],
-    },
-    {
-        href: "/dashboard/book-appointment",
-        label: "Book Appointment",
-        icon: BookOpenCheck,
-        roles: ['hospital_owner', 'manager'],
     },
     {
         href: "/dashboard/admissions",
