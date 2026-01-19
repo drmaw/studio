@@ -109,6 +109,12 @@ export function SidebarNav() {
         roles: ['hospital_owner', 'manager', 'nurse'],
     },
     {
+        href: "/dashboard/bed-management",
+        label: "Bed Management",
+        icon: BedDouble,
+        roles: ['hospital_owner', 'manager', 'nurse'],
+    },
+    {
         href: "/dashboard/billing",
         label: "Billing & Invoicing",
         icon: DollarSign,
