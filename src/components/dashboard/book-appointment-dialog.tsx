@@ -4,8 +4,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useState } from "react";
-import { serverTimestamp, collection } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { format } from 'date-fns';
 
 import { Button } from "@/components/ui/button";
@@ -77,14 +77,54 @@ const generateTimeSlots = (start: string, end: string, intervalMinutes: number):
 export function BookAppointmentDialog({ schedule, organization, patient }: { schedule: DoctorSchedule, organization: Organization, patient: User }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const { toast } = useToast();
   const firestore = useFirestore();
   
-  const timeSlots = generateTimeSlots(schedule.startTime, schedule.endTime, 30);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
+
+  const selectedDate = form.watch('appointmentDate');
+
+  useEffect(() => {
+    if (!selectedDate || !firestore) {
+      setBookedSlots([]);
+      return;
+    }
+
+    const fetchBookedSlots = async () => {
+      setIsLoadingSlots(true);
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      const appointmentsRef = collection(firestore, 'organizations', organization.id, 'appointments');
+      const q = query(
+        appointmentsRef,
+        where('scheduleId', '==', schedule.id),
+        where('appointmentDate', '==', formattedDate)
+      );
+
+      try {
+        const querySnapshot = await getDocs(q);
+        const bookedTimes = querySnapshot.docs.map(doc => doc.data().appointmentTime);
+        setBookedSlots(bookedTimes);
+      } catch (error) {
+        console.error("Error fetching booked slots: ", error);
+        toast({
+          variant: 'destructive',
+          title: 'Could not fetch available slots',
+        });
+      } finally {
+        setIsLoadingSlots(false);
+      }
+    };
+
+    fetchBookedSlots();
+  }, [selectedDate, firestore, organization.id, schedule.id, toast]);
+  
+  const allTimeSlots = generateTimeSlots(schedule.startTime, schedule.endTime, 30);
+  const availableTimeSlots = allTimeSlots.filter(slot => !bookedSlots.includes(slot));
+
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) return;
@@ -152,7 +192,6 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
   }
 
   const scheduleDays = schedule.days.map(d => d.toLowerCase());
-  const dayNameToNumber: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -220,16 +259,24 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Time Slot</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedDate || isLoadingSlots}>
                             <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select an available time slot" />
+                                <SelectValue placeholder={
+                                    !selectedDate ? "Please select a date first" :
+                                    isLoadingSlots ? "Loading slots..." :
+                                    "Select an available time slot"
+                                } />
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                {timeSlots.map(slot => (
-                                    <SelectItem key={slot} value={slot}>{slot}</SelectItem>
-                                ))}
+                                {!isLoadingSlots && availableTimeSlots.length > 0 ? (
+                                    availableTimeSlots.map(slot => (
+                                        <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                                    ))
+                                ) : (
+                                    !isLoadingSlots && <p className="p-2 text-xs text-center text-muted-foreground">No available slots for this date.</p>
+                                )}
                             </SelectContent>
                         </Select>
                         <FormMessage />

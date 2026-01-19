@@ -22,10 +22,7 @@ This foundational phase established the core multi-tenant architecture required 
     *   **[✓] Task 2.1.1**: Define `Invoice` and `InvoiceItem` entities.
     *   **[✓] Task 2.1.2**: Implement the main Invoicing Dashboard.
     *   **[✓] Task 2.1.3**: Build the Invoice Detail page.
-    *   **[✓] Task 2.1.4**: Implement Discount Authority:
-        *   **Data Flow**: Manager (Invoice UI) → Enters discount amount & reason → `Invoice` document `discount` and `total` fields updated.
-        *   **Blueprinting**: Update the `Invoice` entity in `backend.json` and `definitions.ts` to include `discountAmount` and `discountReason` fields.
-        *   **UI Work**: On the `InvoiceDetailPage`, add an "Apply Discount" button visible only to `manager` and `hospital_owner` roles. This will open a dialog to enter the discount amount and a mandatory reason.
+    *   **[✓] Task 2.1.4**: Implement Discount Authority.
 
 *   **[✓] Step 2.2: Implement In-Patient Management (ADT - Admission, Discharge, Transfer)**:
     *   **[✓] Task 2.2.1**: Update data models with the `Admission` entity.
@@ -39,37 +36,36 @@ This foundational phase established the core multi-tenant architecture required 
 **Goal**: Empower patients with greater control and a comprehensive view of their health data.
 
 *   **[✓] Step 3.1: Create a Unified Health Record View**:
-    *   **Task**: Build a central view where a patient can see a complete, chronological timeline of their medical history, aggregating records from all visited organizations.
+    *   **[✓] Task**: Build a central view where a patient can see a complete, chronological timeline of their medical history, aggregating records from all visited organizations.
 
 *   **[✓] Step 3.2: Implement Consent Management**:
-    *   **Task**: Create a "Data & Privacy" settings page where patients can manage data sharing permissions on a per-organization basis.
+    *   **[✓] Task**: Create a "Data & Privacy" settings page where patients can manage data sharing permissions on a per-organization basis.
 
 ---
 
-### **Phase 4: Core Clinical Workflow Automation (In Progress)**
+### **Phase 4: Core Clinical Workflow Automation (✓ Complete)**
 
 **Goal**: Digitize the laboratory process and enhance appointment management to reduce errors and improve efficiency.
 
-*   **Step 4.1: Develop Laboratory Information System (LIS) Module**:
-    *   **Data Flow**: Doctor (EMR) → `LabTestOrder` created → Lab Tech (Dashboard) → `LabTestResult` created → Doctor notified & result attached to EMR → `Invoice` updated.
+*   **[✓] Step 4.1: Develop Laboratory Information System (LIS) Module**:
     *   **[✓] Task 4.1.1: Blueprinting**: Define `LabTestOrder` and `LabTestResult` entities in the data model and security rules.
     *   **[✓] Task 4.1.2: Implement Digital Test Ordering**: Add a feature for doctors to order specific lab tests, creating a `LabTestOrder` document.
     *   **[✓] Task 4.1.3: Build Lab Technician Dashboard**: Create a functional dashboard for `lab_technician` role to view pending orders and input results.
     *   **[✓] Task 4.1.4: Integrate LIS with Billing**: Automatically add the cost of a lab test as a line item to the patient's invoice when ordered.
 
-*   **Step 4.2: Implement Intelligent Appointment Slot Management**:
+*   **[✓] Step 4.2: Implement Intelligent Appointment Slot Management**:
     *   **Data Flow**: Patient/Staff (Booking Dialog) → Query `appointments` collection → Disable booked slots in UI.
-    *   **Task 4.2.1: Enhance Booking Logic**: In the `BookAppointmentDialog`, query the `appointments` collection for the selected doctor and date to disable unavailable time slots, preventing double-booking.
+    *   **[✓] Task 4.2.1: Enhance Booking Logic**: In the `BookAppointmentDialog`, query the `appointments` collection for the selected doctor and date to disable unavailable time slots, preventing double-booking.
 
 ---
 
-### **Phase 5: Patient Empowerment and Engagement**
+### **Phase 5: Patient Empowerment and Engagement (In Progress)**
 
 **Goal**: Give patients more direct control and better tools to manage their healthcare journey.
 
 *   **Step 5.1: Implement Patient Appointment Self-Scheduling**:
     *   **Data Flow**: Patient (UI) → Selects Organization/Doctor/Slot → `Appointment` document created with `pending` status → Doctor is notified.
-    *   **Task 5.1.1: Build Patient-Facing Booking UI**: Create a new page where patients can browse organizations, view doctor profiles, and see their available schedules.
+    *   **[✓] Task 5.1.1: Build Patient-Facing Booking UI**: Create a new page where patients can browse organizations, view doctor profiles, and see their available schedules.
     *   **Task 5.1.2: Implement Patient Booking Logic**: Allow patients to request an appointment, creating an `Appointment` document with a 'pending' status.
 
 *   **Step 5.2: Develop Secure Messaging Module**:
@@ -156,3 +152,4 @@ This foundational phase established the core multi-tenant architecture required 
 
 *   **Step 8.3: Implement Query Pagination for All Long Lists**:
     *   **Task**: Refactor all list views (Invoices, Staff, Medical History, etc.) to load data in pages using `limit()` and `startAfter()` queries, adding "Load More" buttons.
+```

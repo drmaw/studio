@@ -66,6 +66,12 @@ export function SidebarNav() {
         icon: CalendarCheck,
         roles: ['patient'],
     },
+    {
+        href: "/dashboard/patient-booking",
+        label: "Book an Appointment",
+        icon: BookOpenCheck,
+        roles: ['patient'],
+    },
      {
         href: "/dashboard/privacy-log",
         label: "Privacy Log",
