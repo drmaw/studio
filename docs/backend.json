@@ -364,6 +364,22 @@
         "timestamp": { "type": "object" }
       },
       "required": ["itemId", "itemName", "userId", "userName", "changeType", "quantityChanged", "timestamp"]
+    },
+    "Settlement": {
+      "title": "Settlement",
+      "description": "Represents a hand-off of cash from a manager/cashier to the hospital owner for auditing.",
+      "type": "object",
+      "properties": {
+        "organizationId": { "type": "string" },
+        "managerId": { "type": "string" },
+        "managerName": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed"] },
+        "initiatedAt": { "type": "object" },
+        "confirmedAt": { "type": "object" }
+      },
+      "required": ["organizationId", "managerId", "managerName", "ownerId", "amount", "status", "initiatedAt"]
     }
   },
   "auth": {
@@ -454,6 +470,10 @@
       {
         "path": "/organizations/{organizationId}/inventory/{itemId}/stock_logs/{logId}",
         "definition": { "schema": { "$ref": "#/entities/StockLog" }, "description": "Audit log for stock changes of an inventory item." }
+      },
+      {
+        "path": "/organizations/{organizationId}/settlements/{settlementId}",
+        "definition": { "schema": { "$ref": "#/entities/Settlement" }, "description": "Collection for tracking cash settlements between staff and owners." }
       }
     ]
   }

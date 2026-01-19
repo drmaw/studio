@@ -334,3 +334,15 @@ export type StockLog = {
   reason?: string;
   timestamp: FieldValue;
 };
+
+export type Settlement = {
+  id: string;
+  organizationId: string;
+  managerId: string;
+  managerName: string;
+  ownerId: string;
+  amount: number;
+  status: 'pending' | 'confirmed';
+  initiatedAt: FieldValue;
+  confirmedAt?: FieldValue;
+};

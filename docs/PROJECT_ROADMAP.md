@@ -91,14 +91,14 @@ This foundational phase established the core multi-tenant architecture required 
     *   **[✓] Task 6.2.1: Blueprinting**: Define `InventoryItem` (for stock levels) and `StockLog` (for audit trail) entities.
     *   **[✓] Task 6.2.2: Build Inventory Dashboard**: Create a new tab in Hospital Settings for managing general supplies and tracking stock levels.
 
-*   **Step 6.3: Build Advanced Reporting & Analytics Engine**:
+*   **[✓] Step 6.3: Build Advanced Reporting & Analytics Engine**:
     *   **Data Flow**: Backend process aggregates data from `invoices`, `admissions`, etc. → Saves aggregated data to a new `reports` collection → Dashboard UI reads from `reports`.
     *   **[✓] Task 6.3.1: Create Financial Reports Dashboard**: Create a new "Reports" page showing key financial metrics like revenue over time and outstanding balances.
     *   **[✓] Task 6.3.2: Create Operational Reports Dashboard**: Add operational metrics to the "Reports" page, such as bed occupancy rates and average patient length of stay.
 
 *   **Step 6.4: Implement Advanced Financial Controls**:
     *   **Data Flow**: Manager (Cashier UI) → Initiates settlement → `Settlement` document created → Owner is notified → Owner confirms physical cash transfer → `Settlement` status updated.
-    *   **Task 6.4.1: Blueprinting**: Define a `Settlement` entity to track cash hand-offs.
+    *   **[✓] Task 6.4.1: Blueprinting**: Define a `Settlement` entity to track cash hand-offs.
     *   **Task 6.4.2: Build Manager's Cashier Dashboard**: Create a dashboard for managers showing "cash-in-hand" and a button to initiate a settlement.
     *   **Task 6.4.3: Build Owner's Reconciliation Dashboard**: Create a section for owners to view and confirm pending settlements, creating an audit trail.
     *   **Task 6.4.4: Refine UI Access Control**: Review the `SidebarNav` and other UI components to enforce the Owner > Manager hierarchy, hiding sensitive settings from managers.

@@ -173,7 +173,7 @@ service cloud.firestore {
     }
     
     // General Inventory Management
-    match /inventory/{itemId} {
+    match /organizations/{orgId}/inventory/{itemId} {
       allow read: if isMemberOfOrg(orgId);
       allow write: if hasRoleInOrg(orgId, 'manager');
 
@@ -182,6 +182,13 @@ service cloud.firestore {
         allow read: if hasRoleInOrg(orgId, 'manager');
         allow create: if hasRoleInOrg(orgId, 'manager');
       }
+    }
+    
+    // Cash Settlements
+    match /organizations/{orgId}/settlements/{settlementId} {
+      allow create: if hasRoleInOrg(orgId, 'manager');
+      allow read: if hasRoleInOrg(orgId, 'manager') || hasRoleInOrg(orgId, 'hospital_owner');
+      allow update: if hasRoleInOrg(orgId, 'hospital_owner');
     }
   }
 }
