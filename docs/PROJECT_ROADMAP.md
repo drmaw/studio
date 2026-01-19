@@ -135,7 +135,7 @@ This foundational phase established the core multi-tenant architecture required 
     
 *   **Step 7.5: Enable Data Interoperability (FHIR)**
     *   **Data Flow**: Digi Health System → FHIR Transformation Layer → FHIR-compliant API Endpoint → External System.
-    *   **Task 7.5.1**: Map internal data models (`Patient`, `MedicalRecord`) to standard FHIR resources.
+    *   **[✓] Task 7.5.1**: Map internal data models (`Patient`, `MedicalRecord`) to standard FHIR resources.
     *   **Task 7.5.2**: Develop a secure, API layer that exposes patient data in the FHIR format.
 
 ---

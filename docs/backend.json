@@ -505,5 +505,37 @@
         "definition": { "schema": { "$ref": "#/entities/DutyRoster" }, "description": "Subcollection for storing individual staff shift assignments." }
       }
     ]
+  },
+  "fhir": {
+    "description": "Defines mappings from Digi Health's internal data models to standard FHIR (Fast Healthcare Interoperability Resources) R4 resources. This enables data interoperability with other healthcare systems.",
+    "resourceMappings": {
+      "Patient": {
+        "description": "Maps the combination of Digi Health's User and Patient entities to the FHIR Patient resource.",
+        "sourceEntities": ["User", "Patient"],
+        "fhirResource": "Patient",
+        "fieldMappings": [
+          { "source": "User.healthId", "fhirPath": "Patient.identifier[?(@.system=='urn:system:digi-health-id')].value", "description": "Maps the internal Health ID to a FHIR identifier." },
+          { "source": "User.name", "fhirPath": "Patient.name[0].text", "description": "Maps user's full name." },
+          { "source": "User.demographics.gender", "fhirPath": "Patient.gender", "description": "Maps gender." },
+          { "source": "User.demographics.dob", "fhirPath": "Patient.birthDate", "description": "Maps date of birth." },
+          { "source": "User.demographics.mobileNumber", "fhirPath": "Patient.telecom[?(@.system=='phone')].value", "description": "Maps mobile number." },
+          { "source": "User.email", "fhirPath": "Patient.telecom[?(@.system=='email')].value", "description": "Maps email address." }
+        ]
+      },
+      "Observation": {
+        "description": "Maps Digi Health's MedicalRecord entity to the FHIR Observation resource, representing a clinical diagnosis.",
+        "sourceEntities": ["MedicalRecord"],
+        "fhirResource": "Observation",
+        "fieldMappings": [
+          { "source": "MedicalRecord.id", "fhirPath": "Observation.identifier[?(@.system=='urn:system:digi-health-record-id')].value", "description": "Maps the internal record ID." },
+          { "source": "MedicalRecord.diagnosis (ICD-10 Code)", "fhirPath": "Observation.code.coding[?(@.system=='http://hl7.org/fhir/sid/icd-10')].code", "description": "Extracts the ICD-10 code from the diagnosis string." },
+          { "source": "MedicalRecord.diagnosis (Description)", "fhirPath": "Observation.code.text", "description": "Extracts the diagnosis description." },
+          { "source": "MedicalRecord.date", "fhirPath": "Observation.effectiveDateTime", "description": "Maps the record's date." },
+          { "source": "MedicalRecord.patientId", "fhirPath": "Observation.subject.reference", "description": "Links to the FHIR Patient resource, formatted as 'Patient/{patientId}'." },
+          { "source": "MedicalRecord.doctorId", "fhirPath": "Observation.performer[0].reference", "description": "Links to a FHIR Practitioner resource, formatted as 'Practitioner/{doctorId}'." },
+          { "source": "MedicalRecord.notes", "fhirPath": "Observation.note[0].text", "description": "Maps the clinical notes." }
+        ]
+      }
+    }
   }
 }
