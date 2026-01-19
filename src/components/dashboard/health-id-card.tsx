@@ -107,12 +107,14 @@ export function HealthIdCard({ user, patient }: { user: User, patient: Patient |
                             <AvatarImage src={user.avatarUrl} alt={user.name} />
                             <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
                         </Avatar>
-                        <div
-                            className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        <button
+                            type="button"
+                            aria-label="Change profile picture"
+                            className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full"
                             onClick={handleAvatarClick}
                         >
                             {isUploading ? <Loader2 className="h-8 w-8 text-white animate-spin" /> : <Camera className="h-8 w-8 text-white" />}
-                        </div>
+                        </button>
                         <input
                             type="file"
                             ref={fileInputRef}

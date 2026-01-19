@@ -122,8 +122,8 @@ This foundational phase established the core multi-tenant architecture required 
 *   **[✓] Step 7.1: Implement Standardized Medical Terminologies (WHO)**:
     *   **[✓] Task**: Replace free-text diagnosis inputs with a searchable component populated with ICD-10 codes.
 
-*   **Step 7.2: Enhance Accessibility (WHO)**
-    *   **Task**: Conduct a full WCAG 2.1 AA audit and remediate all identified issues.
+*   **[✓] Step 7.2: Enhance Accessibility (WHO)**
+    *   **[✓] Task**: Conduct a full WCAG 2.1 AA audit and remediate all identified issues.
 
 *   **Step 7.3: Strengthen Data Protection Rights (PDPO)**
     *   **Task 7.3.1**: Create a static `/privacy-policy` page.
@@ -152,4 +152,3 @@ This foundational phase established the core multi-tenant architecture required 
 
 *   **Step 8.3: Implement Query Pagination for All Long Lists**:
     *   **Task**: Refactor all list views (Invoices, Staff, Medical History, etc.) to load data in pages using `limit()` and `startAfter()` queries, adding "Load More" buttons.
-```

@@ -27,6 +27,7 @@ export function RecordCard({ record, isSelected, onToggleSelect, onDelete, onVie
                 <Checkbox
                     checked={isSelected}
                     onCheckedChange={() => onToggleSelect(record.id)}
+                    aria-label={`Select record: ${record.name}`}
                     className="bg-background/50 hover:bg-background data-[state=checked]:bg-primary"
                 />
             </div>
