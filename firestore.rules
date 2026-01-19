@@ -105,7 +105,13 @@ service cloud.firestore {
             allow write: if hasRoleInOrg(orgId, 'manager');
         }
     }
-
+    
+    // Admissions are managed within an org.
+    // Patients can read their own admission status. Staff can manage all.
+    match /organizations/{orgId}/admissions/{admissionId} {
+      allow read: if isOwner(resource.data.patientId) || isMemberOfOrg(orgId);
+      allow write: if hasRoleInOrg(orgId, 'manager') || hasRoleInOrg(orgId, 'nurse');
+    }
 
     // Schedules, facilities, and fees are managed by org owners/managers.
     // Any member of the org can read them.

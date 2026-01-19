@@ -284,6 +284,10 @@
       {
         "path": "/organizations/{organizationId}/invoices/{invoiceId}/items/{itemId}",
         "definition": { "schema": { "$ref": "#/entities/InvoiceItem" }, "description": "Line items for a specific invoice." }
+      },
+      {
+        "path": "/organizations/{organizationId}/admissions/{admissionId}",
+        "definition": { "schema": { "$ref": "#/entities/Admission" }, "description": "Patient admissions specific to an organization." }
       }
     ]
   }

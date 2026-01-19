@@ -236,3 +236,14 @@ export type InvoiceItem = {
   totalCost: number;
   createdAt: FieldValue;
 };
+
+export type Admission = {
+    id: string;
+    patientId: string;
+    organizationId: string;
+    facilityId: string;
+    admissionDate: FieldValue;
+    dischargeDate?: FieldValue;
+    status: 'admitted' | 'discharged';
+    createdAt: FieldValue;
+};
