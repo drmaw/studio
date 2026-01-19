@@ -1,6 +1,6 @@
 # Digi Health: Project Roadmap
 
-**Note on Implementation:** While implementing the roadmap steps, the process will maintain simplicity and consistency. Any step requiring modification of a linked or existing file will be done instantly as part of the implementation of that step.
+**Note on Implementation**: While implementing the roadmap steps, the process will maintain simplicity and consistency. Any step requiring modification of a linked or existing file will be done instantly as part of the implementation of that step.
 
 ---
 
@@ -86,10 +86,10 @@ This foundational phase established the core multi-tenant architecture required 
     *   **[✓] Task 6.1.2: Build Bed Management UI**: Create a visual "Bed Management" dashboard showing the real-time status of all beds.
     *   **[✓] Task 6.1.3: Integrate ADT with Bed Management**: Modify the `AdmitPatientDialog` to only show available beds and update bed status on admission/discharge.
 
-*   **Step 6.2: Implement General Inventory Management**:
+*   **[✓] Step 6.2: Implement General Inventory Management**:
     *   **Data Flow**: Manager (UI) → `InventoryItem` updated → `StockLog` created.
     *   **[✓] Task 6.2.1: Blueprinting**: Define `InventoryItem` (for stock levels) and `StockLog` (for audit trail) entities.
-    *   **Task 6.2.2: Build Inventory Dashboard**: Create a new tab in Hospital Settings for managing general supplies and tracking stock levels.
+    *   **[✓] Task 6.2.2: Build Inventory Dashboard**: Create a new tab in Hospital Settings for managing general supplies and tracking stock levels.
 
 *   **Step 6.3: Build Advanced Reporting & Analytics Engine**:
     *   **Data Flow**: Backend process aggregates data from `invoices`, `admissions`, etc. → Saves aggregated data to a new `reports` collection → Dashboard UI reads from `reports`.

@@ -5,6 +5,7 @@ import { DoctorSchedulesTab } from "@/components/dashboard/settings/doctor-sched
 import { FacilityManagementTab } from "@/components/dashboard/settings/facility-management-tab";
 import { GeneralSettingsTab } from "@/components/dashboard/settings/general-settings-tab";
 import { PageHeader } from "@/components/shared/page-header";
+import { InventoryManagementTab } from "@/components/dashboard/settings/inventory-management-tab";
 
 export default function HospitalSettingsPage() {
     return (
@@ -14,11 +15,12 @@ export default function HospitalSettingsPage() {
                 description="Manage your organization's staff, services, and schedules."
             />
             <Tabs defaultValue="general">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="general">General</TabsTrigger>
                     <TabsTrigger value="staff">Staff Management</TabsTrigger>
                     <TabsTrigger value="schedules">Doctor Schedules</TabsTrigger>
                     <TabsTrigger value="facilities">Facility Management</TabsTrigger>
+                    <TabsTrigger value="inventory">Inventory</TabsTrigger>
                 </TabsList>
                 <TabsContent value="general">
                     <Card>
@@ -61,6 +63,17 @@ export default function HospitalSettingsPage() {
                         </CardHeader>
                         <CardContent>
                            <FacilityManagementTab />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="inventory">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Inventory Management</CardTitle>
+                            <CardDescription>Manage your hospital's general supplies and track stock levels.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <InventoryManagementTab />
                         </CardContent>
                     </Card>
                 </TabsContent>
