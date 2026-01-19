@@ -123,6 +123,13 @@ export function ApplyForRoleCard() {
             });
         }
         setIsSubmitting(false);
+    }, () => {
+        setIsSubmitting(false);
+        toast({
+            variant: "destructive",
+            title: "Submission Failed",
+            description: "Your application could not be submitted. Please try again.",
+        });
     });
   };
 
@@ -158,6 +165,12 @@ export function ApplyForRoleCard() {
                 description: `Your request to remove the ${roleToDelete.replace(/_/g, ' ')} role is now pending admin review.`,
             });
         }
+    }, () => {
+         toast({
+            variant: "destructive",
+            title: "Request Failed",
+            description: "Your removal request could not be submitted. Please try again.",
+        });
     });
   };
   

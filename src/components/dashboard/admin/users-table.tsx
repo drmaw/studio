@@ -43,6 +43,11 @@ export function UsersTable() {
             setUpdatingId(null);
         }, () => {
             setUpdatingId(null);
+            toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: 'The user status could not be updated.',
+            });
         });
     };
 

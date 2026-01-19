@@ -57,7 +57,7 @@ export function RepDashboard({ user }: { user: User }) {
             </div>
           ) : demoRecords && demoRecords.length > 0 ? (
             demoRecords.map(record => (
-              <MedicalRecordCard key={record.id} record={record} currentUserRole="marketing_rep" patientId={demoPatientId} />
+              <MedicalRecordCard key={record.id} record={record} currentUserRole="marketing_rep" patientId={demoPatientId} doctor={user}/>
             ))
           ) : (
             <p className="text-muted-foreground text-center p-8">No demo records found.</p>

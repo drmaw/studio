@@ -72,6 +72,9 @@ export function usePatientSearch() {
                         organizationId: currentUser.organizationId,
                         action: 'search' as const,
                         timestamp: serverTimestamp(),
+                    }, undefined, (error) => {
+                        console.error("Failed to write privacy log for search:", error);
+                        // We don't toast here as it's a background action
                     });
                 }
             }

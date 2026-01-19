@@ -127,6 +127,11 @@ export function RegisterForm() {
       }, () => {
         // This error handler is for the batch commit. 
         // The createUser call will be caught by the outer try/catch
+        toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: "Could not save your user profile. Please try again.",
+        });
         setIsLoading(false);
       });
       

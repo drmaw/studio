@@ -76,6 +76,11 @@ export default function MyAppointmentsPage() {
             setCancellingId(null);
         }, () => {
             setCancellingId(null);
+            toast({
+                variant: "destructive",
+                title: "Cancellation Failed",
+                description: "Your appointment could not be cancelled. Please try again.",
+            });
         });
     };
     

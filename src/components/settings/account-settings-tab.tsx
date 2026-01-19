@@ -56,6 +56,11 @@ export function AccountSettingsTab() {
         // Revert UI on error
         if (key === 'vitalsVisible') setIsVitalsVisible(!value);
         if (key === 'discoverable') setIsDiscoverable(!value);
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: 'Your privacy settings could not be saved.',
+        });
     });
   };
 
@@ -84,6 +89,11 @@ export function AccountSettingsTab() {
         router.push('/'); // Force redirect to home page after logout.
     }, () => {
         setIsDeleting(false);
+        toast({
+            variant: "destructive",
+            title: "Deletion Failed",
+            description: "Your account could not be scheduled for deletion.",
+        });
     });
   };
   

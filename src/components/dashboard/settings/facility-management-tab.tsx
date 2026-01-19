@@ -94,6 +94,11 @@ export function FacilityManagementTab() {
         setIsSubmitting(false);
     }, () => {
         setIsSubmitting(false);
+        toast({
+            variant: "destructive",
+            title: "Failed to Add",
+            description: "The new facility could not be added.",
+        });
     });
   }
 
@@ -110,6 +115,11 @@ export function FacilityManagementTab() {
       setDeletingId(null);
     }, () => {
         setDeletingId(null);
+        toast({
+            variant: "destructive",
+            title: "Failed to Remove",
+            description: "The facility could not be removed.",
+        });
     });
   };
   
@@ -124,7 +134,14 @@ export function FacilityManagementTab() {
         description: 'The facility details have been updated successfully.',
     });
      callbacks.onSuccess();
-    }, callbacks.onError);
+    }, () => {
+        callbacks.onError();
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "The facility details could not be updated.",
+        });
+    });
   };
 
   return (

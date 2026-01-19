@@ -140,6 +140,11 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
         setIsBooking(false);
     }, () => {
         setIsBooking(false);
+        toast({
+            variant: "destructive",
+            title: "Booking Failed",
+            description: "The appointment could not be requested. Please try again.",
+        });
     });
   }
 

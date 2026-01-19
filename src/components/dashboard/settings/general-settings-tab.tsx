@@ -13,11 +13,13 @@ import { doc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import type { Organization } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSearchParams } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 export function GeneralSettingsTab() {
   const { user, loading: userLoading, hasRole } = useAuth();
   const firestore = useFirestore();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
 
   const adminOrgId = searchParams.get('orgId');
   const isAdminView = hasRole('admin') && !!adminOrgId;
@@ -32,20 +34,24 @@ export function GeneralSettingsTab() {
   
   const isLoading = userLoading || orgLoading;
 
-  const handleAddImage = async () => {
+  const handleAddImage = () => {
     if (!firestore || !organization) return;
     const newImageUrl = `https://picsum.photos/seed/${Math.random()}/600/400`;
     const orgRef = doc(firestore, 'organizations', organization.id);
-    await updateDocument(orgRef, {
+    updateDocument(orgRef, {
         facilityImages: arrayUnion(newImageUrl)
+    }, undefined, () => {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not add image.' });
     });
   }
 
-  const handleRemoveImage = async (imageUrl: string) => {
+  const handleRemoveImage = (imageUrl: string) => {
     if (!firestore || !organization) return;
     const orgRef = doc(firestore, 'organizations', organization.id);
-    await updateDocument(orgRef, {
+    updateDocument(orgRef, {
         facilityImages: arrayRemove(imageUrl)
+    }, undefined, () => {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not remove image.' });
     });
   }
 

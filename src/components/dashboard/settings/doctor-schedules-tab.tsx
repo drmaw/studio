@@ -27,6 +27,7 @@ import { getDocs, collection, query, where, limit, doc, serverTimestamp } from "
 import type { User, DoctorSchedule, Organization } from "@/lib/definitions";
 import { useSearchParams } from "next/navigation";
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
+import { CurrencyInput } from "@/components/shared/currency-input";
 
 const weekDays = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
 
@@ -130,6 +131,11 @@ export function DoctorSchedulesTab() {
           setIsSubmitting(false);
         }, () => {
             setIsSubmitting(false);
+            toast({
+                variant: "destructive",
+                title: "Failed to Add Schedule",
+                description: "The new schedule could not be saved. Please try again.",
+            });
         });
     } else {
       toast({
@@ -154,6 +160,11 @@ export function DoctorSchedulesTab() {
       setDeletingId(null);
     }, () => {
         setDeletingId(null);
+        toast({
+            variant: "destructive",
+            title: "Failed to Remove",
+            description: "The schedule could not be removed. Please try again.",
+        });
     });
   }
 
@@ -196,19 +207,16 @@ export function DoctorSchedulesTab() {
                                     </FormItem>
                                 )}
                             />
-                            <FormField
+                             <FormField
                                 control={form.control}
                                 name="fee"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>Consultation Fee</FormLabel>
-                                    <FormControl>
-                                        <div className="relative">
-                                            <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <Input type="number" placeholder="e.g., 1000" {...field} className="pl-7" />
-                                        </div>
-                                    </FormControl>
-                                    <FormMessage />
+                                        <FormLabel>Consultation Fee</FormLabel>
+                                        <FormControl>
+                                            <CurrencyInput type="number" placeholder="e.g., 1000" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />

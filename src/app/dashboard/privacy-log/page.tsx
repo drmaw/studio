@@ -4,17 +4,29 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { History, Search, Eye, FilePlus, Loader2 } from "lucide-react";
+import { History, Search, Eye, FilePlus, Loader2, Edit, ShieldAlert } from "lucide-react";
 import type { PrivacyLogEntry } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, where } from "firebase/firestore";
+import { collection, query, orderBy, where, Timestamp } from "firebase/firestore";
 import { FormattedDate } from "@/components/shared/formatted-date";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useMemo } from "react";
 
 function LogEntry({ log }: { log: PrivacyLogEntry }) {
     const actorInitials = log.actorName.split(' ').map(n => n[0]).join('');
+
+    const actionMap: Record<PrivacyLogEntry['action'], { icon: React.ElementType, text: string }> = {
+        search: { icon: Search, text: "searched for your profile" },
+        view_record: { icon: Eye, text: "viewed your records" },
+        add_record: { icon: FilePlus, text: "added a medical record" },
+        edit_record: { icon: Edit, text: "edited a medical record" },
+        update_red_flag: { icon: ShieldAlert, text: "updated a critical alert" },
+        remove_red_flag: { icon: ShieldAlert, text: "removed a critical alert" },
+    };
+
+    const { icon: Icon, text } = actionMap[log.action] || { icon: History, text: log.action };
 
     return (
         <div className="flex items-center gap-4 p-3 hover:bg-muted/50 rounded-md">
@@ -23,7 +35,7 @@ function LogEntry({ log }: { log: PrivacyLogEntry }) {
                 <AvatarFallback>{actorInitials}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-                <p className="font-semibold">{log.actorName}</p>
+                <p className="font-semibold">{log.actorName} <span className="font-normal text-muted-foreground">{text}.</span></p>
                 <p className="text-xs text-muted-foreground">Health ID: {log.actorId}</p>
             </div>
             <div className="text-right text-xs text-muted-foreground">
@@ -78,27 +90,25 @@ export default function PrivacyLogPage() {
 
     const baseQuery = useMemoFirebase(() => {
         if (!user || !firestore) return null;
-        return collection(firestore, 'patients', user.id, 'privacy_log');
+        return query(collection(firestore, 'patients', user.id, 'privacy_log'), orderBy('timestamp', 'desc'));
     }, [user, firestore]);
-
-    const searchLogsQuery = useMemoFirebase(() => {
-        if (!baseQuery) return null;
-        return query(baseQuery, where('action', '==', 'search'), orderBy('timestamp', 'desc'));
-    }, [baseQuery]);
-
-    const viewLogsQuery = useMemoFirebase(() => {
-        if (!baseQuery) return null;
-        return query(baseQuery, where('action', '==', 'view_record'), orderBy('timestamp', 'desc'));
-    }, [baseQuery]);
     
-    const addLogsQuery = useMemoFirebase(() => {
-        if (!baseQuery) return null;
-        return query(baseQuery, where('action', '==', 'add_record'), orderBy('timestamp', 'desc'));
-    }, [baseQuery]);
+    const { data: allLogs, isLoading } = useCollection<PrivacyLogEntry>(baseQuery);
 
-    const { data: searchLogs, isLoading: searchLoading } = useCollection<PrivacyLogEntry>(searchLogsQuery);
-    const { data: viewLogs, isLoading: viewLoading } = useCollection<PrivacyLogEntry>(viewLogsQuery);
-    const { data: addLogs, isLoading: addLoading } = useCollection<PrivacyLogEntry>(addLogsQuery);
+    const searchLogs = useMemo(() => allLogs?.filter(log => log.action === 'search') || [], [allLogs]);
+
+    const recordActivityLogs = useMemo(() => {
+        const actions: PrivacyLogEntry['action'][] = ['view_record', 'add_record', 'edit_record'];
+        const logs = allLogs?.filter(log => actions.includes(log.action)) || [];
+        return logs;
+    }, [allLogs]);
+    
+    const criticalAlertLogs = useMemo(() => {
+        const actions: PrivacyLogEntry['action'][] = ['update_red_flag', 'remove_red_flag'];
+        const logs = allLogs?.filter(log => actions.includes(log.action)) || [];
+        return logs;
+    }, [allLogs]);
+
 
     return (
         <div className="space-y-6">
@@ -108,9 +118,9 @@ export default function PrivacyLogPage() {
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <LogCategory title="Profile Searches" icon={<Search className="h-5 w-5 text-primary"/>} logs={searchLogs || []} isLoading={searchLoading} className="bg-card"/>
-                <LogCategory title="Record Views" icon={<Eye className="h-5 w-5 text-primary"/>} logs={viewLogs || []} isLoading={viewLoading} className="bg-background-soft" />
-                <LogCategory title="Record Additions" icon={<FilePlus className="h-5 w-5 text-primary"/>} logs={addLogs || []} isLoading={addLoading} className="bg-background-softer" />
+                <LogCategory title="Profile Searches" icon={<Search className="h-5 w-5 text-primary"/>} logs={searchLogs} isLoading={isLoading} className="bg-card"/>
+                <LogCategory title="Record Activity" icon={<Eye className="h-5 w-5 text-primary"/>} logs={recordActivityLogs} isLoading={isLoading} className="bg-background-soft" />
+                <LogCategory title="Critical Alerts" icon={<ShieldAlert className="h-5 w-5 text-primary"/>} logs={criticalAlertLogs} isLoading={isLoading} className="bg-background-softer" />
             </div>
         </div>
     )

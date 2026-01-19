@@ -227,7 +227,10 @@ export function RoleManagementTab() {
             createNotification(firestore, app.userId, 'Application Approved', `Your application for the ${app.requestedRole.replace(/_/g, ' ')} role has been approved.`, '/dashboard/profile');
             toast({ title: 'Application Approved', description: `${app.userName} is now a ${app.requestedRole}.` });
             callbacks.onSuccess();
-        }, callbacks.onError);
+        }, () => {
+            toast({ variant: 'destructive', title: 'Approval Failed', description: 'The application could not be approved.' });
+            callbacks.onError();
+        });
     };
 
     const handleRejectApplication = (app: RoleApplication, reason: string, callbacks: {onSuccess: () => void, onError: () => void}) => {
@@ -239,7 +242,10 @@ export function RoleManagementTab() {
             createNotification(firestore, app.userId, 'Application Rejected', `Your application for the ${app.requestedRole.replace(/_/g, ' ')} role has been rejected.`, '/dashboard/profile');
             toast({ variant: 'destructive', title: 'Application Rejected' });
             callbacks.onSuccess();
-        }, callbacks.onError);
+        }, () => {
+            toast({ variant: 'destructive', title: 'Action Failed', description: 'The application could not be rejected.' });
+            callbacks.onError();
+        });
     };
 
     const handleApproveRemoval = async (req: RoleRemovalRequest, callbacks: {onSuccess: () => void, onError: () => void}) => {
@@ -262,7 +268,10 @@ export function RoleManagementTab() {
             createNotification(firestore, req.userId, 'Role Removed', `Your ${req.roleToRemove.replace(/_/g, ' ')} role has been successfully removed.`, '/dashboard/profile');
             toast({ title: 'Role Removal Approved' });
             callbacks.onSuccess();
-        }, callbacks.onError);
+        }, () => {
+            toast({ variant: 'destructive', title: 'Approval Failed', description: 'The role could not be removed.' });
+            callbacks.onError();
+        });
     };
 
     const handleRejectRemoval = (req: RoleRemovalRequest, callbacks: {onSuccess: () => void, onError: () => void}) => {
@@ -274,7 +283,10 @@ export function RoleManagementTab() {
             createNotification(firestore, req.userId, 'Role Removal Rejected', `Your request to remove the ${req.roleToRemove.replace(/_/g, ' ')} role has been rejected.`, '/dashboard/profile');
             toast({ variant: 'destructive', title: 'Role Removal Rejected' });
             callbacks.onSuccess();
-        }, callbacks.onError);
+        }, () => {
+            toast({ variant: 'destructive', title: 'Action Failed', description: 'The removal request could not be rejected.' });
+            callbacks.onError();
+        });
     };
 
     const isLoading = appsLoading || removalsLoading;

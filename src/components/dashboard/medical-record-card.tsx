@@ -1,6 +1,6 @@
 
 
-import type { MedicalRecord, Role } from "@/lib/definitions";
+import type { MedicalRecord, Role, User } from "@/lib/definitions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Calendar, FileText, Stethoscope } from "lucide-react";
 import { EditNoteDialog } from "./edit-note-dialog";
@@ -10,9 +10,10 @@ type MedicalRecordCardProps = {
   record: MedicalRecord;
   currentUserRole: Role;
   patientId: string;
+  doctor: User;
 };
 
-export function MedicalRecordCard({ record, currentUserRole, patientId }: MedicalRecordCardProps) {
+export function MedicalRecordCard({ record, currentUserRole, patientId, doctor }: MedicalRecordCardProps) {
   return (
     <Card className="bg-card hover:bg-muted/50 transition-colors">
       <CardHeader>
@@ -27,7 +28,7 @@ export function MedicalRecordCard({ record, currentUserRole, patientId }: Medica
                     <span className="flex items-center gap-1.5"><Stethoscope className="h-4 w-4" /> by {record.doctorName}</span>
                 </CardDescription>
             </div>
-            {currentUserRole === 'doctor' && <EditNoteDialog record={record} patientId={patientId} />}
+            {currentUserRole === 'doctor' && <EditNoteDialog record={record} patientId={patientId} doctor={doctor} />}
         </div>
       </CardHeader>
       <CardContent>

@@ -280,7 +280,14 @@ export default function BillingPage() {
                 });
                 callbacks.onSuccess();
             }
-        }, callbacks.onError);
+        }, () => {
+            callbacks.onError();
+            toast({
+                variant: "destructive",
+                title: "Failed to Add Item",
+                description: "The item could not be added. Please try again.",
+            });
+        });
     };
     
     const handleUpdateItem = (item: FeeItem, callbacks: { onSuccess: () => void; onError: () => void; }) => {
@@ -294,7 +301,14 @@ export default function BillingPage() {
                 description: 'The fee item has been updated successfully.',
             });
             callbacks.onSuccess();
-        }, callbacks.onError);
+        }, () => {
+            callbacks.onError();
+            toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: "The item could not be updated. Please try again.",
+            });
+        });
     };
     
     const handleDeleteItem = (itemId: string) => {
@@ -305,6 +319,12 @@ export default function BillingPage() {
             toast({
                 title: 'Item Removed',
                 description: 'The item has been removed.',
+            });
+        }, () => {
+            toast({
+                variant: "destructive",
+                title: "Failed to Remove",
+                description: "The item could not be removed. Please try again.",
             });
         });
     };

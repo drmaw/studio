@@ -112,6 +112,13 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
             setSCreatinine('');
         }
         setIsSubmitting(false);
+    }, () => {
+        setIsSubmitting(false);
+        toast({
+            variant: "destructive",
+            title: "Logging Failed",
+            description: "Your vitals could not be saved. Please try again.",
+        });
     });
   };
 

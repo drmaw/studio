@@ -1,0 +1,490 @@
+
+
+'use client'
+
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Cake, User as UserIcon, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Plus, X, File, Trash2, CalendarIcon, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { differenceInYears, parse, isValid, format } from 'date-fns';
+import { useToast } from "@/hooks/use-toast";
+import type { UserDemographics, EmergencyContact, User, Patient } from "@/lib/definitions";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { HealthIdCard } from "@/components/dashboard/health-id-card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
+import { useFirestore, useDoc, useMemoFirebase, commitBatch, writeBatch } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { ApplyForRoleCard } from "@/components/dashboard/profile/apply-for-role-card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+
+const ProfileInfoRow = ({ icon: Icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | null, children?: React.ReactNode }) => {
+  if (!value && !children) return null;
+  return (
+    <div className="flex items-start gap-3">
+      <Icon className="h-4 w-4 mt-1 text-muted-foreground" />
+      <div className="flex-1">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        {value && <p className="font-medium">{value}</p>}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const ProfileEditRow = ({ label, name, value, onChange, placeholder }: { label: string, name: keyof UserDemographics, value: string | undefined, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, placeholder?: string }) => {
+    return (
+        <div className="space-y-1">
+            <Label htmlFor={name} className="text-sm text-muted-foreground">{label}</Label>
+            <Input id={name} name={name} value={value || ''} onChange={onChange} placeholder={placeholder || label} />
+        </div>
+    )
+}
+
+const availableConditions = ['Asthma', 'Diabetes', 'Hypertension', 'CKD'];
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const genders = ['Male', 'Female', 'Other'];
+const maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed'];
+
+type ProfileFormData = Partial<UserDemographics> & {
+    chronicConditions?: string[];
+    allergies?: string[];
+};
+
+export default function ProfilePage() {
+  const { user, loading } = useAuth();
+  const { toast } = useToast();
+  const firestore = useFirestore();
+
+  const patientDocRef = useMemoFirebase(() => {
+      if (!firestore || !user) return null;
+      return doc(firestore, "patients", user.id);
+  }, [firestore, user]);
+
+  const { data: patientData, isLoading: isPatientLoading } = useDoc<Patient>(patientDocRef);
+  
+  const [age, setAge] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState<ProfileFormData>({});
+  const [allergyInput, setAllergyInput] = useState('');
+  
+  // State for new emergency contact
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactRelation, setNewContactRelation] = useState('');
+  const [newContactNumber, setNewContactNumber] = useState('');
+
+  useEffect(() => {
+    if (user && patientData) {
+        const initialData: ProfileFormData = {
+            ...user.demographics,
+            emergencyContacts: user.demographics?.emergencyContacts || [],
+            chronicConditions: patientData.chronicConditions || [],
+            allergies: patientData.allergies || [],
+        };
+        setFormData(initialData);
+
+        if (user.demographics?.dob) {
+            try {
+                const birthDate = parse(user.demographics.dob, "yyyy-MM-dd", new Date());
+                if(isValid(birthDate)) {
+                    const calculatedAge = differenceInYears(new Date(), birthDate);
+                    setAge(calculatedAge);
+                } else {
+                    setAge(null);
+                }
+            } catch (error) {
+                console.error("Invalid date format for DOB:", user.demographics.dob);
+                setAge(null);
+            }
+        } else {
+            setAge(null);
+        }
+    }
+  }, [user, patientData]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }
+
+  const handleSelectChange = (name: keyof ProfileFormData) => (value: string) => {
+    setFormData(prev => ({...prev, [name]: value }));
+  }
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+        setFormData(prev => ({...prev, dob: format(date, 'yyyy-MM-dd')}))
+    }
+  }
+
+  const handleAddAllergy = () => {
+    if (allergyInput && !formData.allergies?.includes(allergyInput)) {
+        setFormData(prev => ({ ...prev, allergies: [...(prev.allergies || []), allergyInput]}));
+        setAllergyInput('');
+    }
+  }
+  
+  const handleRemoveAllergy = (allergyToRemove: string) => {
+    setFormData(prev => ({ ...prev, allergies: prev.allergies?.filter(a => a !== allergyToRemove)}));
+  }
+
+  const handleToggleCondition = (condition: string) => {
+    setFormData(prev => {
+        const currentConditions = prev.chronicConditions || [];
+        const newConditions = currentConditions.includes(condition)
+            ? currentConditions.filter(c => c !== condition)
+            : [...currentConditions, condition];
+        return { ...prev, chronicConditions: newConditions };
+    });
+  };
+
+  const handleAddEmergencyContact = () => {
+    if (!newContactName || !newContactRelation || !newContactNumber) {
+        toast({ variant: "destructive", title: "Incomplete Information", description: "Please fill all required fields for the new contact."});
+        return;
+    }
+
+    const newContact: EmergencyContact = {
+      id: `ec-${Date.now()}`,
+      relation: newContactRelation,
+      name: newContactName,
+      contactNumber: newContactNumber
+    };
+    
+    setFormData(prev => ({...prev, emergencyContacts: [...(prev.emergencyContacts || []), newContact!]}));
+    setNewContactName('');
+    setNewContactRelation('');
+    setNewContactNumber('');
+  };
+
+  const handleRemoveEmergencyContact = (id: string) => {
+    setFormData(prev => ({ ...prev, emergencyContacts: prev.emergencyContacts?.filter(c => c.id !== id) }));
+  };
+
+  const handleUpdateEmergencyContact = (updatedContact: EmergencyContact) => {
+    setFormData(prev => ({
+        ...prev,
+        emergencyContacts: prev.emergencyContacts?.map(c => c.id === updatedContact.id ? updatedContact : c)
+    }));
+  };
+
+  const handleSave = () => {
+    if (!user || !firestore) return;
+    setIsSaving(true);
+    const batch = writeBatch(firestore);
+    const userRef = doc(firestore, "users", user.id);
+    const patientRef = doc(firestore, "patients", user.id);
+    
+    const { chronicConditions, allergies, ...demographicsData } = formData;
+
+    batch.update(userRef, { demographics: demographicsData });
+    batch.update(patientRef, {
+        chronicConditions: chronicConditions || [],
+        allergies: allergies || [],
+    });
+
+    commitBatch(batch, 'update user profile', () => {
+        toast({
+            title: "Profile Updated",
+            description: "Your personal and medical information has been saved.",
+        });
+        setIsEditing(false);
+        setIsSaving(false);
+    }, () => {
+        setIsSaving(false);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Your profile could not be saved. Please try again.",
+        });
+    });
+  }
+
+  const handleCancel = () => {
+    if (user && patientData) {
+      setFormData({
+        ...user.demographics,
+        emergencyContacts: user.demographics?.emergencyContacts || [],
+        chronicConditions: patientData.chronicConditions || [],
+        allergies: patientData.allergies || [],
+      });
+    }
+    setIsEditing(false);
+  }
+
+  if (loading || isPatientLoading || !user) {
+    return (
+      <div className="space-y-6">
+          <Skeleton className="h-40 w-full" />
+          <div className="flex justify-center">
+              <Skeleton className="h-96 w-full max-w-2xl" />
+          </div>
+      </div>
+    );
+  }
+  
+  const dobDate = formData.dob ? parse(formData.dob, "yyyy-MM-dd", new Date()) : null;
+  const displayDob = dobDate && isValid(dobDate) ? format(dobDate, 'dd-MM-yyyy') : 'N/A';
+
+  return (
+    <div className="space-y-6">
+        <HealthIdCard user={user} patient={patientData} />
+        <div className="flex justify-center">
+            <div className="w-full max-w-2xl space-y-6">
+                <Card className="bg-card">
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle className="text-xl">Personal & Medical Details</CardTitle>
+                            <CardDescription className="text-sm pt-1">
+                                Your personal information, demographics, and health conditions.
+                            </CardDescription>
+                        </div>
+                        {!isEditing && (
+                            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Profile
+                            </Button>
+                        )}
+                        </div>
+                    </CardHeader>
+                    <Separator />
+                    <CardContent className="pt-6 space-y-6">
+                        {isEditing ? (
+                            <>
+                                <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <ProfileEditRow label="Mobile Number" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} />
+                                    <div className="space-y-1">
+                                        <Label className="text-sm text-muted-foreground">Date of Birth</Label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant={"outline"}
+                                                    className={cn("w-full justify-start text-left font-normal", !formData.dob && "text-muted-foreground")}
+                                                >
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    {dobDate && isValid(dobDate) ? format(dobDate, "PPP") : <span>Pick a date</span>}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={dobDate || undefined}
+                                                    onSelect={handleDateChange}
+                                                    captionLayout="dropdown-buttons"
+                                                    fromYear={1920}
+                                                    toYear={new Date().getFullYear()}
+                                                    initialFocus
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-sm text-muted-foreground">Gender</Label>
+                                        <Select value={formData.gender} onValueChange={handleSelectChange('gender')}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select gender..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {genders.map(gender => (
+                                                    <SelectItem key={gender} value={gender}>{gender}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-sm text-muted-foreground">Marital Status</Label>
+                                        <Select value={formData.maritalStatus} onValueChange={handleSelectChange('maritalStatus')}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select marital status..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {maritalStatuses.map(status => (
+                                                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <ProfileEditRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleInputChange} />
+                                    <ProfileEditRow label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleInputChange} />
+                                    <ProfileEditRow label="NID" name="nid" value={formData.nid} onChange={handleInputChange} />
+                                     <div className="space-y-1">
+                                        <Label className="text-sm text-muted-foreground">Blood Group</Label>
+                                        <Select value={formData.bloodGroup} onValueChange={handleSelectChange('bloodGroup')}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select blood group..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {bloodGroups.map(group => (
+                                                    <SelectItem key={group} value={group}>{group}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <ProfileEditRow label="Present Address" name="presentAddress" value={formData.presentAddress} onChange={handleInputChange} />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <ProfileEditRow label="Permanent Address" name="permanentAddress" value={formData.permanentAddress} onChange={handleInputChange} />
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold border-b pb-2">Medical Information</h3>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="conditions" className="text-base">Chronic Conditions</Label>
+                                        <p className="text-sm text-muted-foreground">Select one or more conditions.</p>
+                                        <div className="flex flex-wrap gap-2 pt-2">
+                                            {availableConditions.map(condition => {
+                                                const isSelected = formData.chronicConditions?.includes(condition);
+                                                return (
+                                                    <Badge
+                                                        key={condition}
+                                                        variant={isSelected ? "default" : "outline"}
+                                                        onClick={() => handleToggleCondition(condition)}
+                                                        className="cursor-pointer text-base py-1 px-3 transition-all"
+                                                    >
+                                                        {condition}
+                                                    </Badge>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="allergies" className="text-base">Allergies</Label>
+                                        <div className="flex gap-2">
+                                            <Input 
+                                                id="allergies" 
+                                                placeholder="e.g., Penicillin" 
+                                                value={allergyInput} 
+                                                onChange={(e) => setAllergyInput(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAllergy())}
+                                            />
+                                            <Button type="button" onClick={handleAddAllergy}><Plus className="mr-2 h-4 w-4" /> Add</Button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 pt-2">
+                                            {formData.allergies?.map(allergy => (
+                                                <Badge key={allergy} variant="destructive" className="pr-1 capitalize">
+                                                    {allergy}
+                                                    <button onClick={() => handleRemoveAllergy(allergy)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 text-destructive-foreground">
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="space-y-4">
+                                  <h3 className="text-lg font-semibold border-b pb-2">Emergency Contacts</h3>
+                                   {formData.emergencyContacts?.map((contact) => (
+                                    <div key={contact.id} className="flex items-center justify-between p-2 rounded-md border">
+                                        <div>
+                                            <p className="font-semibold">{contact.name || 'N/A'}</p>
+                                            <p className="text-sm text-muted-foreground">{contact.relation}</p>
+                                            <p className="text-sm text-muted-foreground">{contact.contactNumber || `Health ID: ${contact.healthId}`}</p>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <EditContactDialog contact={contact} onSave={handleUpdateEmergencyContact} />
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleRemoveEmergencyContact(contact.id)}>
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                   ))}
+                                    <div className="p-4 border-2 border-dashed rounded-lg bg-background space-y-2">
+                                        <h4 className="text-sm font-medium text-center">Add New Emergency Contact</h4>
+                                        <Input placeholder="Full Name" value={newContactName} onChange={(e) => setNewContactName(e.target.value)} autoComplete="name"/>
+                                        <Input placeholder="Relation (e.g., Mother)" value={newContactRelation} onChange={(e) => setNewContactRelation(e.target.value)} />
+                                        <Input placeholder="Contact Number" value={newContactNumber} onChange={(e) => setNewContactNumber(e.target.value)} />
+                                        <Button className="w-full" type="button" onClick={handleAddEmergencyContact}><Plus className="mr-2 h-4 w-4" />Add Contact</Button>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <ProfileInfoRow icon={Phone} label="Mobile" value={user.demographics?.mobileNumber} />
+                                    <ProfileInfoRow icon={Cake} label="Date of Birth & Age" value={displayDob && age ? `${displayDob} (${age} years)` : displayDob} />
+                                    <ProfileInfoRow icon={UserIcon} label="Gender" value={user.demographics?.gender} />
+                                    <ProfileInfoRow icon={Fingerprint} label="NID" value={user.demographics?.nid} />
+                                    <ProfileInfoRow icon={Users} label="Marital Status" value={user.demographics?.maritalStatus} />
+                                    <div className="md:col-span-2">
+                                        <ProfileInfoRow icon={MapPin} label="Present Address" value={user.demographics?.presentAddress} />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <ProfileInfoRow icon={MapPin} label="Permanent Address" value={user.demographics?.permanentAddress} />
+                                    </div>
+                                </div>
+                                <Separator />
+                                <h3 className="text-lg font-semibold border-b pb-2 pt-2">Medical Information</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <ProfileInfoRow icon={Droplet} label="Blood Group" value={user.demographics?.bloodGroup} />
+                                    <ProfileInfoRow icon={HeartPulse} label="Chronic Conditions">
+                                        {formData.chronicConditions && formData.chronicConditions.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                                {formData.chronicConditions.map(c => <Badge key={c} variant="outline" className="capitalize">{c}</Badge>)}
+                                            </div>
+                                        ) : <p className="font-medium">None</p>}
+                                    </ProfileInfoRow>
+                                    <div className="md:col-span-2">
+                                    <ProfileInfoRow icon={Siren} label="Allergies">
+                                        {formData.allergies && formData.allergies.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                                {formData.allergies.map(a => <Badge key={a} variant="destructive" className="bg-destructive/10 text-destructive-foreground border-destructive/20 capitalize">{a}</Badge>)}
+                                            </div>
+                                        ) : <p className="font-medium">None</p>}
+                                    </ProfileInfoRow>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <h3 className="text-lg font-semibold border-b pb-2 pt-2">Emergency Contacts</h3>
+                                {formData.emergencyContacts && formData.emergencyContacts.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {formData.emergencyContacts.map(contact => (
+                                            <div key={contact.id} className="flex items-center justify-between p-2 rounded-md border bg-background-softer">
+                                                <div>
+                                                    <p className="font-semibold">{contact.name || 'N/A'}</p>
+                                                    <p className="text-sm text-muted-foreground">{contact.relation}</p>
+                                                    <p className="text-sm text-muted-foreground">{contact.contactNumber || `Health ID: ${contact.healthId}`}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : <p className="text-sm text-muted-foreground">No emergency contacts added.</p>}
+                            </>
+                        )}
+                    </CardContent>
+
+                    {isEditing && (
+                        <CardFooter className="bg-muted/50 p-4 border-t flex justify-end">
+                            <div className="flex gap-2">
+                                <Button onClick={handleCancel} variant="outline" disabled={isSaving}>
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Cancel
+                                </Button>
+
+                                <Button onClick={handleSave} disabled={isSaving}>
+                                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </CardFooter>
+                    )}
+                </Card>
+                <ApplyForRoleCard />
+            </div>
+        </div>
+    </div>
+  );
+}

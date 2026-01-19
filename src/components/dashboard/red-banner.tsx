@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, Edit, Save, Trash2, XCircle, Loader2 } from "lucide-react";
-import type { Role } from "@/lib/definitions";
-import { useFirestore, updateDocument } from "@/firebase";
-import { doc } from "firebase/firestore";
+import type { Role, User } from "@/lib/definitions";
+import { useFirestore, writeBatch, commitBatch } from "@/firebase";
+import { doc, serverTimestamp, collection } from "firebase/firestore";
 import { ConfirmationDialog } from "../shared/confirmation-dialog";
+import { useAuth } from "@/hooks/use-auth";
 
 type RedBannerProps = {
     patientId: string;
@@ -20,6 +21,7 @@ type RedBannerProps = {
 
 export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBannerProps) {
     const { toast } = useToast();
+    const { user: currentUser } = useAuth();
     const [redFlag, setRedFlag] = useState(initialRedFlag);
     const [comment, setComment] = useState(initialRedFlag?.comment || '');
     const [isEditing, setIsEditing] = useState(false);
@@ -27,12 +29,25 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
     const firestore = useFirestore();
 
     const handleSave = () => {
-        if (!patientId || !firestore || !redFlag) return;
+        if (!patientId || !firestore || !redFlag || !currentUser) return;
         setIsProcessing(true);
-        const patientRef = doc(firestore, 'patients', patientId);
-        const updateData = { redFlag: { title: redFlag.title, comment: comment } };
+        const batch = writeBatch(firestore);
         
-        updateDocument(patientRef, updateData, () => {
+        const patientRef = doc(firestore, 'patients', patientId);
+        batch.update(patientRef, { redFlag: { title: redFlag.title, comment: comment } });
+        
+        const logRef = doc(collection(firestore, 'patients', patientId, 'privacy_log'));
+        batch.set(logRef, {
+            actorId: currentUser.healthId,
+            actorName: currentUser.name,
+            actorAvatarUrl: currentUser.avatarUrl,
+            patientId: patientId,
+            organizationId: currentUser.organizationId,
+            action: 'update_red_flag' as const,
+            timestamp: serverTimestamp(),
+        });
+        
+        commitBatch(batch, 'update red flag', () => {
             setRedFlag(prev => prev ? ({ ...prev, comment }) : null);
             setIsEditing(false);
             toast({
@@ -42,16 +57,34 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
             setIsProcessing(false);
         }, () => {
             setIsProcessing(false);
+             toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: "The critical alert could not be saved.",
+            });
         });
     };
 
     const handleDelete = () => {
-        if (!patientId || !firestore) return;
+        if (!patientId || !firestore || !currentUser) return;
         setIsProcessing(true);
-        const patientRef = doc(firestore, 'patients', patientId);
-        const updateData = { redFlag: null };
+        const batch = writeBatch(firestore);
 
-        updateDocument(patientRef, updateData, () => {
+        const patientRef = doc(firestore, 'patients', patientId);
+        batch.update(patientRef, { redFlag: null });
+
+        const logRef = doc(collection(firestore, 'patients', patientId, 'privacy_log'));
+        batch.set(logRef, {
+            actorId: currentUser.healthId,
+            actorName: currentUser.name,
+            actorAvatarUrl: currentUser.avatarUrl,
+            patientId: patientId,
+            organizationId: currentUser.organizationId,
+            action: 'remove_red_flag' as const,
+            timestamp: serverTimestamp(),
+        });
+
+        commitBatch(batch, 'delete red flag', () => {
             setRedFlag(null);
             toast({
                 title: "Alert Removed",
@@ -60,6 +93,11 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
             setIsProcessing(false);
         }, () => {
             setIsProcessing(false);
+            toast({
+                variant: "destructive",
+                title: "Deletion Failed",
+                description: "The critical alert could not be removed.",
+            });
         });
     };
 

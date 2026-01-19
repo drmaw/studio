@@ -17,6 +17,7 @@ import { doc, collection, query, orderBy, serverTimestamp } from "firebase/fires
 import type { Patient, MedicalRecord, Vitals, User } from "@/lib/definitions";
 import { AddMedicalRecordDialog } from "@/components/dashboard/add-medical-record-dialog";
 import { FormattedDate } from "@/components/shared/formatted-date";
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
@@ -24,6 +25,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   const { user: currentUser, loading: currentUserLoading, hasRole, activeRole } = useAuth();
   const router = useRouter();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!currentUserLoading && !currentUser) {
@@ -84,7 +86,10 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
             timestamp: serverTimestamp(),
         };
 
-        addDocument(logRef, logEntry);
+        addDocument(logRef, logEntry, undefined, (error) => {
+            console.error("Failed to write privacy log for record view:", error);
+            // We don't toast here as it's a background action
+        });
     }
   }, [firestore, currentUser, patientUser, currentUserLoading, isPatientUserLoading, hasRole, patientId]);
 
@@ -167,7 +172,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
         <div className="space-y-4">
           {records && records.length > 0 ? (
             records.map(record => (
-              <MedicalRecordCard key={record.id} record={record} currentUserRole={activeRole!} patientId={patientId}/>
+              <MedicalRecordCard key={record.id} record={record} currentUserRole={activeRole!} patientId={patientId} doctor={currentUser}/>
             ))
           ) : (
             <Card className="flex items-center justify-center p-8 bg-background-soft">

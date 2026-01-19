@@ -64,6 +64,11 @@ export default function DoctorAppointmentsPage() {
             setUpdatingId(null);
         }, () => {
             setUpdatingId(null);
+            toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: 'The appointment status could not be updated.',
+            });
         });
     };
     

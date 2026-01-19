@@ -12,38 +12,55 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { type MedicalRecord } from "@/lib/definitions"
+import { type MedicalRecord, type User } from "@/lib/definitions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Loader2, Pencil } from "lucide-react"
-import { useFirestore, updateDocument } from "@/firebase"
-import { doc } from "firebase/firestore"
+import { useFirestore, writeBatch, commitBatch } from "@/firebase"
+import { doc, serverTimestamp, collection } from "firebase/firestore"
 
-export function EditNoteDialog({ record, patientId }: { record: MedicalRecord, patientId: string }) {
+export function EditNoteDialog({ record, patientId, doctor }: { record: MedicalRecord, patientId: string, doctor: User }) {
   const [isOpen, setIsOpen] = useState(false);
   const [note, setNote] = useState(record.notes);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!patientId || !firestore) return;
     setIsSaving(true);
     
-    const recordRef = doc(firestore, "patients", patientId, "medical_records", record.id);
-    const updateData = { notes: note };
+    const batch = writeBatch(firestore);
     
-    const success = await updateDocument(recordRef, updateData);
+    const recordRef = doc(firestore, "patients", patientId, "medical_records", record.id);
+    batch.update(recordRef, { notes: note });
+    
+    const logRef = doc(collection(firestore, 'patients', patientId, 'privacy_log'));
+    batch.set(logRef, {
+        actorId: doctor.healthId,
+        actorName: doctor.name,
+        actorAvatarUrl: doctor.avatarUrl,
+        patientId: patientId,
+        organizationId: doctor.organizationId,
+        action: 'edit_record' as const,
+        timestamp: serverTimestamp(),
+    });
 
-    if (success) {
+    commitBatch(batch, 'update medical record and log', () => {
         setIsOpen(false);
         toast({
             title: "Note Saved",
             description: "The medical record has been updated successfully.",
         });
-    }
-
-    setIsSaving(false);
+        setIsSaving(false);
+    }, () => {
+        setIsSaving(false);
+        toast({
+            variant: "destructive",
+            title: "Save Failed",
+            description: "The medical record could not be updated.",
+        });
+    });
   }
 
   return (
@@ -58,7 +75,7 @@ export function EditNoteDialog({ record, patientId }: { record: MedicalRecord, p
         <DialogHeader>
           <DialogTitle>Edit Medical Note</DialogTitle>
           <DialogDescription>
-            Update the notes for the diagnosis of '{record.diagnosis}' on {record.date}.
+            Update the notes for the diagnosis of '{record.diagnosis}' on <FormattedDate date={record.date} formatString="dd-MM-yyyy" />.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">

@@ -121,6 +121,11 @@ export function StaffManagementTab() {
           setIsLoading(false);
         }, () => {
             setIsLoading(false);
+            toast({
+                variant: 'destructive',
+                title: 'Failed to Add Staff',
+                description: 'The user could not be added to your organization.',
+            });
         });
     } else {
       toast({
@@ -158,6 +163,11 @@ export function StaffManagementTab() {
         setRemovingId(null);
     }, () => {
         setRemovingId(null);
+        toast({
+            variant: 'destructive',
+            title: 'Failed to Remove',
+            description: 'The staff member could not be removed.',
+        });
     });
   };
 

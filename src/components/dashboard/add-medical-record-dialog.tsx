@@ -18,8 +18,9 @@ import type { User } from "@/lib/definitions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Loader2, Plus } from "lucide-react"
-import { useFirestore, commitBatch, writeBatch, addDocument } from "@/firebase"
+import { useFirestore, commitBatch, writeBatch } from "@/firebase"
 import { collection, serverTimestamp, doc } from "firebase/firestore"
+import { FormattedDate } from "../shared/formatted-date";
 
 export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doctor: User }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -76,6 +77,11 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
         setIsSaving(false);
     }, () => {
         setIsSaving(false);
+        toast({
+            variant: "destructive",
+            title: "Save Failed",
+            description: "The medical record could not be saved.",
+        });
     });
   }
 
