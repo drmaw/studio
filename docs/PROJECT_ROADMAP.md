@@ -107,3 +107,34 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Data Flow**: Scheduled Function/Admin Action → Aggregates data from `invoices`, `admissions`, etc. → Saves aggregated data to a new `reports` collection → Dashboard UI reads from `reports`.
     *   **Task 6.3.1: Create Financial Reports Dashboard**: A new "Reports" page for managers showing key financial metrics. This will involve creating backend logic (potentially a Firebase Function, not implemented by agent) to periodically aggregate data from the `invoices` collection into summary documents for efficient display. Charts will visualize revenue over time, outstanding balances, and top-performing services.
     *   **Task 6.3.2: Create Operational Reports Dashboard**: A second tab on the "Reports" page for operational metrics. This will show charts for bed occupancy rates, average patient length of stay (calculated from `admissions` data), and new patient registrations over time.
+
+---
+
+### **Phase 7: Alignment with Global Health & Data Protection Standards**
+
+**Goal**: Evolve the platform into a system that is demonstrably safe, ethical, and legally compliant by aligning with WHO recommendations and international data protection principles.
+
+*   **Step 7.1: Implement Standardized Medical Terminologies (WHO)**
+    *   **Data Flow**: User (Doctor) enters diagnosis → UI presents a searchable list of ICD-10 codes → Doctor selects code → Coded value is stored alongside the text description in the `MedicalRecord`.
+    *   **Task 7.1.1: Integrate ICD-10 Standard**: Replace the free-text `diagnosis` input in the `AddMedicalRecordDialog` with a searchable dropdown or autocomplete component populated with ICD-10 codes and descriptions.
+    *   **Task 7.1.2: Update Data Model for Coded Data**: Modify the `MedicalRecord` entity in `definitions.ts` and `backend.json` to store both the selected code (e.g., `J20.9`) and the text description.
+
+*   **Step 7.2: Enhance Accessibility (WHO)**
+    *   **Data Flow**: Not applicable (UI/UX enhancement).
+    *   **Task 7.2.1: Conduct Full WCAG Audit**: Systematically review every component and page against WCAG 2.1 AA standards.
+    *   **Task 7.2.2: Remediate Accessibility Issues**: Implement necessary code changes, such as adding `aria-label` attributes to icon-only buttons, ensuring all form inputs are linked to labels, verifying keyboard navigability, and correcting color contrast ratios where needed.
+
+*   **Step 7.3: Strengthen Data Protection Rights (PDPO)**
+    *   **Data Flow**: Patient navigates to Privacy Settings → Clicks a "Request Correction" button on a record → A `CorrectionRequest` document is created → Appears on an admin/doctor dashboard for review.
+    *   **Task 7.3.1: Create Static Privacy Policy Page**: Add a new page at `/privacy-policy` and link to it from the app's footer.
+    *   **Task 7.3.2: Implement "Right to Rectification" Workflow**:
+        *   **Blueprinting**: Add a `CorrectionRequest` entity to `backend.json` and `definitions.ts`.
+        *   **UI Work**: Add a "Request Correction" button to the `MedicalRecordCard`. This opens a dialog for the patient to explain the needed correction.
+        *   **Admin UI**: Create a new tab or section in the hospital/admin dashboard to list and manage these requests.
+    *   **Task 7.3.3: Implement Explicit Consent Modal**: Modify the `AccountSettingsTab` so that when a patient enables data sharing for a hospital for the first time, a modal appears requiring them to explicitly agree to the terms of sharing.
+
+*   **Step 7.4: Ensure Comprehensive Traceability & Transparency**
+    *   **Data Flow**: Any action that modifies data (e.g., confirming an appointment, changing a role) → A new, descriptive `PrivacyLog` document is created in a Firestore `WriteBatch` along with the primary data modification.
+    *   **Task 7.4.1: Expand `PrivacyLog` Triggers**: Go through key workflows (`book-appointment`, `staff-management`, `account-settings`) and add logic to create a detailed log entry for every significant user action.
+    *   **Task 7.4.2: Enhance Log Descriptors**: Make log messages more human-readable (e.g., "Dr. X confirmed appointment for Patient Y" instead of "update_appointment_status").
+    *   **Task 7.4.3: Improve Privacy Log UI**: Add filtering controls (by date, organization, and action type) to the `/dashboard/privacy-log` page to allow patients to easily search and audit their activity history.
