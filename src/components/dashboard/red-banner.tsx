@@ -19,10 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { useFirestore } from "@/firebase";
-import { doc, updateDoc } from "firebase/firestore";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { useFirestore, updateDocument } from "@/firebase";
+import { doc } from "firebase/firestore";
 
 type RedBannerProps = {
     patientId: string;
@@ -38,49 +36,37 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
     const [isVisible, setIsVisible] = useState(true);
     const firestore = useFirestore();
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!patientId || !firestore) return;
         const patientRef = doc(firestore, 'patients', patientId);
         const updateData = { redFlag: { title: redFlag.title, comment: comment } };
         
-        updateDoc(patientRef, updateData)
-            .then(() => {
-                setRedFlag(prev => ({ ...prev, comment }));
-                setIsEditing(false);
-                toast({
-                    title: "Alert Saved",
-                    description: "The critical alert has been updated.",
-                });
-            })
-            .catch(async (serverError) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: patientRef.path,
-                    operation: 'update',
-                    requestResourceData: updateData
-                }));
+        const success = await updateDocument(patientRef, updateData);
+        
+        if (success) {
+            setRedFlag(prev => ({ ...prev, comment }));
+            setIsEditing(false);
+            toast({
+                title: "Alert Saved",
+                description: "The critical alert has been updated.",
             });
+        }
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (!patientId || !firestore) return;
         const patientRef = doc(firestore, 'patients', patientId);
         const updateData = { redFlag: null };
 
-        updateDoc(patientRef, updateData)
-            .then(() => {
-                setIsVisible(false);
-                toast({
-                    title: "Alert Removed",
-                    description: "The critical alert has been removed for this patient.",
-                });
-            })
-            .catch(async (serverError) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: patientRef.path,
-                    operation: 'update',
-                    requestResourceData: updateData
-                }));
+        const success = await updateDocument(patientRef, updateData);
+        
+        if (success) {
+            setIsVisible(false);
+            toast({
+                title: "Alert Removed",
+                description: "The critical alert has been removed for this patient.",
             });
+        }
     };
 
     if (!isVisible) {

@@ -3,8 +3,8 @@
 
 import { useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, updateDocument } from '@/firebase';
+import { collection, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
 import type { Appointment, DoctorSchedule } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,8 +26,6 @@ import {
 import { FormattedDate } from '@/components/shared/formatted-date';
 import { createNotification } from '@/lib/notifications';
 import { format } from 'date-fns';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function MyAppointmentsPage() {
     const { user, loading: userLoading } = useAuth();
@@ -54,36 +52,31 @@ export default function MyAppointmentsPage() {
         const appointment = appointmentSnap.data() as Appointment;
 
         const updateData = { status: 'cancelled' };
-        updateDoc(appointmentRef, updateData)
-            .then(async () => {
-                // Notify doctor
-                const scheduleRef = doc(firestore, 'organizations', appointment.organizationId, 'schedules', appointment.scheduleId);
-                const scheduleSnap = await getDoc(scheduleRef);
-                if (scheduleSnap.exists()) {
-                    const schedule = scheduleSnap.data() as DoctorSchedule;
-                    const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
-                    await createNotification(
-                        firestore,
-                        schedule.doctorAuthId,
-                        'Appointment Cancelled',
-                        `${user.name} has cancelled their appointment for ${formattedDate}.`,
-                        `/dashboard/appointments/${appointment.organizationId}/${appointment.scheduleId}`
-                    );
-                }
+        
+        const success = await updateDocument(appointmentRef, updateData);
 
-                toast({
-                    variant: 'destructive',
-                    title: 'Appointment Cancelled',
-                    description: 'Your appointment has been successfully cancelled.',
-                });
-            })
-            .catch(async (serverError) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: appointmentRef.path,
-                    operation: 'update',
-                    requestResourceData: updateData,
-                }));
+        if (success) {
+            // Notify doctor
+            const scheduleRef = doc(firestore, 'organizations', appointment.organizationId, 'schedules', appointment.scheduleId);
+            const scheduleSnap = await getDoc(scheduleRef);
+            if (scheduleSnap.exists()) {
+                const schedule = scheduleSnap.data() as DoctorSchedule;
+                const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
+                await createNotification(
+                    firestore,
+                    schedule.doctorAuthId,
+                    'Appointment Cancelled',
+                    `${user.name} has cancelled their appointment for ${formattedDate}.`,
+                    `/dashboard/appointments/${appointment.organizationId}/${appointment.scheduleId}`
+                );
+            }
+
+            toast({
+                variant: 'destructive',
+                title: 'Appointment Cancelled',
+                description: 'Your appointment has been successfully cancelled.',
             });
+        }
     };
     
     const isLoading = userLoading || appointmentsLoading;

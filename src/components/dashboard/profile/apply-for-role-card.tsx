@@ -3,9 +3,9 @@
 
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, addDocument } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import type { Role, RoleApplication, RoleRemovalRequest } from '@/lib/definitions';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -116,12 +116,14 @@ export function ApplyForRoleCard() {
             createdAt: serverTimestamp(),
         };
 
-        await addDoc(applicationsRef, newApplication);
+        const docRef = await addDocument(applicationsRef, newApplication);
 
-        toast({
-            title: "Application Submitted",
-            description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is now pending review.`,
-        });
+        if (docRef) {
+            toast({
+                title: "Application Submitted",
+                description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is now pending review.`,
+            });
+        }
 
     } catch (error) {
         console.error("Application submission failed:", error);
@@ -147,26 +149,21 @@ export function ApplyForRoleCard() {
         return;
     }
 
-    try {
-        const removalRequestsRef = collection(firestore, 'users', user.id, 'role_removal_requests');
-        const newRemovalRequest: Omit<RoleRemovalRequest, 'id'> = {
-            userId: user.id,
-            userName: user.name,
-            roleToRemove: roleToDelete,
-            status: 'pending' as const,
-            createdAt: serverTimestamp(),
-        };
-        await addDoc(removalRequestsRef, newRemovalRequest);
+    const removalRequestsRef = collection(firestore, 'users', user.id, 'role_removal_requests');
+    const newRemovalRequest: Omit<RoleRemovalRequest, 'id'> = {
+        userId: user.id,
+        userName: user.name,
+        roleToRemove: roleToDelete,
+        status: 'pending' as const,
+        createdAt: serverTimestamp(),
+    };
+    
+    const docRef = await addDocument(removalRequestsRef, newRemovalRequest);
+
+    if (docRef) {
         toast({
             title: "Removal Request Submitted",
             description: `Your request to remove the ${roleToDelete.replace(/_/g, ' ')} role is now pending admin review.`,
-        });
-    } catch (error) {
-        console.error("Failed to submit removal request:", error);
-        toast({
-            variant: "destructive",
-            title: "Request Failed",
-            description: "Could not submit your role removal request.",
         });
     }
   };

@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useState } from "react";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { serverTimestamp, collection } from "firebase/firestore";
 import { format } from 'date-fns';
 
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore } from "@/firebase";
+import { useFirestore, addDocument } from "@/firebase";
 import { cn } from "@/lib/utils";
 import type { DoctorSchedule, Organization, User } from "@/lib/definitions";
 import { createNotification } from "@/lib/notifications";
@@ -88,27 +88,27 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) return;
     
-    try {
-        const appointmentRef = collection(firestore, 'appointments');
-        const formattedDate = format(values.appointmentDate, 'dd-MM-yyyy');
+    const appointmentRef = collection(firestore, 'appointments');
+    const formattedDate = format(values.appointmentDate, 'dd-MM-yyyy');
 
-        const newAppointment = {
-            patientId: patient.id,
-            patientName: patient.name,
-            doctorId: schedule.doctorId,
-            doctorName: schedule.doctorName,
-            organizationId: organization.id,
-            organizationName: organization.name,
-            scheduleId: schedule.id,
-            appointmentDate: format(values.appointmentDate, 'yyyy-MM-dd'),
-            appointmentTime: values.appointmentTime,
-            reason: values.reason || '',
-            status: 'pending',
-            createdAt: serverTimestamp(),
-        };
+    const newAppointment = {
+        patientId: patient.id,
+        patientName: patient.name,
+        doctorId: schedule.doctorId,
+        doctorName: schedule.doctorName,
+        organizationId: organization.id,
+        organizationName: organization.name,
+        scheduleId: schedule.id,
+        appointmentDate: format(values.appointmentDate, 'yyyy-MM-dd'),
+        appointmentTime: values.appointmentTime,
+        reason: values.reason || '',
+        status: 'pending',
+        createdAt: serverTimestamp(),
+    };
 
-        await addDoc(appointmentRef, newAppointment);
-        
+    const docRef = await addDocument(appointmentRef, newAppointment);
+    
+    if (docRef) {
         // Notify the doctor of the new request
         await createNotification(
             firestore, 
@@ -133,10 +133,6 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
         });
         setIsOpen(false);
         form.reset();
-
-    } catch (error) {
-        console.error("Failed to book appointment:", error);
-        toast({ variant: 'destructive', title: 'Booking Failed', description: 'Could not request the appointment.' });
     }
   }
 

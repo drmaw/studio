@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,11 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "../ui/badge";
 import { differenceInYears, parse, isValid } from 'date-fns';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, setDoc } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore } from "@/firebase";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { useFirestore, setDocument } from "@/firebase";
 
 export function HealthIdCard({ user, patient }: { user: User, patient: Patient | null }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,20 +73,16 @@ export function HealthIdCard({ user, patient }: { user: User, patient: Patient |
 
             const userDocRef = doc(firestore, 'users', authUser.id);
             const updateData = { avatarUrl: downloadURL };
-            setDoc(userDocRef, updateData, { merge: true })
-                .then(() => {
-                     toast({
-                        title: 'Profile Picture Updated',
-                        description: 'Your new picture has been saved.',
-                    });
-                })
-                .catch(async (serverError) => {
-                     errorEmitter.emit('permission-error', new FirestorePermissionError({
-                        path: userDocRef.path,
-                        operation: 'update',
-                        requestResourceData: updateData,
-                    }));
+            
+            const success = await setDocument(userDocRef, updateData, { merge: true });
+
+            if (success) {
+                toast({
+                    title: 'Profile Picture Updated',
+                    description: 'Your new picture has been saved.',
                 });
+            }
+
         } catch (error) {
             console.error("Profile picture upload failed:", error);
             toast({
@@ -104,7 +99,7 @@ export function HealthIdCard({ user, patient }: { user: User, patient: Patient |
         return null;
     }
     
-    const displayName = user.roles.includes('doctor') ? `Dr. ${user.name}` : user.name;
+    const displayName = user.name;
 
     return (
         <Card className="bg-emerald-50 border-emerald-200">
@@ -132,7 +127,7 @@ export function HealthIdCard({ user, patient }: { user: User, patient: Patient |
                     </div>
                     
                     <div className="overflow-hidden">
-                        <h2 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">{displayName || 'Loading...'}</h2>
+                        <h2 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">{user.roles.includes('doctor') ? `Dr. ${displayName}` : displayName}</h2>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
                             <div className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {user.healthId}</div>
                             {user.demographics?.mobileNumber && <div className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {user.demographics.mobileNumber}</div>}

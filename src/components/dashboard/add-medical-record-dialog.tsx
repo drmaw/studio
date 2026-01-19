@@ -18,11 +18,9 @@ import type { User } from "@/lib/definitions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Loader2, Plus } from "lucide-react"
-import { useFirestore } from "@/firebase"
-import { addDoc, collection, serverTimestamp, writeBatch, doc } from "firebase/firestore"
+import { useFirestore, commitBatch } from "@/firebase"
+import { collection, serverTimestamp, writeBatch, doc } from "firebase/firestore"
 import { format } from 'date-fns'
-import { errorEmitter } from "@/firebase/error-emitter"
-import { FirestorePermissionError } from "@/firebase/errors"
 
 export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doctor: User }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,7 +30,7 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!diagnosis || !firestore) {
         toast({ variant: 'destructive', title: 'Diagnosis Required', description: 'Please enter a diagnosis.'});
         return;
@@ -46,7 +44,7 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
     const newRecord = {
         patientId: patient.id,
         doctorId: doctor.healthId,
-        doctorName: doctor.name,
+        doctorName: `Dr. ${doctor.name}`,
         organizationId: doctor.organizationId,
         date: format(new Date(), 'dd-MM-yyyy'),
         diagnosis,
@@ -68,26 +66,19 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
     };
     batch.set(doc(logRef), logEntry);
     
-    batch.commit()
-        .then(() => {
-            setDiagnosis('');
-            setNotes('');
-            setIsOpen(false);
-            toast({
-              title: "Record Added",
-              description: "The new medical record has been saved successfully.",
-            });
-        })
-        .catch(async (serverError) => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: 'batch-write',
-                operation: 'create',
-                requestResourceData: { newRecord, logEntry }
-            }));
-        })
-        .finally(() => {
-            setIsSaving(false);
+    const success = await commitBatch(batch, 'add medical record and log');
+
+    if (success) {
+        setDiagnosis('');
+        setNotes('');
+        setIsOpen(false);
+        toast({
+            title: "Record Added",
+            description: "The new medical record has been saved successfully.",
         });
+    }
+    
+    setIsSaving(false);
   }
 
   return (

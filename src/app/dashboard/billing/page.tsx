@@ -31,11 +31,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, updateDoc, deleteDoc, serverTimestamp, doc } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase, addDocument, updateDocument, deleteDocument } from "@/firebase";
+import { collection, serverTimestamp, doc } from "firebase/firestore";
 import type { FeeItem } from "@/lib/definitions";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 
 
 function EditFeeItemDialog({ 
@@ -265,7 +263,7 @@ export default function BillingPage() {
     const doctorFees = useMemo(() => feeItems?.filter(item => item.category === 'doctor_fee') || [], [feeItems]);
 
 
-    const handleAddItem = (category: FeeItem['category'], name: string, cost: number) => {
+    const handleAddItem = async (category: FeeItem['category'], name: string, cost: number) => {
         if (!user || !firestore) return;
         const feeItemsRef = collection(firestore, 'organizations', user.organizationId, 'fee_items');
         const newItem = {
@@ -276,60 +274,44 @@ export default function BillingPage() {
             createdAt: serverTimestamp()
         };
 
-        addDoc(feeItemsRef, newItem)
-            .then(() => {
-                toast({
-                    title: 'Item Added',
-                    description: `"${name}" has been added.`,
-                });
-            })
-            .catch(async (serverError) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: feeItemsRef.path,
-                    operation: 'create',
-                    requestResourceData: newItem
-                }));
+        const docRef = await addDocument(feeItemsRef, newItem);
+
+        if (docRef) {
+            toast({
+                title: 'Item Added',
+                description: `"${name}" has been added.`,
             });
+        }
     };
     
-    const handleUpdateItem = (item: FeeItem) => {
+    const handleUpdateItem = async (item: FeeItem) => {
         if (!user || !firestore) return;
         const itemRef = doc(firestore, 'organizations', user.organizationId, 'fee_items', item.id);
         const updateData = { name: item.name, cost: item.cost };
         
-        updateDoc(itemRef, updateData)
-            .then(() => {
-                toast({
-                    title: 'Item Updated',
-                    description: 'The fee item has been updated successfully.',
-                });
-            })
-            .catch(async (serverError) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: itemRef.path,
-                    operation: 'update',
-                    requestResourceData: updateData
-                }));
+        const success = await updateDocument(itemRef, updateData);
+
+        if (success) {
+            toast({
+                title: 'Item Updated',
+                description: 'The fee item has been updated successfully.',
             });
+        }
     };
     
-    const handleDeleteItem = (itemId: string) => {
+    const handleDeleteItem = async (itemId: string) => {
         if (!user || !firestore) return;
         const itemRef = doc(firestore, 'organizations', user.organizationId, 'fee_items', itemId);
-        deleteDoc(itemRef)
-            .then(() => {
-                toast({
-                    variant: "destructive",
-                    title: 'Item Removed',
-                    description: 'The item has been removed.',
-                });
-            })
-            .catch(async (serverError) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: itemRef.path,
-                    operation: 'delete',
-                }));
+        
+        const success = await deleteDocument(itemRef);
+
+        if (success) {
+            toast({
+                variant: "destructive",
+                title: 'Item Removed',
+                description: 'The item has been removed.',
             });
+        }
     };
 
     return (

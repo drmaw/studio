@@ -12,13 +12,11 @@ import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VitalsTracker } from "@/components/dashboard/vitals-tracker";
 import { RedBanner } from "@/components/dashboard/red-banner";
-import { useDoc, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { doc, collection, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
+import { useDoc, useCollection, useFirestore, useMemoFirebase, addDocument } from "@/firebase";
+import { doc, collection, query, orderBy, serverTimestamp } from "firebase/firestore";
 import type { Patient, MedicalRecord, Vitals, User } from "@/lib/definitions";
 import { AddMedicalRecordDialog } from "@/components/dashboard/add-medical-record-dialog";
 import { FormattedDate } from "@/components/shared/formatted-date";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
@@ -86,14 +84,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
             timestamp: serverTimestamp(),
         };
 
-        addDoc(logRef, logEntry)
-            .catch(async (serverError) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: logRef.path,
-                    operation: 'create',
-                    requestResourceData: logEntry,
-                }));
-            });
+        addDocument(logRef, logEntry);
     }
   }, [firestore, currentUser, patientUser, currentUserLoading, isPatientUserLoading, hasRole, patientId]);
 
@@ -131,7 +122,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
       return null;
   }
   
-  const displayName = patientUser.roles.includes('doctor') ? `Dr. ${patientUser.name}` : patientUser.name;
+  const displayName = patientUser.name;
 
   return (
     <div className="space-y-6">

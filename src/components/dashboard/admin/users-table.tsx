@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, updateDocument } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,8 +15,6 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 export function UsersTable() {
     const firestore = useFirestore();
@@ -33,21 +31,16 @@ export function UsersTable() {
         );
     }, [users, filter]);
 
-    const handleUpdateUserStatus = (userId: string, status: 'active' | 'suspended') => {
+    const handleUpdateUserStatus = async (userId: string, status: 'active' | 'suspended') => {
         if (!firestore) return;
         const userRef = doc(firestore, 'users', userId);
         const updateData = { status };
-        updateDoc(userRef, updateData)
-            .then(() => {
-                toast({ title: "User Status Updated", description: `User has been ${status}.` });
-            })
-            .catch(async (serverError) => {
-                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: userRef.path,
-                    operation: 'update',
-                    requestResourceData: updateData
-                }));
-            });
+        
+        const success = await updateDocument(userRef, updateData);
+        
+        if (success) {
+            toast({ title: "User Status Updated", description: `User has been ${status}.` });
+        }
     };
 
     return (

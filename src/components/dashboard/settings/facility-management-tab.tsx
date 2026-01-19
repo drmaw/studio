@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,9 +41,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, addDocument, updateDocument, deleteDocument } from "@/firebase";
 import type { Facility } from "@/lib/definitions";
-import { collection, addDoc, updateDoc, deleteDoc, serverTimestamp, doc } from "firebase/firestore";
+import { collection, serverTimestamp, doc } from "firebase/firestore";
 import { useSearchParams } from "next/navigation";
 
 const formSchema = z.object({
@@ -84,40 +85,52 @@ export function FacilityManagementTab() {
     setIsSubmitting(true);
     
     const facilitiesRef = collection(firestore, 'organizations', orgId, 'facilities');
-    await addDoc(facilitiesRef, {
+    const newFacility = {
         organizationId: orgId,
         ...values,
         createdAt: serverTimestamp()
-    });
-
-    toast({
-        title: "Facility Added",
-        description: `The ${values.type} "${values.name}" has been added.`,
-    });
+    };
     
-    form.reset({ name: "", beds: 1, cost: 1000, type: values.type });
+    const docRef = await addDocument(facilitiesRef, newFacility);
+
+    if (docRef) {
+        toast({
+            title: "Facility Added",
+            description: `The ${values.type} "${values.name}" has been added.`,
+        });
+        form.reset({ name: "", beds: 1, cost: 1000, type: values.type });
+    }
+    
     setIsSubmitting(false);
   }
 
   const handleDelete = async (facilityId: string) => {
     if (!orgId || !firestore) return;
     const facilityRef = doc(firestore, 'organizations', orgId, 'facilities', facilityId);
-    await deleteDoc(facilityRef);
-    toast({
-      title: "Facility Removed",
-      description: "The facility has been removed from the list.",
-    });
+    
+    const success = await deleteDocument(facilityRef);
+
+    if (success) {
+      toast({
+        title: "Facility Removed",
+        description: "The facility has been removed from the list.",
+      });
+    }
   };
   
   const handleUpdate = async (updatedFacility: Facility) => {
     if (!orgId || !firestore) return;
     const facilityRef = doc(firestore, 'organizations', orgId, 'facilities', updatedFacility.id);
     const { id, organizationId, createdAt, ...updateData } = updatedFacility;
-    await updateDoc(facilityRef, updateData);
+    
+    const success = await updateDocument(facilityRef, updateData);
+
+    if (success) {
      toast({
         title: 'Facility Updated',
         description: 'The facility details have been updated successfully.',
     });
+    }
   };
 
   return (

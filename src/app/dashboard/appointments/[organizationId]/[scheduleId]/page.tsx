@@ -3,8 +3,8 @@
 
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
-import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc, orderBy, query, updateDoc, where } from "firebase/firestore";
+import { useCollection, useDoc, useFirestore, useMemoFirebase, updateDocument } from "@/firebase";
+import { collection, doc, orderBy, query, where } from "firebase/firestore";
 import type { Appointment, DoctorSchedule } from "@/lib/definitions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,8 +16,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FormattedDate } from "@/components/shared/formatted-date";
 import { createNotification } from "@/lib/notifications";
 import { format } from 'date-fns';
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function DoctorAppointmentsPage() {
     const params = useParams();
@@ -44,32 +42,26 @@ export default function DoctorAppointmentsPage() {
         }, [firestore, organizationId, scheduleId])
     );
 
-    const handleStatusChange = (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
+    const handleStatusChange = async (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
         if (!firestore) return;
         const appointmentRef = doc(firestore, 'appointments', appointment.id);
         const updateData = { status };
         
-        updateDoc(appointmentRef, updateData)
-            .then(() => {
-                // Notify patient
-                const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Cancelled';
-                const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
-                const description = `Your appointment with ${appointment.doctorName} on ${formattedDate} has been ${status}.`;
-                
-                createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
+        const success = await updateDocument(appointmentRef, updateData);
+        
+        if (success) {
+            // Notify patient
+            const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Cancelled';
+            const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
+            const description = `Your appointment with ${appointment.doctorName} on ${formattedDate} has been ${status}.`;
+            
+            createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
 
-                toast({
-                    title: `Appointment ${status}`,
-                    description: `The appointment has been ${status}.`
-                });
-            })
-            .catch(async (serverError) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: appointmentRef.path,
-                    operation: 'update',
-                    requestResourceData: updateData,
-                }));
+            toast({
+                title: `Appointment ${status}`,
+                description: `The appointment has been ${status}.`
             });
+        }
     };
     
     const isLoading = appointmentsLoading || scheduleLoading;

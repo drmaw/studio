@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useAuth as useFirebaseAuth, updateDocument } from '@/firebase';
+import { doc, serverTimestamp } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
@@ -53,15 +53,15 @@ export function AccountSettingsTab() {
     if (key === 'vitalsVisible') setIsVitalsVisible(value);
     if (key === 'discoverable') setIsDiscoverable(value);
 
-    try {
-        const userRef = doc(firestore, 'users', user.id);
-        await updateDoc(userRef, {
-            'demographics.privacySettings': newSettings
-        });
+    
+    const userRef = doc(firestore, 'users', user.id);
+    const success = await updateDocument(userRef, {
+        'demographics.privacySettings': newSettings
+    });
+
+    if (success) {
         toast({ title: 'Privacy setting updated.' });
-    } catch (error) {
-        console.error("Failed to update privacy setting:", error);
-        toast({ variant: 'destructive', title: 'Update Failed' });
+    } else {
         // Revert UI on failure
         if (key === 'vitalsVisible') setIsVitalsVisible(!value);
         if (key === 'discoverable') setIsDiscoverable(!value);
@@ -71,15 +71,14 @@ export function AccountSettingsTab() {
 
   const handleUpgrade = async () => {
     if (!user || !firestore) return;
-    try {
-        const userRef = doc(firestore, 'users', user.id);
-        await updateDoc(userRef, { isPremium: true });
+    const userRef = doc(firestore, 'users', user.id);
+    const success = await updateDocument(userRef, { isPremium: true });
+    
+    if (success) {
         toast({
             title: "Congratulations!",
             description: "You've been upgraded to a Premium account."
         });
-    } catch (error) {
-         toast({ variant: 'destructive', title: 'Upgrade Failed' });
     }
   };
 
@@ -93,13 +92,14 @@ export function AccountSettingsTab() {
         return;
     };
 
-    try {
-        const userRef = doc(firestore, "users", user.id);
-        await updateDoc(userRef, {
-            status: 'suspended',
-            deletionScheduledAt: serverTimestamp()
-        });
-        
+    
+    const userRef = doc(firestore, "users", user.id);
+    const success = await updateDocument(userRef, {
+        status: 'suspended',
+        deletionScheduledAt: serverTimestamp()
+    });
+    
+    if (success) {
         toast({
             title: "Account Deletion Scheduled",
             description: "Your account will be permanently deleted in 30 days. You have been logged out.",
@@ -107,14 +107,6 @@ export function AccountSettingsTab() {
 
         await signOut(auth);
         router.push('/'); // Force redirect to home page after logout.
-
-    } catch (error) {
-        console.error("Failed to schedule account deletion:", error);
-        toast({
-            variant: "destructive",
-            title: "Deletion Failed",
-            description: "An error occurred while scheduling your account for deletion.",
-        });
     }
   };
   

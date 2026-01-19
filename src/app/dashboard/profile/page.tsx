@@ -18,14 +18,12 @@ import { Label } from "@/components/ui/label";
 import { HealthIdCard } from "@/components/dashboard/health-id-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
-import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase, commitBatch } from "@/firebase";
 import { doc, writeBatch } from "firebase/firestore";
 import { ApplyForRoleCard } from "@/components/dashboard/profile/apply-for-role-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 
 const ProfileInfoRow = ({ icon: Icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | null, children?: React.ReactNode }) => {
   if (!value && !children) return null;
@@ -177,7 +175,7 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!user || !firestore) return;
     
     const batch = writeBatch(firestore);
@@ -192,21 +190,15 @@ export default function ProfilePage() {
         allergies: allergies || [],
     });
 
-    batch.commit()
-        .then(() => {
-            toast({
-                title: "Profile Updated",
-                description: "Your personal and medical information has been saved.",
-            });
-            setIsEditing(false);
-        })
-        .catch(async (serverError) => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: userRef.path,
-                operation: 'update',
-                requestResourceData: { demographicsData, chronicConditions, allergies }
-            }));
+    const success = await commitBatch(batch, 'update user profile');
+
+    if (success) {
+        toast({
+            title: "Profile Updated",
+            description: "Your personal and medical information has been saved.",
         });
+        setIsEditing(false);
+    }
   }
 
   const handleCancel = () => {

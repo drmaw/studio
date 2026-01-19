@@ -20,12 +20,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { QrScannerDialog } from "@/components/dashboard/qr-scanner-dialog";
-import { collection, getDocs, query, where, limit, doc, getDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, limit, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
-import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useDoc, useFirestore, useMemoFirebase, addDocument } from "@/firebase";
 import { BookAppointmentDialog } from "@/components/dashboard/book-appointment-dialog";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 
 
 type CombinedPatient = User & Partial<Patient>;
@@ -136,14 +134,7 @@ export default function BookAppointmentPage() {
                     action: 'search' as const,
                     timestamp: serverTimestamp(),
                 };
-                addDoc(logRef, logEntry)
-                    .catch(async (serverError) => {
-                        errorEmitter.emit('permission-error', new FirestorePermissionError({
-                            path: logRef.path,
-                            operation: 'create',
-                            requestResourceData: logEntry,
-                        }));
-                    });
+                addDocument(logRef, logEntry);
 
             } else {
                 setSearchedPatient('not_found');

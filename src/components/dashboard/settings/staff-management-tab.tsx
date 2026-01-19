@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,8 +34,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import type { User, Role } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, getDocs, doc, limit, writeBatch, updateDoc } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase, commitBatch, updateDocument } from "@/firebase";
+import { collection, query, where, getDocs, doc, limit, writeBatch } from "firebase/firestore";
 import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
 import { useSearchParams } from "next/navigation";
 
@@ -111,13 +112,15 @@ export function StaffManagementTab() {
               roles: updatedRoles
           });
 
-          await batch.commit();
+          const success = await commitBatch(batch, `add staff ${userToAdd.id} to org ${orgId}`);
 
-          toast({
-              title: "Staff Added",
-              description: `${userToAdd.name} has been assigned the ${values.role.replace(/_/g, ' ')} role in your organization.`,
-          });
-          form.reset();
+          if (success) {
+            toast({
+                title: "Staff Added",
+                description: `${userToAdd.name} has been assigned the ${values.role.replace(/_/g, ' ')} role in your organization.`,
+            });
+            form.reset();
+          }
       } else {
         toast({
           variant: "destructive",
@@ -152,16 +155,17 @@ export function StaffManagementTab() {
         const newRoles = ['patient'];
         const personalOrgId = `org-ind-${staffMember.id}`;
 
-        await updateDoc(userDocRef, {
+        const success = await updateDocument(userDocRef, {
             roles: newRoles,
             organizationId: personalOrgId,
         });
 
-        toast({
-            title: "Staff Removed",
-            description: `${staffMember.name} has been removed from your organization.`,
-        });
-
+        if (success) {
+            toast({
+                title: "Staff Removed",
+                description: `${staffMember.name} has been removed from your organization.`,
+            });
+        }
     } catch (e) {
         console.error("Error removing staff:", e);
         toast({

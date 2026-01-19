@@ -11,12 +11,10 @@ import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
 import { PlusCircle, Loader2, HeartPulse, Droplet, Weight, Activity, Beaker } from 'lucide-react';
 import type { Role, Vitals } from '@/lib/definitions';
-import { useFirestore } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, addDocument } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { FormattedDate } from '../shared/formatted-date';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 
 type VitalsTrackerProps = {
@@ -71,7 +69,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
     name: format(parseISO(v.date), 'dd-MM'),
   })).slice().reverse();
 
-  const handleAddVitals = (newVitalData: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => {
+  const handleAddVitals = async (newVitalData: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => {
     if (!patientId || !firestore) return;
 
     if (Object.values(newVitalData).every(val => val === null || val === undefined || isNaN(val as number))) {
@@ -99,30 +97,23 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
         createdAt: serverTimestamp()
     };
     
-    addDoc(vitalsRef, newVital)
-        .then(() => {
-            toast({
-              title: "Vitals Logged",
-              description: "Your latest health vitals have been recorded.",
-            });
+    const docRef = await addDocument(vitalsRef, newVital);
 
-            setBpSystolic('');
-            setBpDiastolic('');
-            setPulse('');
-            setWeight('');
-            setRbs('');
-            setSCreatinine('');
-        })
-        .catch(async (serverError) => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: vitalsRef.path,
-                operation: 'create',
-                requestResourceData: newVital
-            }));
-        })
-        .finally(() => {
-            setIsSubmitting(false);
+    if (docRef) {
+        toast({
+            title: "Vitals Logged",
+            description: "Your latest health vitals have been recorded.",
         });
+
+        setBpSystolic('');
+        setBpDiastolic('');
+        setPulse('');
+        setWeight('');
+        setRbs('');
+        setSCreatinine('');
+    }
+    
+    setIsSubmitting(false);
   };
 
   const renderInput = () => {

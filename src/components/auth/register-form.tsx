@@ -19,12 +19,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth, useFirestore, commitBatch } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import type { User, Patient, Organization } from "@/lib/definitions";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -120,25 +118,15 @@ export function RegisterForm() {
       batch.set(patientDocRef, newPatient);
       batch.set(orgDocRef, newOrganization); // Add organization to the batch
 
-      batch.commit()
-        .then(() => {
-            toast({
-                title: "Registration Successful",
-                description: "You can now log in with your credentials.",
-            });
-            router.push("/login");
-        })
-        .catch(async (serverError) => {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: 'batch-write',
-                operation: 'create',
-                requestResourceData: { newUser, newPatient, newOrganization }
-            }));
-        })
-        .finally(() => {
-            setIsLoading(false);
+      const success = await commitBatch(batch, 'new user registration');
+      if (success) {
+        toast({
+            title: "Registration Successful",
+            description: "You can now log in with your credentials.",
         });
-
+        router.push("/login");
+      }
+      
     } catch (error: any) {
       console.error("Registration failed:", error);
       toast({
@@ -146,7 +134,8 @@ export function RegisterForm() {
         title: "Registration Failed",
         description: error.message || "Could not create account. Please try again.",
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   }
 

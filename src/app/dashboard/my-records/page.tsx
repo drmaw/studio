@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -33,13 +34,11 @@ import { RecordViewer } from '@/components/dashboard/record-viewer';
 import type { RecordFile } from '@/lib/definitions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, serverTimestamp, query, orderBy, doc, deleteDoc, writeBatch, addDoc, updateDoc } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, addDocument, deleteDocument, commitBatch, updateDocument } from '@/firebase';
+import { collection, serverTimestamp, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FormattedDate } from '@/components/shared/formatted-date';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 
 export default function MyHealthRecordsPage() {
@@ -116,20 +115,14 @@ export default function MyHealthRecordsPage() {
                 createdAt: serverTimestamp(),
             };
 
-            addDoc(recordFilesRef, newRecord)
-                .then(() => {
-                    toast({
-                        title: 'Upload successful',
-                        description: `Your file "${selectedFile.name}" has been uploaded.`,
-                    });
-                })
-                .catch(async (serverError) => {
-                    errorEmitter.emit('permission-error', new FirestorePermissionError({
-                        path: recordFilesRef.path,
-                        operation: 'create',
-                        requestResourceData: newRecord
-                    }));
+            const docRef = await addDocument(recordFilesRef, newRecord);
+
+            if (docRef) {
+                toast({
+                    title: 'Upload successful',
+                    description: `Your file "${selectedFile.name}" has been uploaded.`,
                 });
+            }
             
         } catch (error) {
             console.error("Upload failed: ", error);
@@ -141,26 +134,22 @@ export default function MyHealthRecordsPage() {
         }
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if(!user || !firestore) return;
         const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
-        deleteDoc(docRef)
-            .then(() => {
-                setSelectedRecords(prev => prev.filter(selectedId => selectedId !== id));
-                toast({
-                    title: 'Record deleted',
-                    description: 'The selected health record has been removed.',
-                });
-            })
-            .catch(async (serverError) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: docRef.path,
-                    operation: 'delete',
-                }));
+        
+        const success = await deleteDocument(docRef);
+
+        if (success) {
+            setSelectedRecords(prev => prev.filter(selectedId => selectedId !== id));
+            toast({
+                title: 'Record deleted',
+                description: 'The selected health record has been removed.',
             });
+        }
     }
 
-    const handleDeleteSelected = () => {
+    const handleDeleteSelected = async () => {
         if (!user || !firestore || selectedRecords.length === 0) return;
         
         const batch = writeBatch(firestore);
@@ -169,20 +158,15 @@ export default function MyHealthRecordsPage() {
             batch.delete(docRef);
         });
 
-        batch.commit()
-            .then(() => {
-                 toast({
-                    title: `${selectedRecords.length} records deleted`,
-                    description: 'The selected health records have been removed.',
-                });
-                setSelectedRecords([]);
-            })
-            .catch(async (serverError) => {
-                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `/patients/${user.id}/record_files`,
-                    operation: 'delete',
-                }));
+        const success = await commitBatch(batch, `delete ${selectedRecords.length} records`);
+
+        if (success) {
+            toast({
+                title: `${selectedRecords.length} records deleted`,
+                description: 'The selected health records have been removed.',
             });
+            setSelectedRecords([]);
+        }
     };
 
     const handleDownloadSelected = () => {
@@ -194,24 +178,19 @@ export default function MyHealthRecordsPage() {
         setSelectedRecords([]);
     };
 
-    const handleUpgrade = () => {
+    const handleUpgrade = async () => {
         if (!user || !firestore) return;
         const userRef = doc(firestore, 'users', user.id);
         const updateData = { isPremium: true };
-        updateDoc(userRef, updateData)
-            .then(() => {
-                toast({
-                    title: "Congratulations!",
-                    description: "You've been upgraded to a Premium account."
-                });
-            })
-            .catch(async (serverError) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: userRef.path,
-                    operation: 'update',
-                    requestResourceData: updateData
-                }));
+        
+        const success = await updateDocument(userRef, updateData);
+
+        if (success) {
+            toast({
+                title: "Congratulations!",
+                description: "You've been upgraded to a Premium account."
             });
+        }
     };
     
     const toggleRecordSelection = (id: string) => {

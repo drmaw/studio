@@ -1,6 +1,6 @@
+
 'use client';
 
-import { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,8 @@ import { Building, Hash, MapPin, Phone, Image as ImageIcon, PlusCircle, Trash2 }
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/use-auth';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase, updateDocument } from '@/firebase';
+import { doc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import type { Organization } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSearchParams } from 'next/navigation';
@@ -36,7 +36,7 @@ export function GeneralSettingsTab() {
     if (!firestore || !organization) return;
     const newImageUrl = `https://picsum.photos/seed/${Math.random()}/600/400`;
     const orgRef = doc(firestore, 'organizations', organization.id);
-    await updateDoc(orgRef, {
+    await updateDocument(orgRef, {
         facilityImages: arrayUnion(newImageUrl)
     });
   }
@@ -44,7 +44,7 @@ export function GeneralSettingsTab() {
   const handleRemoveImage = async (imageUrl: string) => {
     if (!firestore || !organization) return;
     const orgRef = doc(firestore, 'organizations', organization.id);
-    await updateDoc(orgRef, {
+    await updateDocument(orgRef, {
         facilityImages: arrayRemove(imageUrl)
     });
   }

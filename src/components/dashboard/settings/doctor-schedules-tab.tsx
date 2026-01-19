@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,8 +22,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
-import { getDocs, collection, query, where, limit, doc, addDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
+import { useFirestore, useCollection, useDoc, useMemoFirebase, addDocument, deleteDocument } from "@/firebase";
+import { getDocs, collection, query, where, limit, doc, serverTimestamp } from "firebase/firestore";
 import type { User, DoctorSchedule, Organization } from "@/lib/definitions";
 import { useSearchParams } from "next/navigation";
 
@@ -105,7 +106,7 @@ export function DoctorSchedulesTab() {
         const newSchedule: Omit<DoctorSchedule, 'id'> = {
             doctorId: doctorData.healthId,
             doctorAuthId: doctorDoc.id,
-            doctorName: doctorData.name,
+            doctorName: `Dr. ${doctorData.name}`,
             organizationId: orgId,
             organizationName: organization.name,
             roomNumber: values.roomNumber,
@@ -116,13 +117,15 @@ export function DoctorSchedulesTab() {
             createdAt: serverTimestamp()
         };
 
-        await addDoc(schedulesRef, newSchedule);
+        const docRef = await addDocument(schedulesRef, newSchedule);
 
-        toast({
-            title: "Schedule Added",
-            description: `A new chamber has been scheduled for ${doctorData.name}.`,
-        });
-        form.reset();
+        if (docRef) {
+          toast({
+              title: "Schedule Added",
+              description: `A new chamber has been scheduled for ${doctorData.name}.`,
+          });
+          form.reset();
+        }
     } else {
       toast({
         variant: "destructive",
@@ -137,12 +140,16 @@ export function DoctorSchedulesTab() {
   const handleDelete = async (scheduleId: string) => {
     if (!orgId || !firestore) return;
     const scheduleRef = doc(firestore, 'organizations', orgId, 'schedules', scheduleId);
-    await deleteDoc(scheduleRef);
-    toast({
-      variant: "destructive",
-      title: "Schedule Removed",
-      description: "The doctor's schedule has been removed.",
-    });
+    
+    const success = await deleteDocument(scheduleRef);
+
+    if (success) {
+      toast({
+        variant: "destructive",
+        title: "Schedule Removed",
+        description: "The doctor's schedule has been removed.",
+      });
+    }
   }
 
   const isFormDisabled = isSubmitting || orgLoading || ownerLoading;

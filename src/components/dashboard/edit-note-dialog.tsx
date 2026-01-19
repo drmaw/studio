@@ -16,10 +16,8 @@ import { type MedicalRecord } from "@/lib/definitions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Loader2, Pencil } from "lucide-react"
-import { useFirestore } from "@/firebase"
-import { doc, updateDoc } from "firebase/firestore"
-import { errorEmitter } from "@/firebase/error-emitter"
-import { FirestorePermissionError } from "@/firebase/errors"
+import { useFirestore, updateDocument } from "@/firebase"
+import { doc } from "firebase/firestore"
 
 export function EditNoteDialog({ record, patientId }: { record: MedicalRecord, patientId: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,31 +26,24 @@ export function EditNoteDialog({ record, patientId }: { record: MedicalRecord, p
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!patientId || !firestore) return;
     setIsSaving(true);
     
     const recordRef = doc(firestore, "patients", patientId, "medical_records", record.id);
     const updateData = { notes: note };
     
-    updateDoc(recordRef, updateData)
-        .then(() => {
-            setIsOpen(false);
-            toast({
-              title: "Note Saved",
-              description: "The medical record has been updated successfully.",
-            });
-        })
-        .catch(async (serverError) => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: recordRef.path,
-                operation: 'update',
-                requestResourceData: updateData,
-            }));
-        })
-        .finally(() => {
-            setIsSaving(false);
+    const success = await updateDocument(recordRef, updateData);
+
+    if (success) {
+        setIsOpen(false);
+        toast({
+            title: "Note Saved",
+            description: "The medical record has been updated successfully.",
         });
+    }
+
+    setIsSaving(false);
   }
 
   return (
