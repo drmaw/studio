@@ -2,9 +2,9 @@
 'use client'
 
 import { useState } from 'react';
-import { useFirestore, useCollectionGroup, useMemoFirebase, commitBatch, updateDocument, writeBatch, addDocument } from '@/firebase';
+import { useFirestore, useCollectionGroup, useMemoFirebase, commitBatch, updateDocument, writeBatch, addDocument, setDocument } from '@/firebase';
 import { collectionGroup, query, where, doc, serverTimestamp, getDoc, collection } from 'firebase/firestore';
-import type { Role, RoleApplication, RoleRemovalRequest, User, Organization } from '@/lib/definitions';
+import type { Role, RoleApplication, RoleRemovalRequest, User, Organization, Membership } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -189,38 +189,42 @@ export function RoleManagementTab() {
     const { data: removalRequests, isLoading: removalsLoading } = useCollectionGroup<RoleRemovalRequest>(removalsQuery);
     
     const handleApproveApplication = async (app: RoleApplication, callbacks: {onSuccess: () => void, onError: () => void}) => {
-        if (!firestore) return;
+        if (!firestore) return callbacks.onError();
         const batch = writeBatch(firestore);
         
         const appRef = doc(firestore, 'users', app.userId, 'role_applications', app.id);
         batch.update(appRef, { status: 'approved', reviewedAt: serverTimestamp() });
-
-        const userRef = doc(firestore, 'users', app.userId);
-        const userDocSnap = await getDoc(userRef);
         
-        if (userDocSnap.exists()) {
-            const userDoc = userDocSnap.data() as User;
-            const currentRoles = userDoc.roles || [];
-            const newRoles = Array.from(new Set([...currentRoles, app.requestedRole]));
-            batch.update(userRef, { roles: newRoles });
+        // If approving a hospital owner, create the organization and their membership
+        if (app.requestedRole === 'hospital_owner' && app.details?.organization) {
+            const orgRef = doc(collection(firestore, 'organizations')); // Auto-generate ID
+            const newOrg: Omit<Organization, 'id'> = {
+                name: app.details.organization.name,
+                address: app.details.organization.address,
+                registrationNumber: app.details.organization.reg,
+                tin: app.details.organization.tin,
+                ownerId: app.userId,
+                status: 'active',
+                createdAt: serverTimestamp(),
+            };
+            batch.set(orgRef, newOrg);
+            
+            // Create membership for the owner in their new organization
+            const memberRef = doc(firestore, 'organizations', orgRef.id, 'members', app.userId);
+            const ownerMembership: Omit<Membership, 'id'> = {
+                userId: app.userId,
+                userName: app.userName,
+                userHealthId: (await getDoc(doc(firestore, 'users', app.userId))).data()?.healthId,
+                roles: ['hospital_owner'],
+                status: 'active',
+                consent: { shareRecords: false },
+            };
+            batch.set(memberRef, ownerMembership);
 
-             // If approving a hospital owner, create the organization
-            if (app.requestedRole === 'hospital_owner' && app.details?.organization) {
-                const orgCollectionRef = collection(firestore, 'organizations');
-                const orgRef = doc(orgCollectionRef); // Auto-generate ID
-                const newOrg: Omit<Organization, 'id'> = {
-                    name: app.details.organization.name,
-                    address: app.details.organization.address,
-                    registrationNumber: app.details.organization.reg,
-                    tin: app.details.organization.tin,
-                    ownerId: app.userId,
-                    status: 'active',
-                    createdAt: serverTimestamp(),
-                };
-                batch.set(orgRef, newOrg);
-                // Update the user's orgId to the new one
-                batch.update(userRef, { organizationId: orgRef.id });
-            }
+        } else {
+            // For other roles, a manual process by the owner in the staff tab is expected
+            // as we don't know which org to add them to from this context.
+            // We just approve the application status.
         }
         
         commitBatch(batch, `approve role application for ${app.userId}`, () => {
@@ -254,15 +258,23 @@ export function RoleManagementTab() {
 
         const requestRef = doc(firestore, 'users', req.userId, 'role_removal_requests', req.id);
         batch.update(requestRef, { status: 'approved', reviewedAt: serverTimestamp() });
-
-        const userRef = doc(firestore, 'users', req.userId);
-        const userDocSnap = await getDoc(userRef);
-
-        if (userDocSnap.exists()) {
-            const userDoc = userDocSnap.data() as User;
-            const newRoles = (userDoc.roles || []).filter((r: Role) => r !== req.roleToRemove);
-            batch.update(userRef, { roles: newRoles });
-        }
+        
+        // This is a global admin action. We assume we need to find the membership and remove the role.
+        const memberCollectionQuery = query(collectionGroup(firestore, 'members'), where('userId', '==', req.userId));
+        const memberSnapshots = await getDocs(memberCollectionQuery);
+        
+        memberSnapshots.forEach(memberDoc => {
+            const memberData = memberDoc.data() as Membership;
+            if (memberData.roles.includes(req.roleToRemove)) {
+                const newRoles = memberData.roles.filter(r => r !== req.roleToRemove);
+                if (newRoles.length === 0) {
+                    // If no roles are left, delete the membership
+                    batch.delete(memberDoc.ref);
+                } else {
+                    batch.update(memberDoc.ref, { roles: newRoles });
+                }
+            }
+        });
         
         commitBatch(batch, `approve role removal for ${req.userId}`, () => {
             createNotification(firestore, req.userId, 'Role Removed', `Your ${req.roleToRemove.replace(/_/g, ' ')} role has been successfully removed.`, '/dashboard/profile');

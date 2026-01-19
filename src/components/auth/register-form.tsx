@@ -84,11 +84,10 @@ export function RegisterForm() {
       const memberDocRef = doc(firestore, "organizations", orgId, "members", firebaseUser.uid);
 
       // 1. Create the core User profile
-      const newUser: Omit<User, 'id'> = {
+      const newUser: Omit<User, 'id' | 'roles'> = {
           healthId: healthId,
           name: values.name,
           email: firebaseUser.email!,
-          roles: ['patient'] as Role[],
           organizationId: orgId,
           organizationName: `${values.name}'s Personal Records`,
           avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,

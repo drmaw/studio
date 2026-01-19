@@ -34,7 +34,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import type { User, Role, Membership } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, setDocument, getDocs, collection, query, where, doc, limit, getDoc, collectionGroup, orderBy, startAfter, type DocumentSnapshot, writeBatch, commitBatch } from "@/firebase";
+import { useFirestore, setDocument, getDocs, collection, query, where, doc, limit, getDoc, collectionGroup, orderBy, startAfter, type DocumentSnapshot, writeBatch, commitBatch, deleteDocument } from "@/firebase";
 import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
 import { useSearchParams } from "next/navigation";
 import { CardFooter } from "@/components/ui/card";
@@ -185,28 +185,9 @@ export function StaffManagementTab() {
     
     setRemovingId(member.userId);
     
-    const batch = writeBatch(firestore);
-    
-    // 1. Delete the membership document
     const memberRef = doc(firestore, 'organizations', orgId, 'members', member.userId);
-    batch.delete(memberRef);
     
-    // 2. Update the user's root roles array
-    const userRef = doc(firestore, 'users', member.userId);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-        const userData = userSnap.data() as User;
-        const currentRoles = userData.roles || [];
-        const rolesToRemove = member.roles;
-        const newRoles = currentRoles.filter(role => !rolesToRemove.includes(role));
-        // Always ensure 'patient' role remains
-        if (!newRoles.includes('patient')) {
-            newRoles.push('patient');
-        }
-        batch.update(userRef, { roles: newRoles });
-    }
-
-    commitBatch(batch, `remove staff ${member.userId} from org ${orgId}`, () => {
+    deleteDocument(memberRef, () => {
         toast({
             title: "Staff Removed",
             description: `${member.userName} has been removed from your organization.`,
