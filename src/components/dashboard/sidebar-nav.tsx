@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, CalendarCheck, DollarSign, Shield, BookOpenCheck, BedDouble, ScrollText, MessageSquare, BarChart, HandCoins } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, CalendarCheck, DollarSign, Shield, BookOpenCheck, BedDouble, ScrollText, MessageSquare, BarChart, HandCoins, Code } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Role } from "@/lib/definitions";
@@ -81,6 +81,12 @@ export function SidebarNav() {
         label: "Privacy Log",
         icon: History,
         roles: ['patient'],
+    },
+    {
+      href: "/dashboard/developer",
+      label: "Developer",
+      icon: Code,
+      roles: ['patient', ...professionalRoleHierarchy],
     },
     {
       href: "/dashboard/settings",

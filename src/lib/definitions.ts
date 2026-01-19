@@ -365,3 +365,61 @@ export type DutyRoster = {
   dutyArea: string;
   createdAt: FieldValue;
 };
+
+
+// FHIR Resource Types (simplified for demonstration)
+export interface FHIR_Identifier {
+    system: string;
+    value: string;
+}
+
+export interface FHIR_HumanName {
+    text: string;
+}
+
+export interface FHIR_Patient {
+    resourceType: 'Patient';
+    id: string;
+    identifier: FHIR_Identifier[];
+    name: FHIR_HumanName[];
+    gender?: 'male' | 'female' | 'other' | 'unknown';
+    birthDate?: string; // YYYY-MM-DD
+}
+
+export interface FHIR_Coding {
+    system: string;
+    code: string;
+    display: string;
+}
+
+export interface FHIR_CodeableConcept {
+    coding: FHIR_Coding[];
+    text: string;
+}
+
+export interface FHIR_Reference {
+    reference: string;
+}
+
+export interface FHIR_Observation {
+    resourceType: 'Observation';
+    id: string;
+    status: 'final';
+    code: FHIR_CodeableConcept;
+    subject: FHIR_Reference;
+    effectiveDateTime: string; // ISO 8601
+    performer: FHIR_Reference[];
+    note?: [{ text: string }];
+}
+
+export interface FHIR_BundleEntry {
+    fullUrl: string;
+    resource: FHIR_Patient | FHIR_Observation;
+}
+
+export interface FHIR_Bundle {
+    resourceType: 'Bundle';
+    id: string;
+    type: 'collection';
+    entry: FHIR_BundleEntry[];
+}
