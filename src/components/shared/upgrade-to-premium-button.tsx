@@ -23,7 +23,7 @@ export function UpgradeToPremiumButton({ asChild = false, children, className, .
     const { toast } = useToast();
     const [isUpgrading, setIsUpgrading] = useState(false);
 
-    const handleUpgrade = async () => {
+    const handleUpgrade = () => {
         if (!user || !firestore) {
             toast({
                 variant: 'destructive',
@@ -36,22 +36,13 @@ export function UpgradeToPremiumButton({ asChild = false, children, className, .
         setIsUpgrading(true);
 
         const userRef = doc(firestore, 'users', user.id);
-        const success = await updateDocument(userRef, { isPremium: true });
-
-        if (success) {
+        updateDocument(userRef, { isPremium: true }, () => {
             toast({
                 title: 'Upgrade Successful!',
                 description: 'You are now a premium member.',
             });
-        } else {
-             toast({
-                variant: 'destructive',
-                title: 'Upgrade Failed',
-                description: 'Could not update your subscription status.',
-            });
-        }
-
-        setIsUpgrading(false);
+            setIsUpgrading(false);
+        });
     };
 
     const Comp = asChild ? Slot : Button;

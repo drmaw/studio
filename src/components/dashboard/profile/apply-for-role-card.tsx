@@ -78,7 +78,7 @@ export function ApplyForRoleCard() {
   }, [applications, removalRequests]);
 
 
-  const handleApply = async (event: React.FormEvent) => {
+  const handleApply = (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedRole || !user || !firestore) {
       toast({
@@ -115,19 +115,18 @@ export function ApplyForRoleCard() {
         createdAt: serverTimestamp(),
     };
 
-    const docRef = await addDocument(applicationsRef, newApplication);
-
-    if (docRef) {
-        toast({
-            title: "Application Submitted",
-            description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is now pending review.`,
-        });
-    }
-
-    setIsSubmitting(false);
+    addDocument(applicationsRef, newApplication, (docRef) => {
+        if (docRef) {
+            toast({
+                title: "Application Submitted",
+                description: `Your application for the ${selectedRole.replace(/_/g, ' ')} role is now pending review.`,
+            });
+        }
+        setIsSubmitting(false);
+    });
   };
 
-  const handleRequestRoleRemoval = async (roleToDelete: Role) => {
+  const handleRequestRoleRemoval = (roleToDelete: Role) => {
     if (!user || !firestore) return;
 
     // Prevent removing the essential 'patient' role
@@ -152,14 +151,14 @@ export function ApplyForRoleCard() {
         createdAt: serverTimestamp(),
     };
     
-    const docRef = await addDocument(removalRequestsRef, newRemovalRequest);
-
-    if (docRef) {
-        toast({
-            title: "Removal Request Submitted",
-            description: `Your request to remove the ${roleToDelete.replace(/_/g, ' ')} role is now pending admin review.`,
-        });
-    }
+    addDocument(removalRequestsRef, newRemovalRequest, (docRef) => {
+        if (docRef) {
+            toast({
+                title: "Removal Request Submitted",
+                description: `Your request to remove the ${roleToDelete.replace(/_/g, ' ')} role is now pending admin review.`,
+            });
+        }
+    });
   };
   
   const renderRoleForm = () => {

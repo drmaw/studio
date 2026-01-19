@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ type RecordViewerProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-const RecordViewer = ({ records, startIndex, open, onOpenChange }: RecordViewerProps) => {
+export const RecordViewer = ({ records, startIndex, open, onOpenChange }: RecordViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(startIndex);
 
   useEffect(() => {
@@ -142,29 +142,3 @@ const RecordViewer = ({ records, startIndex, open, onOpenChange }: RecordViewerP
     </Dialog>
   );
 }
-
-const Preview = ({ record }: { record: RecordFile }): ReactNode => {
-    return (
-        <div className="aspect-video bg-muted flex items-center justify-center">
-            {record.fileType === 'image' ? (
-                <Image src={record.url} alt={record.name} width={400} height={300} className="w-full h-full object-cover" />
-            ) : (
-                <FileIcon className="w-16 h-16 text-muted-foreground" />
-            )}
-        </div>
-    );
-};
-
-
-const Footer = ({ record }: { record: RecordFile }): ReactNode => {
-    return (
-        <p className="text-xs text-muted-foreground mt-4">
-            <FormattedDate date={record.createdAt} formatString="dd-MM-yyyy, hh:mm a" fallback="N/A" />
-        </p>
-    );
-};
-
-RecordViewer.Preview = Preview;
-RecordViewer.Footer = Footer;
-
-export { RecordViewer };

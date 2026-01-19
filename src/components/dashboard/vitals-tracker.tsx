@@ -69,7 +69,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
     name: format(parseISO(v.date), 'dd-MM'),
   })).slice().reverse();
 
-  const handleAddVitals = async (newVitalData: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => {
+  const handleAddVitals = (newVitalData: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => {
     if (!patientId || !firestore) return;
 
     if (Object.values(newVitalData).every(val => val === null || val === undefined || isNaN(val as number))) {
@@ -97,23 +97,22 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
         createdAt: serverTimestamp()
     };
     
-    const docRef = await addDocument(vitalsRef, newVital);
+    addDocument(vitalsRef, newVital, (docRef) => {
+        if (docRef) {
+            toast({
+                title: "Vitals Logged",
+                description: "Your latest health vitals have been recorded.",
+            });
 
-    if (docRef) {
-        toast({
-            title: "Vitals Logged",
-            description: "Your latest health vitals have been recorded.",
-        });
-
-        setBpSystolic('');
-        setBpDiastolic('');
-        setPulse('');
-        setWeight('');
-        setRbs('');
-        setSCreatinine('');
-    }
-    
-    setIsSubmitting(false);
+            setBpSystolic('');
+            setBpDiastolic('');
+            setPulse('');
+            setWeight('');
+            setRbs('');
+            setSCreatinine('');
+        }
+        setIsSubmitting(false);
+    });
   };
 
   const renderInput = () => {

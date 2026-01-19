@@ -18,9 +18,8 @@ import type { User } from "@/lib/definitions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Loader2, Plus } from "lucide-react"
-import { useFirestore, commitBatch } from "@/firebase"
-import { collection, serverTimestamp, writeBatch, doc } from "firebase/firestore"
-import { format } from 'date-fns'
+import { useFirestore, commitBatch, writeBatch } from "@/firebase"
+import { collection, serverTimestamp, doc } from "firebase/firestore"
 
 export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doctor: User }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,7 +29,7 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!diagnosis || !firestore) {
         toast({ variant: 'destructive', title: 'Diagnosis Required', description: 'Please enter a diagnosis.'});
         return;
@@ -66,9 +65,7 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
     };
     batch.set(doc(logRef), logEntry);
     
-    const success = await commitBatch(batch, 'add medical record and log');
-
-    if (success) {
+    commitBatch(batch, 'add medical record and log', () => {
         setDiagnosis('');
         setNotes('');
         setIsOpen(false);
@@ -76,9 +73,8 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
             title: "Record Added",
             description: "The new medical record has been saved successfully.",
         });
-    }
-    
-    setIsSaving(false);
+        setIsSaving(false);
+    });
   }
 
   return (

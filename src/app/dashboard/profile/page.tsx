@@ -18,8 +18,8 @@ import { Label } from "@/components/ui/label";
 import { HealthIdCard } from "@/components/dashboard/health-id-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EditContactDialog } from "@/components/dashboard/edit-contact-dialog";
-import { useFirestore, useDoc, useMemoFirebase, commitBatch } from "@/firebase";
-import { doc, writeBatch } from "firebase/firestore";
+import { useFirestore, useDoc, useMemoFirebase, commitBatch, writeBatch } from "@/firebase";
+import { doc } from "firebase/firestore";
 import { ApplyForRoleCard } from "@/components/dashboard/profile/apply-for-role-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -145,7 +145,7 @@ export default function ProfilePage() {
     });
   };
 
-  const handleAddEmergencyContact = async () => {
+  const handleAddEmergencyContact = () => {
     if (!newContactName || !newContactRelation || !newContactNumber) {
         toast({ variant: "destructive", title: "Incomplete Information", description: "Please fill all required fields for the new contact."});
         return;
@@ -175,7 +175,7 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!user || !firestore) return;
     
     const batch = writeBatch(firestore);
@@ -190,15 +190,13 @@ export default function ProfilePage() {
         allergies: allergies || [],
     });
 
-    const success = await commitBatch(batch, 'update user profile');
-
-    if (success) {
+    commitBatch(batch, 'update user profile', () => {
         toast({
             title: "Profile Updated",
             description: "Your personal and medical information has been saved.",
         });
         setIsEditing(false);
-    }
+    });
   }
 
   const handleCancel = () => {

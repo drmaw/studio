@@ -34,8 +34,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import type { User, Role } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase, commitBatch, updateDocument } from "@/firebase";
-import { collection, query, where, getDocs, doc, limit, writeBatch } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase, commitBatch, updateDocument, writeBatch } from "@/firebase";
+import { collection, query, where, getDocs, doc, limit } from "firebase/firestore";
 import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
 import { useSearchParams } from "next/navigation";
 
@@ -111,27 +111,25 @@ export function StaffManagementTab() {
             roles: updatedRoles
         });
 
-        const success = await commitBatch(batch, `add staff ${userToAdd.id} to org ${orgId}`);
-
-        if (success) {
+        commitBatch(batch, `add staff ${userToAdd.id} to org ${orgId}`, () => {
           toast({
               title: "Staff Added",
               description: `${userToAdd.name} has been assigned the ${values.role.replace(/_/g, ' ')} role in your organization.`,
           });
           form.reset();
-        }
+          setIsLoading(false);
+        });
     } else {
       toast({
         variant: "destructive",
         title: "User Not Found",
         description: "No user found with that Health ID.",
       });
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }
 
-  const handleRemoveStaff = async (staffMember: User) => {
+  const handleRemoveStaff = (staffMember: User) => {
     if (!hospitalOwner || !firestore) return;
 
     if (staffMember.id === hospitalOwner.id && !isAdminView) {
@@ -145,17 +143,15 @@ export function StaffManagementTab() {
     const newRoles = ['patient'];
     const personalOrgId = `org-ind-${staffMember.id}`;
 
-    const success = await updateDocument(userDocRef, {
+    updateDocument(userDocRef, {
         roles: newRoles,
         organizationId: personalOrgId,
-    });
-
-    if (success) {
+    }, () => {
         toast({
             title: "Staff Removed",
             description: `${staffMember.name} has been removed from your organization.`,
         });
-    }
+    });
   };
 
   return (

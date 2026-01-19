@@ -249,7 +249,7 @@ export default function BillingPage() {
     const doctorFees = useMemo(() => feeItems?.filter(item => item.category === 'doctor_fee') || [], [feeItems]);
 
 
-    const handleAddItem = async (category: FeeItem['category'], name: string, cost: number) => {
+    const handleAddItem = (category: FeeItem['category'], name: string, cost: number) => {
         if (!user || !firestore) return;
         const feeItemsRef = collection(firestore, 'organizations', user.organizationId, 'fee_items');
         const newItem = {
@@ -260,43 +260,39 @@ export default function BillingPage() {
             createdAt: serverTimestamp()
         };
 
-        const docRef = await addDocument(feeItemsRef, newItem);
-
-        if (docRef) {
-            toast({
-                title: 'Item Added',
-                description: `"${name}" has been added.`,
-            });
-        }
+        addDocument(feeItemsRef, newItem, (docRef) => {
+            if (docRef) {
+                toast({
+                    title: 'Item Added',
+                    description: `"${name}" has been added.`,
+                });
+            }
+        });
     };
     
-    const handleUpdateItem = async (item: FeeItem) => {
+    const handleUpdateItem = (item: FeeItem) => {
         if (!user || !firestore) return;
         const itemRef = doc(firestore, 'organizations', user.organizationId, 'fee_items', item.id);
         const updateData = { name: item.name, cost: item.cost };
         
-        const success = await updateDocument(itemRef, updateData);
-
-        if (success) {
+        updateDocument(itemRef, updateData, () => {
             toast({
                 title: 'Item Updated',
                 description: 'The fee item has been updated successfully.',
             });
-        }
+        });
     };
     
-    const handleDeleteItem = async (itemId: string) => {
+    const handleDeleteItem = (itemId: string) => {
         if (!user || !firestore) return;
         const itemRef = doc(firestore, 'organizations', user.organizationId, 'fee_items', itemId);
         
-        const success = await deleteDocument(itemRef);
-
-        if (success) {
+        deleteDocument(itemRef, () => {
             toast({
                 title: 'Item Removed',
                 description: 'The item has been removed.',
             });
-        }
+        });
     };
 
     return (

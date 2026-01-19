@@ -25,37 +25,33 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
     const [isEditing, setIsEditing] = useState(false);
     const firestore = useFirestore();
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (!patientId || !firestore || !redFlag) return;
         const patientRef = doc(firestore, 'patients', patientId);
         const updateData = { redFlag: { title: redFlag.title, comment: comment } };
         
-        const success = await updateDocument(patientRef, updateData);
-        
-        if (success) {
+        updateDocument(patientRef, updateData, () => {
             setRedFlag(prev => prev ? ({ ...prev, comment }) : null);
             setIsEditing(false);
             toast({
                 title: "Alert Saved",
                 description: "The critical alert has been updated.",
             });
-        }
+        });
     };
 
-    const handleDelete = async () => {
+    const handleDelete = () => {
         if (!patientId || !firestore) return;
         const patientRef = doc(firestore, 'patients', patientId);
         const updateData = { redFlag: null };
 
-        const success = await updateDocument(patientRef, updateData);
-        
-        if (success) {
+        updateDocument(patientRef, updateData, () => {
             setRedFlag(null);
             toast({
                 title: "Alert Removed",
                 description: "The critical alert has been removed for this patient.",
             });
-        }
+        });
     };
 
     if (!redFlag) {

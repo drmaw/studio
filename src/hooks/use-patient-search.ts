@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -63,7 +64,7 @@ export function usePatientSearch() {
                 const validSearcherRoles = ['doctor', 'hospital_owner', 'manager'];
                 if (currentUser.roles.some(role => validSearcherRoles.includes(role))) {
                     const logRef = collection(firestore, 'patients', foundPatient.id, 'privacy_log');
-                    await addDocument(logRef, {
+                    addDocument(logRef, {
                         actorId: currentUser.healthId,
                         actorName: currentUser.name,
                         actorAvatarUrl: currentUser.avatarUrl,

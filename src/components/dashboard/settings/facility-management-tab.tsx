@@ -71,7 +71,7 @@ export function FacilityManagementTab() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: z.infer<typeof formSchema>) {
     if (!orgId || !firestore) return;
     setIsSubmitting(true);
     
@@ -82,46 +82,41 @@ export function FacilityManagementTab() {
         createdAt: serverTimestamp()
     };
     
-    const docRef = await addDocument(facilitiesRef, newFacility);
-
-    if (docRef) {
-        toast({
-            title: "Facility Added",
-            description: `The ${values.type} "${values.name}" has been added.`,
-        });
-        form.reset({ name: "", beds: 1, cost: 1000, type: values.type });
-    }
-    
-    setIsSubmitting(false);
+    addDocument(facilitiesRef, newFacility, (docRef) => {
+        if (docRef) {
+            toast({
+                title: "Facility Added",
+                description: `The ${values.type} "${values.name}" has been added.`,
+            });
+            form.reset({ name: "", beds: 1, cost: 1000, type: values.type });
+        }
+        setIsSubmitting(false);
+    });
   }
 
-  const handleDelete = async (facilityId: string) => {
+  const handleDelete = (facilityId: string) => {
     if (!orgId || !firestore) return;
     const facilityRef = doc(firestore, 'organizations', orgId, 'facilities', facilityId);
     
-    const success = await deleteDocument(facilityRef);
-
-    if (success) {
+    deleteDocument(facilityRef, () => {
       toast({
         title: "Facility Removed",
         description: "The facility has been removed from the list.",
       });
-    }
+    });
   };
   
-  const handleUpdate = async (updatedFacility: Facility) => {
+  const handleUpdate = (updatedFacility: Facility) => {
     if (!orgId || !firestore) return;
     const facilityRef = doc(firestore, 'organizations', orgId, 'facilities', updatedFacility.id);
     const { id, organizationId, createdAt, ...updateData } = updatedFacility;
     
-    const success = await updateDocument(facilityRef, updateData);
-
-    if (success) {
+    updateDocument(facilityRef, updateData, () => {
      toast({
         title: 'Facility Updated',
         description: 'The facility details have been updated successfully.',
     });
-    }
+    });
   };
 
   return (
@@ -271,7 +266,7 @@ function EditFacilityDialog({
     onSave,
 }: { 
     item: Facility;
-    onSave: (updatedItem: Facility) => Promise<void>;
+    onSave: (updatedItem: Facility) => void;
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -286,9 +281,9 @@ function EditFacilityDialog({
         },
     });
 
-    async function handleSave(values: z.infer<typeof formSchema>) {
+    function handleSave(values: z.infer<typeof formSchema>) {
         setIsSaving(true);
-        await onSave({ ...item, ...values });
+        onSave({ ...item, ...values });
         setIsSaving(false);
         setIsOpen(false);
     };

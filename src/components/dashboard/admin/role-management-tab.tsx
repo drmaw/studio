@@ -2,8 +2,8 @@
 'use client'
 
 import { useState } from 'react';
-import { useFirestore, useCollectionGroup, useMemoFirebase, commitBatch, updateDocument } from '@/firebase';
-import { collectionGroup, query, where, doc, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
+import { useFirestore, useCollectionGroup, useMemoFirebase, commitBatch, updateDocument, writeBatch } from '@/firebase';
+import { collectionGroup, query, where, doc, serverTimestamp, getDoc, collection } from 'firebase/firestore';
 import type { Role, RoleApplication, RoleRemovalRequest, User, Organization } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -31,10 +31,10 @@ function RejectApplicationDialog({ application, onReject }: { application: RoleA
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleReject = async () => {
+    const handleReject = () => {
         if (!reason) return;
         setIsSubmitting(true);
-        await onReject(application, reason);
+        onReject(application, reason);
         setIsSubmitting(false);
         setIsOpen(false);
     }
@@ -183,25 +183,21 @@ export function RoleManagementTab() {
             }
         }
         
-        const success = await commitBatch(batch, `approve role application for ${app.userId}`);
-        
-        if (success) {
-            await createNotification(firestore, app.userId, 'Application Approved', `Your application for the ${app.requestedRole.replace(/_/g, ' ')} role has been approved.`, '/dashboard/profile');
+        commitBatch(batch, `approve role application for ${app.userId}`, () => {
+            createNotification(firestore, app.userId, 'Application Approved', `Your application for the ${app.requestedRole.replace(/_/g, ' ')} role has been approved.`, '/dashboard/profile');
             toast({ title: 'Application Approved', description: `${app.userName} is now a ${app.requestedRole}.` });
-        }
+        });
     };
 
-    const handleRejectApplication = async (app: RoleApplication, reason: string) => {
+    const handleRejectApplication = (app: RoleApplication, reason: string) => {
         if (!firestore) return;
         const appRef = doc(firestore, 'users', app.userId, 'role_applications', app.id);
         const updateData = { status: 'rejected', reason: reason, reviewedAt: serverTimestamp() };
         
-        const success = await updateDocument(appRef, updateData);
-        
-        if (success) {
-            await createNotification(firestore, app.userId, 'Application Rejected', `Your application for the ${app.requestedRole.replace(/_/g, ' ')} role has been rejected.`, '/dashboard/profile');
+        updateDocument(appRef, updateData, () => {
+            createNotification(firestore, app.userId, 'Application Rejected', `Your application for the ${app.requestedRole.replace(/_/g, ' ')} role has been rejected.`, '/dashboard/profile');
             toast({ variant: 'destructive', title: 'Application Rejected' });
-        }
+        });
     };
 
     const handleApproveRemoval = async (req: RoleRemovalRequest) => {
@@ -220,25 +216,21 @@ export function RoleManagementTab() {
             batch.update(userRef, { roles: newRoles });
         }
         
-        const success = await commitBatch(batch, `approve role removal for ${req.userId}`);
-        
-        if (success) {
-            await createNotification(firestore, req.userId, 'Role Removed', `Your ${req.roleToRemove.replace(/_/g, ' ')} role has been successfully removed.`, '/dashboard/profile');
+        commitBatch(batch, `approve role removal for ${req.userId}`, () => {
+            createNotification(firestore, req.userId, 'Role Removed', `Your ${req.roleToRemove.replace(/_/g, ' ')} role has been successfully removed.`, '/dashboard/profile');
             toast({ title: 'Role Removal Approved' });
-        }
+        });
     };
 
-    const handleRejectRemoval = async (req: RoleRemovalRequest) => {
+    const handleRejectRemoval = (req: RoleRemovalRequest) => {
         if (!firestore) return;
         const requestRef = doc(firestore, 'users', req.userId, 'role_removal_requests', req.id);
         const updateData = { status: 'rejected', reviewedAt: serverTimestamp() };
         
-        const success = await updateDocument(requestRef, updateData);
-
-        if (success) {
-            await createNotification(firestore, req.userId, 'Role Removal Rejected', `Your request to remove the ${req.roleToRemove.replace(/_/g, ' ')} role has been rejected.`, '/dashboard/profile');
+        updateDocument(requestRef, updateData, () => {
+            createNotification(firestore, req.userId, 'Role Removal Rejected', `Your request to remove the ${req.roleToRemove.replace(/_/g, ' ')} role has been rejected.`, '/dashboard/profile');
             toast({ variant: 'destructive', title: 'Role Removal Rejected' });
-        }
+        });
     };
 
     const isLoading = appsLoading || removalsLoading;

@@ -42,26 +42,24 @@ export default function DoctorAppointmentsPage() {
         }, [firestore, organizationId, scheduleId])
     );
 
-    const handleStatusChange = async (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
+    const handleStatusChange = (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
         if (!firestore) return;
         const appointmentRef = doc(firestore, 'appointments', appointment.id);
         const updateData = { status };
         
-        const success = await updateDocument(appointmentRef, updateData);
-        
-        if (success) {
+        updateDocument(appointmentRef, updateData, () => {
             // Notify patient
             const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Cancelled';
             const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
             const description = `Your appointment with ${appointment.doctorName} on ${formattedDate} has been ${status}.`;
             
-            await createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
+            createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
 
             toast({
                 title: `Appointment ${status}`,
                 description: `The appointment has been ${status}.`
             });
-        }
+        });
     };
     
     const isLoading = appointmentsLoading || scheduleLoading;

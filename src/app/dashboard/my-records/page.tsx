@@ -5,9 +5,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Trash2, Loader2, Image as ImageIcon, MoreHorizontal, Download, FileText } from 'lucide-react';
+import { UploadCloud, Trash2, Loader2, Image as ImageIcon, MoreHorizontal, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from '@/hooks/use-auth';
@@ -22,16 +21,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RecordViewer } from '@/components/dashboard/record-viewer';
 import type { RecordFile } from '@/lib/definitions';
 import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import { useFirestore, useCollection, useMemoFirebase, addDocument, deleteDocument, commitBatch } from '@/firebase';
-import { collection, serverTimestamp, query, orderBy, doc, writeBatch } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, addDocument, deleteDocument, commitBatch, writeBatch } from '@/firebase';
+import { collection, serverTimestamp, query, orderBy, doc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FormattedDate } from '@/components/shared/formatted-date';
 import { PageHeader } from '@/components/shared/page-header';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { EmptyState } from '@/components/shared/empty-state';
 import { UpgradeToPremiumButton } from '@/components/shared/upgrade-to-premium-button';
+import { RecordCard } from '@/components/dashboard/record-card';
 
 
 export default function MyHealthRecordsPage() {
@@ -72,7 +70,7 @@ export default function MyHealthRecordsPage() {
         }
     };
 
-    const handleUpload = async () => {
+    const handleUpload = () => {
         if (!selectedFile || !recordType || !user || !firestore) return;
 
         if (currentRecords.length >= maxRecords) {
@@ -86,13 +84,13 @@ export default function MyHealthRecordsPage() {
 
         setIsUploading(true);
         
-        try {
-            const storage = getStorage();
-            const filePath = `record_files/${user.id}/${Date.now()}-${selectedFile.name}`;
-            const storageRef = ref(storage, filePath);
-            const uploadResult = await uploadBytes(storageRef, selectedFile);
-            const downloadURL = await getDownloadURL(uploadResult.ref);
-
+        const storage = getStorage();
+        const filePath = `record_files/${user.id}/${Date.now()}-${selectedFile.name}`;
+        const storageRef = ref(storage, filePath);
+        
+        uploadBytes(storageRef, selectedFile).then(uploadResult => {
+            return getDownloadURL(uploadResult.ref);
+        }).then(downloadURL => {
             const recordFilesRef = collection(firestore, 'patients', user.id, 'record_files');
 
             const newRecord = {
@@ -108,41 +106,38 @@ export default function MyHealthRecordsPage() {
                 createdAt: serverTimestamp(),
             };
 
-            const docRef = await addDocument(recordFilesRef, newRecord);
-
-            if (docRef) {
-                toast({
-                    title: 'Upload successful',
-                    description: `Your file "${selectedFile.name}" has been uploaded.`,
-                });
-            }
-            
-        } catch (error) {
+            addDocument(recordFilesRef, newRecord, (docRef) => {
+                if (docRef) {
+                    toast({
+                        title: 'Upload successful',
+                        description: `Your file "${selectedFile.name}" has been uploaded.`,
+                    });
+                }
+                 setSelectedFile(null);
+                setRecordType('');
+                setIsUploading(false);
+            });
+        }).catch(error => {
             console.error("Upload failed: ", error);
             toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload your file.'});
-        } finally {
-            setSelectedFile(null);
-            setRecordType('');
             setIsUploading(false);
-        }
+        });
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = (id: string) => {
         if(!user || !firestore) return;
         const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
         
-        const success = await deleteDocument(docRef);
-
-        if (success) {
+        deleteDocument(docRef, () => {
             setSelectedRecords(prev => prev.filter(selectedId => selectedId !== id));
             toast({
                 title: 'Record deleted',
                 description: 'The selected health record has been removed.',
             });
-        }
+        });
     }
 
-    const handleDeleteSelected = async () => {
+    const handleDeleteSelected = () => {
         if (!user || !firestore || selectedRecords.length === 0) return;
         
         const batch = writeBatch(firestore);
@@ -151,15 +146,13 @@ export default function MyHealthRecordsPage() {
             batch.delete(docRef);
         });
 
-        const success = await commitBatch(batch, `delete ${selectedRecords.length} records`);
-
-        if (success) {
+        commitBatch(batch, `delete ${selectedRecords.length} records`, () => {
             toast({
                 title: `${selectedRecords.length} records deleted`,
                 description: 'The selected health records have been removed.',
             });
             setSelectedRecords([]);
-        }
+        });
     };
 
     const handleDownloadSelected = () => {
@@ -316,48 +309,14 @@ export default function MyHealthRecordsPage() {
                     {!recordsLoading && currentRecords.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {currentRecords.map((record, index) => (
-                                <Card key={record.id} className={cn("group overflow-hidden flex flex-col relative bg-card", selectedRecords.includes(record.id) && "ring-2 ring-primary")}>
-                                     <div className="absolute top-2 left-2 z-10">
-                                        <Checkbox 
-                                            checked={selectedRecords.includes(record.id)}
-                                            onCheckedChange={() => toggleRecordSelection(record.id)}
-                                            className="bg-background/50 hover:bg-background data-[state=checked]:bg-primary"
-                                        />
-                                    </div>
-                                    <CardContent className="p-0 cursor-pointer" onClick={() => openRecordViewer(index)}>
-                                        <div className="aspect-video bg-muted flex items-center justify-center">
-                                            {record.fileType === 'image' ? (
-                                                <Image src={record.url} alt={record.name} width={400} height={300} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <FileText className="w-16 h-16 text-muted-foreground" />
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                    <div className="p-4 border-t flex flex-col flex-1">
-                                        <div className="flex justify-between items-start">
-                                            <h3 className="font-semibold truncate flex-1 pr-2">{record.name}</h3>
-                                            <ConfirmationDialog
-                                                trigger={
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                }
-                                                title="Are you sure?"
-                                                description={`This will permanently delete your record "${record.name}". This action cannot be undone.`}
-                                                onConfirm={() => handleDelete(record.id)}
-                                                confirmText="Delete"
-                                            />
-                                        </div>
-                                        <div className="mt-2 flex gap-2 flex-wrap">
-                                            <Badge variant={record.fileType === 'pdf' ? 'destructive' : 'secondary'}>{record.fileType.toUpperCase()}</Badge>
-                                            <Badge variant="outline" className="capitalize">{record.recordType}</Badge>
-                                        </div>
-                                        <div className="flex-1" />
-                                        <p className="text-xs text-muted-foreground mt-4">
-                                            <FormattedDate date={record.createdAt} formatString="dd-MM-yyyy, hh:mm a" fallback="N/A" />
-                                        </p>
-                                    </div>
-                                </Card>
+                               <RecordCard
+                                    key={record.id}
+                                    record={record}
+                                    isSelected={selectedRecords.includes(record.id)}
+                                    onToggleSelect={toggleRecordSelection}
+                                    onDelete={handleDelete}
+                                    onView={() => openRecordViewer(index)}
+                                />
                             ))}
                         </div>
                     ) : (

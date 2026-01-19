@@ -48,7 +48,7 @@ export function HealthIdCard({ user, patient }: { user: User, patient: Patient |
         fileInputRef.current?.click();
     };
 
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file || !authUser || !firestore) return;
 
@@ -62,37 +62,32 @@ export function HealthIdCard({ user, patient }: { user: User, patient: Patient |
         }
 
         setIsUploading(true);
-
-        try {
-            const storage = getStorage();
-            const filePath = `profile_pictures/${authUser.id}`;
-            const storageRef = ref(storage, filePath);
-            
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-
-            const userDocRef = doc(firestore, 'users', authUser.id);
-            const updateData = { avatarUrl: downloadURL };
-            
-            const success = await setDocument(userDocRef, updateData, { merge: true });
-
-            if (success) {
-                toast({
-                    title: 'Profile Picture Updated',
-                    description: 'Your new picture has been saved.',
+        const storage = getStorage();
+        const filePath = `profile_pictures/${authUser.id}`;
+        const storageRef = ref(storage, filePath);
+        
+        uploadBytes(storageRef, file)
+            .then(snapshot => getDownloadURL(snapshot.ref))
+            .then(downloadURL => {
+                const userDocRef = doc(firestore, 'users', authUser.id);
+                const updateData = { avatarUrl: downloadURL };
+                setDocument(userDocRef, updateData, { merge: true }, () => {
+                     toast({
+                        title: 'Profile Picture Updated',
+                        description: 'Your new picture has been saved.',
+                    });
+                    setIsUploading(false);
                 });
-            }
-
-        } catch (error) {
-            console.error("Profile picture upload failed:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Upload Failed',
-                description: 'Could not upload your new profile picture.',
+            })
+            .catch(error => {
+                console.error("Profile picture upload failed:", error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Upload Failed',
+                    description: 'Could not upload your new profile picture.',
+                });
+                setIsUploading(false);
             });
-        } finally {
-            setIsUploading(false);
-        }
     };
     
     if (!user) {

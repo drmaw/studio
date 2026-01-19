@@ -85,7 +85,7 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
     resolver: zodResolver(formSchema),
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) return;
     
     const appointmentRef = collection(firestore, 'appointments');
@@ -102,40 +102,40 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
         appointmentDate: format(values.appointmentDate, 'yyyy-MM-dd'),
         appointmentTime: values.appointmentTime,
         reason: values.reason || '',
-        status: 'pending',
+        status: 'pending' as const,
         createdAt: serverTimestamp(),
     };
 
-    const docRef = await addDocument(appointmentRef, newAppointment);
-    
-    if (docRef) {
-        // Notify the doctor of the new request
-        await createNotification(
-            firestore, 
-            schedule.doctorAuthId,
-            'New Appointment Request',
-            `${patient.name} has requested an appointment on ${formattedDate} at ${values.appointmentTime}.`,
-            `/dashboard/appointments/${organization.id}/${schedule.id}`
-        );
-
-        // Notify the patient that an appointment was booked for them
-        if (patient.id !== schedule.doctorAuthId) { // Avoid self-notification
-            await createNotification(
-                firestore,
-                patient.id,
-                'New Appointment Booked',
-                `An appointment with ${schedule.doctorName} on ${formattedDate} at ${values.appointmentTime} has been booked for you. It is pending confirmation.`,
-                '/dashboard/my-appointments'
+    addDocument(appointmentRef, newAppointment, (docRef) => {
+        if (docRef) {
+            // Notify the doctor of the new request
+            createNotification(
+                firestore, 
+                schedule.doctorAuthId,
+                'New Appointment Request',
+                `${patient.name} has requested an appointment on ${formattedDate} at ${values.appointmentTime}.`,
+                `/dashboard/appointments/${organization.id}/${schedule.id}`
             );
-        }
 
-        toast({
-            title: "Appointment Requested!",
-            description: "Your request has been sent to the doctor for confirmation.",
-        });
-        setIsOpen(false);
-        form.reset();
-    }
+            // Notify the patient that an appointment was booked for them
+            if (patient.id !== schedule.doctorAuthId) { // Avoid self-notification
+                createNotification(
+                    firestore,
+                    patient.id,
+                    'New Appointment Booked',
+                    `An appointment with ${schedule.doctorName} on ${formattedDate} at ${values.appointmentTime} has been booked for you. It is pending confirmation.`,
+                    '/dashboard/my-appointments'
+                );
+            }
+
+            toast({
+                title: "Appointment Requested!",
+                description: "Your request has been sent to the doctor for confirmation.",
+            });
+            setIsOpen(false);
+            form.reset();
+        }
+    });
   }
 
   const { isSubmitting } = form.formState;

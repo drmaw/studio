@@ -31,16 +31,14 @@ export function UsersTable() {
         );
     }, [users, filter]);
 
-    const handleUpdateUserStatus = async (userId: string, status: 'active' | 'suspended') => {
+    const handleUpdateUserStatus = (userId: string, status: 'active' | 'suspended') => {
         if (!firestore) return;
         const userRef = doc(firestore, 'users', userId);
         const updateData = { status };
         
-        const success = await updateDocument(userRef, updateData);
-        
-        if (success) {
+        updateDocument(userRef, updateData, () => {
             toast({ title: "User Status Updated", description: `User has been ${status}.` });
-        }
+        });
     };
 
     return (

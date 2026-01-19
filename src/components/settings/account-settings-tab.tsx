@@ -34,7 +34,7 @@ export function AccountSettingsTab() {
     }
   }, [user]);
 
-  const handlePrivacyChange = async (key: 'vitalsVisible' | 'discoverable', value: boolean) => {
+  const handlePrivacyChange = (key: 'vitalsVisible' | 'discoverable', value: boolean) => {
     if (!user || !firestore) return;
     
     const newSettings = {
@@ -47,17 +47,11 @@ export function AccountSettingsTab() {
 
     
     const userRef = doc(firestore, 'users', user.id);
-    const success = await updateDocument(userRef, {
+    updateDocument(userRef, {
         'demographics.privacySettings': newSettings
-    });
-
-    if (success) {
+    }, () => {
         toast({ title: 'Privacy setting updated.' });
-    } else {
-        // Revert UI on failure
-        if (key === 'vitalsVisible') setIsVitalsVisible(!value);
-        if (key === 'discoverable') setIsDiscoverable(!value);
-    }
+    });
   };
 
   const handleAccountDeletion = async () => {
@@ -72,12 +66,10 @@ export function AccountSettingsTab() {
 
     
     const userRef = doc(firestore, "users", user.id);
-    const success = await updateDocument(userRef, {
+    updateDocument(userRef, {
         status: 'suspended',
         deletionScheduledAt: serverTimestamp()
-    });
-    
-    if (success) {
+    }, async () => {
         toast({
             title: "Account Deletion Scheduled",
             description: "Your account will be permanently deleted in 30 days. You have been logged out.",
@@ -85,7 +77,7 @@ export function AccountSettingsTab() {
 
         await signOut(auth);
         router.push('/'); // Force redirect to home page after logout.
-    }
+    });
   };
   
   if (loading) {

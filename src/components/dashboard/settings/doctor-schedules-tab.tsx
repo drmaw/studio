@@ -117,38 +117,36 @@ export function DoctorSchedulesTab() {
             createdAt: serverTimestamp()
         };
 
-        const docRef = await addDocument(schedulesRef, newSchedule);
-
-        if (docRef) {
-          toast({
-              title: "Schedule Added",
-              description: `A new chamber has been scheduled for Dr. ${doctorData.name}.`,
-          });
-          form.reset();
-        }
+        addDocument(schedulesRef, newSchedule, (docRef) => {
+          if (docRef) {
+            toast({
+                title: "Schedule Added",
+                description: `A new chamber has been scheduled for Dr. ${doctorData.name}.`,
+            });
+            form.reset();
+          }
+          setIsSubmitting(false);
+        });
     } else {
       toast({
         variant: "destructive",
         title: "Doctor Not Found",
         description: "No doctor with that Health ID was found.",
       });
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
   }
   
-  const handleDelete = async (scheduleId: string) => {
+  const handleDelete = (scheduleId: string) => {
     if (!orgId || !firestore) return;
     const scheduleRef = doc(firestore, 'organizations', orgId, 'schedules', scheduleId);
     
-    const success = await deleteDocument(scheduleRef);
-
-    if (success) {
+    deleteDocument(scheduleRef, () => {
       toast({
         title: "Schedule Removed",
         description: "The doctor's schedule has been removed.",
       });
-    }
+    });
   }
 
   const isFormDisabled = isSubmitting || orgLoading || ownerLoading;
