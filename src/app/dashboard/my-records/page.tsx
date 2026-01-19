@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,8 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RecordViewer } from '@/components/dashboard/record-viewer';
 import type { RecordFile } from '@/lib/definitions';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useFirestore, useCollection, useMemoFirebase, addDocument, deleteDocument, commitBatch, writeBatch } from '@/firebase';
-import { collection, serverTimestamp, query, orderBy, doc } from 'firebase/firestore';
+import { useFirestore, addDocument, deleteDocument, commitBatch, writeBatch } from '@/firebase';
+import { collection, serverTimestamp, query, orderBy, doc, limit, startAfter, getDocs, type DocumentSnapshot } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/shared/page-header';
@@ -30,6 +30,7 @@ import { EmptyState } from '@/components/shared/empty-state';
 import { UpgradeToPremiumButton } from '@/components/shared/upgrade-to-premium-button';
 import { RecordCard } from '@/components/dashboard/record-card';
 
+const PAGE_SIZE = 9;
 
 export default function MyHealthRecordsPage() {
     const { user, loading } = useAuth();
@@ -43,18 +44,51 @@ export default function MyHealthRecordsPage() {
     const [viewerStartIndex, setViewerStartIndex] = useState(0);
     const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
     const [isDeleting, setIsDeleting] = useState(false);
-    
-    const recordsQuery = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return query(collection(firestore, 'patients', user.id, 'record_files'), orderBy('createdAt', 'desc'));
-    }, [firestore, user]);
 
-    const { data: records, isLoading: recordsLoading } = useCollection<RecordFile>(recordsQuery);
+    const [records, setRecords] = useState<RecordFile[]>([]);
+    const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
 
     const MAX_RECORDS_STANDARD = 10;
     const MAX_RECORDS_PREMIUM = 40;
     const maxRecords = user?.isPremium ? MAX_RECORDS_PREMIUM : MAX_RECORDS_STANDARD;
-    const currentRecords = records || [];
+    const currentRecords = records;
+
+     const fetchRecords = async (loadMore = false) => {
+        if (!user || !firestore) return;
+
+        if (loadMore) setIsLoadingMore(true); else setIsLoading(true);
+
+        const recordsRef = collection(firestore, 'patients', user.id, 'record_files');
+        let q;
+        if (loadMore && lastVisible) {
+            q = query(recordsRef, orderBy('createdAt', 'desc'), startAfter(lastVisible), limit(PAGE_SIZE));
+        } else {
+            q = query(recordsRef, orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
+        }
+
+        try {
+            const documentSnapshots = await getDocs(q);
+            const newRecords = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as RecordFile));
+
+            setHasMore(newRecords.length === PAGE_SIZE);
+            setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length-1]);
+            setRecords(prev => loadMore ? [...prev, ...newRecords] : newRecords);
+        } catch (error) {
+            console.error("Error fetching records: ", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not fetch records." });
+        } finally {
+            if (loadMore) setIsLoadingMore(false); else setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if(user && firestore) {
+            fetchRecords();
+        }
+    }, [user, firestore]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -111,6 +145,7 @@ export default function MyHealthRecordsPage() {
                         title: 'Upload successful',
                         description: `Your file "${selectedFile.name}" has been uploaded.`,
                     });
+                    fetchRecords(); // Refetch records to show the new one
                 }
                  setSelectedFile(null);
                 setRecordType('');
@@ -132,6 +167,7 @@ export default function MyHealthRecordsPage() {
         
         deleteDocument(docRef, () => {
             setSelectedRecords(prev => prev.filter(selectedId => selectedId !== id));
+            setRecords(prev => prev.filter(r => r.id !== id));
             toast({
                 title: 'Record deleted',
                 description: 'The selected health record has been removed.',
@@ -153,6 +189,7 @@ export default function MyHealthRecordsPage() {
                 title: `${selectedRecords.length} records deleted`,
                 description: 'The selected health records have been removed.',
             });
+            setRecords(prev => prev.filter(r => !selectedRecords.includes(r.id)));
             setSelectedRecords([]);
             setIsDeleting(false);
         }, () => {
@@ -176,8 +213,7 @@ export default function MyHealthRecordsPage() {
     };
     
     const toggleSelectAll = () => {
-        if (!records) return;
-        if (selectedRecords.length === records.length) {
+        if (records.length > 0 && selectedRecords.length === records.length) {
             setSelectedRecords([]);
         } else {
             setSelectedRecords(records.map(r => r.id));
@@ -192,7 +228,7 @@ export default function MyHealthRecordsPage() {
     
     const storagePercentage = (currentRecords.length / maxRecords) * 100;
 
-    if (loading) {
+    if (loading && records.length === 0) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-10 w-1/2" />
@@ -309,11 +345,11 @@ export default function MyHealthRecordsPage() {
                         </label>
                     </div>
 
-                    {recordsLoading && <div className="text-center p-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>}
-
-                    {!recordsLoading && currentRecords.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {currentRecords.map((record, index) => (
+                    {isLoading && <div className="text-center p-8 col-span-1 md:col-span-2 lg:col-span-3"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>}
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {!isLoading && currentRecords.length > 0 ? (
+                            currentRecords.map((record, index) => (
                                <RecordCard
                                     key={record.id}
                                     record={record}
@@ -322,15 +358,15 @@ export default function MyHealthRecordsPage() {
                                     onDelete={handleDelete}
                                     onView={() => openRecordViewer(index)}
                                 />
-                            ))}
+                            ))
+                        ) : (!isLoading && <div className="col-span-1 md:col-span-2 lg:col-span-3"><EmptyState icon={ImageIcon} message="No Records Yet" description="You haven't uploaded any records yet."/></div>)}
+                    </div>
+                    {hasMore && !isLoading && (
+                         <div className="mt-6 flex justify-center">
+                            <Button onClick={() => fetchRecords(true)} disabled={isLoadingMore}>
+                                {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
+                            </Button>
                         </div>
-                    ) : (
-                        !recordsLoading && 
-                        <EmptyState 
-                            icon={ImageIcon}
-                            message="No Records Yet"
-                            description="You haven't uploaded any records yet."
-                        />
                     )}
                 </div>
             </div>

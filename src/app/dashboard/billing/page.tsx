@@ -1,16 +1,16 @@
 
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Loader2, PlusCircle, Search, UserX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase, addDocument } from "@/firebase";
-import { collection, serverTimestamp, orderBy, query } from "firebase/firestore";
+import { useFirestore, addDocument } from "@/firebase";
+import { collection, serverTimestamp, orderBy, query, limit, startAfter, getDocs, type DocumentSnapshot } from "firebase/firestore";
 import type { Invoice } from "@/lib/definitions";
 import { PageHeader } from "@/components/shared/page-header";
 import { usePatientSearch } from "@/hooks/use-patient-search";
@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { FormattedDate } from "@/components/shared/formatted-date";
 import { useRouter } from "next/navigation";
 
+const PAGE_SIZE = 10;
 
 export default function BillingPage() {
     const { user: currentUser } = useAuth();
@@ -33,15 +34,47 @@ export default function BillingPage() {
         isSearching,
         searchResult,
         handleSearch,
-        setSearchResult,
     } = usePatientSearch();
 
-    const invoicesQuery = useMemoFirebase(() => {
-        if (!currentUser || !firestore) return null;
-        return query(collection(firestore, 'organizations', currentUser.organizationId, 'invoices'), orderBy('createdAt', 'desc'));
-    }, [currentUser, firestore]);
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
 
-    const { data: invoices, isLoading: invoicesLoading } = useCollection<Invoice>(invoicesQuery);
+    const fetchInvoices = async (loadMore = false) => {
+        if (!currentUser || !firestore) return;
+        
+        if(loadMore) setIsLoadingMore(true); else setIsLoading(true);
+
+        const invoicesRef = collection(firestore, 'organizations', currentUser.organizationId, 'invoices');
+        let q;
+        if (loadMore && lastVisible) {
+            q = query(invoicesRef, orderBy('createdAt', 'desc'), startAfter(lastVisible), limit(PAGE_SIZE));
+        } else {
+            q = query(invoicesRef, orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
+        }
+
+        try {
+            const documentSnapshots = await getDocs(q);
+            const newInvoices = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invoice));
+            
+            setHasMore(newInvoices.length === PAGE_SIZE);
+            setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length-1]);
+            setInvoices(prev => loadMore ? [...prev, ...newInvoices] : newInvoices);
+        } catch (error) {
+            console.error("Error fetching invoices: ", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not fetch invoices." });
+        } finally {
+            if(loadMore) setIsLoadingMore(false); else setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (currentUser && firestore) {
+            fetchInvoices();
+        }
+    }, [currentUser, firestore]);
 
     const handleCreateInvoice = () => {
         if (!currentUser || !firestore || !searchResult || searchResult === 'not_found') return;
@@ -150,13 +183,13 @@ export default function BillingPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {invoicesLoading ? (
+                            {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center h-24">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
-                            ) : invoices && invoices.length > 0 ? (
+                            ) : invoices.length > 0 ? (
                                 invoices.map(invoice => (
                                     <TableRow key={invoice.id}>
                                         <TableCell className="font-medium">{invoice.patientName}</TableCell>
@@ -185,6 +218,13 @@ export default function BillingPage() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                 <CardFooter className="justify-center py-4">
+                    {hasMore && (
+                        <Button onClick={() => fetchInvoices(true)} disabled={isLoadingMore}>
+                            {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
+                        </Button>
+                    )}
+                </CardFooter>
             </Card>
         </div>
     );
