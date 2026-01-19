@@ -2,13 +2,15 @@
 'use client'
 
 import { DoctorDashboard } from "@/components/dashboard/doctor-dashboard";
+import { HospitalOwnerDashboard } from "@/components/dashboard/hospital-owner-dashboard";
+import { LabTechnicianDashboard } from "@/components/dashboard/lab-technician-dashboard";
+import { MyUpcomingShifts } from "@/components/dashboard/my-upcoming-shifts";
+import { PlaceholderDashboard } from "@/components/dashboard/placeholder-dashboard";
 import { RepDashboard } from "@/components/dashboard/rep-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { HospitalOwnerDashboard } from "@/components/dashboard/hospital-owner-dashboard";
-import { PlaceholderDashboard } from "@/components/dashboard/placeholder-dashboard";
-import { useSearchParams } from "next/navigation";
 import { type Role } from "@/lib/definitions";
+import { useSearchParams } from "next/navigation";
 
 
 export default function ProfessionalDashboardPage() {
@@ -35,11 +37,12 @@ export default function ProfessionalDashboardPage() {
     return null;
   }
 
-  // A map of specific dashboard components.
+  // A map of specific dashboard components that have unique layouts.
   const specificDashboards: Partial<Record<Role, React.ComponentType<{ user: typeof user }>>> = {
     'doctor': DoctorDashboard,
-    'marketing_rep': RepDashboard,
     'hospital_owner': HospitalOwnerDashboard,
+    'lab_technician': LabTechnicianDashboard,
+    'marketing_rep': RepDashboard,
   };
   
   const SpecificDashboard = specificDashboards[dashboardRole];
@@ -48,6 +51,25 @@ export default function ProfessionalDashboardPage() {
     return <SpecificDashboard user={user} />;
   }
 
-  // For all other professional roles, use the placeholder.
+  // These roles use the standard placeholder + shifts layout.
+  const placeholderRolesWithShifts: Role[] = [
+    'nurse', 
+    'manager', 
+    'assistant_manager', 
+    'pathologist', 
+    'pharmacist', 
+    'front_desk'
+  ];
+
+  if (placeholderRolesWithShifts.includes(dashboardRole)) {
+    return (
+      <div className="space-y-6">
+        <PlaceholderDashboard user={user} role={dashboardRole} />
+        <MyUpcomingShifts />
+      </div>
+    );
+  }
+
+  // Fallback for any other professional role that might not be explicitly handled.
   return <PlaceholderDashboard user={user} role={dashboardRole} />;
 }

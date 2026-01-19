@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState } from 'react'
@@ -13,8 +12,8 @@ import { PlusCircle, Loader2, HeartPulse, Droplet, Weight, Activity, Beaker } fr
 import type { Role, Vitals } from '@/lib/definitions';
 import { useFirestore, addDocument } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { FormattedDate } from '../shared/formatted-date';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { FormattedDate } from '@/components/shared/formatted-date';
 
 
 type VitalsTrackerProps = {
