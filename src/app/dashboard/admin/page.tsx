@@ -11,6 +11,7 @@ import { RoleManagementTab } from '@/components/dashboard/admin/role-management-
 import { UsersTable } from '@/components/dashboard/admin/users-table';
 import { OrganizationsTable } from '@/components/dashboard/admin/organizations-table';
 import { GlobalAuditLog } from '@/components/dashboard/admin/global-audit-log';
+import { PageHeader } from '@/components/shared/page-header';
 
 
 export default function AdminDashboardPage() {
@@ -28,13 +29,10 @@ export default function AdminDashboardPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2">
-                    <UserCog className="h-8 w-8" />
-                    Admin Dashboard
-                </h1>
-                <p className="text-muted-foreground">Monitor and manage the entire Digi Health platform.</p>
-            </div>
+            <PageHeader 
+                title={<><UserCog className="h-8 w-8" /> Admin Dashboard</>}
+                description="Monitor and manage the entire Digi Health platform."
+            />
             
             <Tabs defaultValue="overview">
                 <TabsList className="grid w-full grid-cols-5">

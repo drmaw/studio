@@ -8,19 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, Edit, Save, Trash2, XCircle } from "lucide-react";
 import type { Role } from "@/lib/definitions";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { useFirestore, updateDocument } from "@/firebase";
 import { doc } from "firebase/firestore";
+import { ConfirmationDialog } from "../shared/confirmation-dialog";
 
 type RedBannerProps = {
     patientId: string;
@@ -110,25 +100,13 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
                                 <Button size="sm" variant="ghost" className="text-destructive-foreground hover:bg-destructive/80 hover:text-destructive-foreground" onClick={() => setIsEditing(true)}>
                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                 </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button size="sm" variant="destructive">
-                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                This action cannot be undone. This will permanently delete the critical alert for this patient.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete Alert</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                <ConfirmationDialog
+                                    trigger={<Button size="sm" variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</Button>}
+                                    title="Are you sure?"
+                                    description="This action cannot be undone. This will permanently delete the critical alert for this patient."
+                                    onConfirm={handleDelete}
+                                    confirmText="Delete Alert"
+                                />
                             </>
                         )}
                     </div>

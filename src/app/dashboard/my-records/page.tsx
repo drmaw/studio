@@ -1,27 +1,16 @@
 
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, File, Trash2, Loader2, Image as ImageIcon, Sparkles, User, Clock, MoreHorizontal, Download } from 'lucide-react';
+import { UploadCloud, Trash2, Loader2, Image as ImageIcon, MoreHorizontal, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from '@/hooks/use-auth';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +28,10 @@ import { collection, serverTimestamp, query, orderBy, doc, writeBatch } from 'fi
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FormattedDate } from '@/components/shared/formatted-date';
+import { PageHeader } from '@/components/shared/page-header';
+import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
+import { EmptyState } from '@/components/shared/empty-state';
+import { UpgradeToPremiumButton } from '@/components/shared/upgrade-to-premium-button';
 
 
 export default function MyHealthRecordsPage() {
@@ -177,21 +170,6 @@ export default function MyHealthRecordsPage() {
         });
         setSelectedRecords([]);
     };
-
-    const handleUpgrade = async () => {
-        if (!user || !firestore) return;
-        const userRef = doc(firestore, 'users', user.id);
-        const updateData = { isPremium: true };
-        
-        const success = await updateDocument(userRef, updateData);
-
-        if (success) {
-            toast({
-                title: "Congratulations!",
-                description: "You've been upgraded to a Premium account."
-            });
-        }
-    };
     
     const toggleRecordSelection = (id: string) => {
         setSelectedRecords(prev => 
@@ -235,10 +213,10 @@ export default function MyHealthRecordsPage() {
                 startIndex={viewerStartIndex}
             />
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-3xl font-bold">My Health Records</h1>
-                    <p className="text-muted-foreground">Upload, manage, and view your personal medical documents.</p>
-                </div>
+                <PageHeader 
+                    title="My Health Records"
+                    description="Upload, manage, and view your personal medical documents."
+                />
 
                 <Card className="bg-card">
                     <CardHeader>
@@ -277,10 +255,7 @@ export default function MyHealthRecordsPage() {
                         <Progress value={storagePercentage} />
                         {!user?.isPremium && (
                             <div className="pt-2 text-center text-sm">
-                            <Button variant="link" className="p-0 h-auto text-primary" onClick={handleUpgrade}>
-                                    <Sparkles className="mr-2 h-4 w-4" />
-                                    Upgrade to Premium for {MAX_RECORDS_PREMIUM} slots
-                            </Button>
+                                <UpgradeToPremiumButton />
                             </div>
                         )}
                     </CardFooter>
@@ -307,26 +282,18 @@ export default function MyHealthRecordsPage() {
                                             Download selected
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
+                                        <ConfirmationDialog
+                                            trigger={
                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                                     <Trash2 className="mr-2 h-4 w-4" />
                                                     Delete selected
                                                 </DropdownMenuItem>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This action cannot be undone. This will permanently delete {selectedRecords.length} record(s).
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={handleDeleteSelected} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
+                                            }
+                                            title="Are you absolutely sure?"
+                                            description={`This action cannot be undone. This will permanently delete ${selectedRecords.length} record(s).`}
+                                            onConfirm={handleDeleteSelected}
+                                            confirmText="Delete"
+                                        />
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
@@ -358,66 +325,40 @@ export default function MyHealthRecordsPage() {
                                         />
                                     </div>
                                     <CardContent className="p-0 cursor-pointer" onClick={() => openRecordViewer(index)}>
-                                        {record.fileType === 'image' ? (
-                                            <Image src={record.url} alt={record.name} width={400} height={300} className="w-full h-48 object-cover transition-transform group-hover:scale-105" />
-                                        ) : (
-                                            <div className="w-full h-48 bg-secondary flex flex-col items-center justify-center text-center p-4">
-                                                <File className="h-16 w-16 text-muted-foreground" />
-                                                <p className="text-sm mt-2 text-muted-foreground font-semibold truncate">{record.name}</p>
-                                            </div>
-                                        )}
+                                        <RecordViewer.Preview record={record} />
                                     </CardContent>
                                     <div className="p-4 border-t flex flex-col flex-1">
                                         <div className="flex justify-between items-start">
                                             <h3 className="font-semibold truncate flex-1 pr-2">{record.name}</h3>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
+                                            <ConfirmationDialog
+                                                trigger={
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            This action cannot be undone. This will permanently delete your record "{record.name}".
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDelete(record.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
+                                                }
+                                                title="Are you sure?"
+                                                description={`This will permanently delete your record "${record.name}". This action cannot be undone.`}
+                                                onConfirm={() => handleDelete(record.id)}
+                                                confirmText="Delete"
+                                            />
                                         </div>
                                         <div className="mt-2 flex gap-2 flex-wrap">
                                             <Badge variant={record.fileType === 'pdf' ? 'destructive' : 'secondary'}>{record.fileType.toUpperCase()}</Badge>
                                             <Badge variant="outline" className="capitalize">{record.recordType}</Badge>
                                         </div>
                                         <div className="flex-1" />
-                                        <div className="mt-4 space-y-2 text-xs text-muted-foreground pt-4 border-t border-dashed">
-                                            <div className="flex items-center gap-2">
-                                                <Clock className="h-3 w-3"/>
-                                                <FormattedDate date={record.createdAt} formatString="dd-MM-yyyy" />
-                                                <span className="font-semibold text-foreground/80">&bull; {record.size}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <User className="h-3 w-3" />
-                                                <span>Uploaded by: <span className="font-semibold text-foreground/80">{record.uploaderName}</span></span>
-                                            </div>
-                                        </div>
+                                        <RecordViewer.Footer record={record} />
                                     </div>
                                 </Card>
                             ))}
                         </div>
                     ) : (
                         !recordsLoading && 
-                        <Card className="flex items-center justify-center p-12 bg-background-soft">
-                            <div className="text-center text-muted-foreground">
-                                <ImageIcon className="h-12 w-12 mx-auto mb-2" />
-                                <p>You haven't uploaded any records yet.</p>
-                            </div>
-                        </Card>
+                        <EmptyState 
+                            icon={ImageIcon}
+                            message="No Records Yet"
+                            description="You haven't uploaded any records yet."
+                        />
                     )}
                 </div>
             </div>

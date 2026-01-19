@@ -1,9 +1,7 @@
 
-
 'use client'
 
-import { useState } from "react";
-import type { Patient, User } from "@/lib/definitions";
+import type { User, DoctorSchedule } from "@/lib/definitions";
 import {
   Card,
   CardContent,
@@ -14,85 +12,26 @@ import {
 } from "@/components/ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Search, QrCode, AlertTriangle, Phone, Clock, ShieldCheck, HeartPulse, Siren, UserX, Loader2, Hospital } from "lucide-react";
+import { ArrowRight, CalendarDays, Search, QrCode, UserX, Loader2, Hospital, Clock } from "lucide-react";
 import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import { QrScannerDialog } from "./qr-scanner-dialog";
-import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, collectionGroup, doc, getDoc } from "firebase/firestore";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { DoctorSchedule } from "@/lib/definitions";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { useCollectionGroup, useFirestore, useMemoFirebase } from "@/firebase";
 import { Skeleton } from "../ui/skeleton";
-
-
-type CombinedPatient = User & Partial<Patient>;
-
-function PatientSearchResultCard({ patient }: { patient: CombinedPatient }) {
-  const patientInitials = patient.name.split(' ').map(n => n[0]).join('');
-  return (
-    <Card className="bg-background">
-      <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-4">
-         <Avatar className="h-20 w-20">
-            <AvatarImage src={patient.avatarUrl} />
-            <AvatarFallback className="text-2xl">{patientInitials}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <CardTitle className="text-2xl">{patient.name}</CardTitle>
-            <CardDescription className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm mt-2">
-              <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Health ID: {patient.healthId}</span>
-              <span className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {patient.demographics?.mobileNumber}</span>
-              <span>DOB: {patient.demographics?.dob}</span>
-              <span>{patient.demographics?.gender}</span>
-            </CardDescription>
-          </div>
-          <Button asChild variant="default" size="sm" className="self-start">
-            <Link href={`/dashboard/patients/${patient.id}`}>
-              View Full Records <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {patient.redFlag && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>{patient.redFlag.title}</AlertTitle>
-            <AlertDescription>
-              <p>{patient.redFlag.comment}</p>
-            </AlertDescription>
-          </Alert>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <h4 className="font-semibold flex items-center gap-2 text-sm"><HeartPulse className="h-4 w-4"/> Chronic Conditions</h4>
-            <div className="flex flex-wrap gap-2">
-              {patient.chronicConditions && patient.chronicConditions.length > 0 ? (
-                patient.chronicConditions.map(c => <Badge key={c} variant="outline">{c}</Badge>)
-              ) : <p className="text-xs text-muted-foreground">None</p>}
-            </div>
-          </div>
-           <div className="space-y-2">
-            <h4 className="font-semibold flex items-center gap-2 text-sm"><Siren className="h-4 w-4"/> Allergies</h4>
-            <div className="flex flex-wrap gap-2">
-              {patient.allergies && patient.allergies.length > 0 ? (
-                patient.allergies.map(a => <Badge key={a} variant="destructive" className="bg-destructive/10 text-destructive-foreground border-destructive/20">{a}</Badge>)
-              ) : <p className="text-xs text-muted-foreground">None</p>}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
+import { collectionGroup, query, where } from "firebase/firestore";
+import { PageHeader } from "../shared/page-header";
+import { QrScannerDialog } from "./qr-scanner-dialog";
+import { usePatientSearch } from "@/hooks/use-patient-search";
+import { EmptyState } from "../shared/empty-state";
+import { PatientInfoCard } from "../shared/patient-info-card";
 
 export function DoctorDashboard({ user }: { user: User }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<CombinedPatient | null | 'not_found'>(null);
-  const { toast } = useToast();
+  const {
+    searchQuery,
+    setSearchQuery,
+    isSearching,
+    searchResult,
+    handleSearch,
+  } = usePatientSearch();
+
   const firestore = useFirestore();
 
   const schedulesQuery = useMemoFirebase(() => {
@@ -100,93 +39,7 @@ export function DoctorDashboard({ user }: { user: User }) {
     return query(collectionGroup(firestore, 'schedules'), where('doctorId', '==', user.healthId));
   }, [firestore, user]);
   
-  const { data: chamberSchedules, isLoading: schedulesLoading } = useCollection<DoctorSchedule>(schedulesQuery);
-
-
-  const handleSearch = async (id?: string) => {
-    const finalQuery = id || searchQuery;
-    if (!finalQuery || !user || !firestore) {
-        toast({
-            variant: "destructive",
-            title: "Search field is empty",
-            description: "Please enter a Health ID or Mobile Number.",
-        });
-        return;
-    }
-    
-    setIsSearching(true);
-    setSearchResult(null);
-
-    try {
-        const usersRef = collection(firestore, "users");
-        const isHealthId = /^\d{10}$/.test(finalQuery); 
-        
-        const q = isHealthId 
-            ? query(usersRef, where("healthId", "==", finalQuery), limit(1))
-            : query(usersRef, where("demographics.mobileNumber", "==", finalQuery), limit(1));
-
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const userDoc = querySnapshot.docs[0];
-            const patientUser = { id: userDoc.id, ...userDoc.data() } as User;
-            
-            const patientDocRef = doc(firestore, "patients", patientUser.id);
-            const patientDocSnap = await getDoc(patientDocRef);
-            const patientData = patientDocSnap.exists() ? patientDocSnap.data() as Patient : null;
-
-            const combinedData: CombinedPatient = {
-                ...patientUser,
-                ...patientData,
-                id: patientUser.id,
-            };
-
-            setSearchResult(combinedData);
-
-            // Log the search action for doctors/managers/owners
-            const validSearcherRoles = ['doctor', 'hospital_owner', 'manager'];
-            if (user.roles.some(role => validSearcherRoles.includes(role))) {
-                const logRef = collection(firestore, 'patients', combinedData.id, 'privacy_log');
-                const logEntry = {
-                    actorId: user.healthId,
-                    actorName: user.name,
-                    actorAvatarUrl: user.avatarUrl,
-                    patientId: combinedData.id,
-                    organizationId: user.organizationId,
-                    action: 'search' as const,
-                    timestamp: serverTimestamp(),
-                };
-                addDoc(logRef, logEntry)
-                    .catch(async (serverError) => {
-                        errorEmitter.emit('permission-error', new FirestorePermissionError({
-                            path: logRef.path,
-                            operation: 'create',
-                            requestResourceData: logEntry,
-                        }));
-                    });
-            }
-        } else {
-            setSearchResult('not_found');
-        }
-
-    } catch (error) {
-        console.error("Patient search failed:", error);
-        toast({
-            variant: "destructive",
-            title: "Search Failed",
-            description: "An error occurred while searching for the patient.",
-        });
-        setSearchResult('not_found');
-    }
-
-    setIsSearching(false);
-    if (id) {
-        setSearchQuery(id);
-    }
-  }
-  
-  const handleQrScan = (decodedId: string) => {
-    handleSearch(decodedId);
-  }
+  const { data: chamberSchedules, isLoading: schedulesLoading } = useCollectionGroup<DoctorSchedule>(schedulesQuery);
 
   if (!user) {
       return null;
@@ -196,10 +49,10 @@ export function DoctorDashboard({ user }: { user: User }) {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Welcome, {displayName}</h1>
-        <p className="text-muted-foreground">Search for patients and manage your chamber schedules.</p>
-      </div>
+      <PageHeader
+        title={`Welcome, ${displayName}`}
+        description="Search for patients and manage your chamber schedules."
+      />
 
       {/* Patient Search */}
       <Card className="bg-card">
@@ -219,7 +72,7 @@ export function DoctorDashboard({ user }: { user: User }) {
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     />
                 </div>
-                <QrScannerDialog onScan={handleQrScan}>
+                <QrScannerDialog onScan={(id) => handleSearch(id)}>
                     <Button variant="outline" size="icon">
                         <QrCode className="h-5 w-5"/>
                         <span className="sr-only">Scan QR</span>
@@ -236,13 +89,22 @@ export function DoctorDashboard({ user }: { user: User }) {
                     <Loader2 className="h-8 w-8 animate-spin text-primary"/>
                  </div>
               ) : searchResult === 'not_found' ? (
-                 <Card className="flex flex-col items-center justify-center p-12 bg-background-soft border-dashed">
-                    <UserX className="h-16 w-16 text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold">No Patient Found</h3>
-                    <p className="text-muted-foreground">No patient record matches the provided ID or mobile number.</p>
-                </Card>
+                 <EmptyState
+                    icon={UserX}
+                    message="No Patient Found"
+                    description="No patient record matches the provided ID or mobile number."
+                 />
               ) : searchResult ? (
-                <PatientSearchResultCard patient={searchResult} />
+                <PatientInfoCard 
+                    patient={searchResult}
+                    actionSlot={
+                        <Button asChild variant="default" size="sm">
+                            <Link href={`/dashboard/patients/${searchResult.id}`}>
+                            View Full Records <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    }
+                />
               ) : null}
             </div>
         </CardContent>

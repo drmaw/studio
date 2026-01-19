@@ -1,31 +1,21 @@
 
 'use client';
 
-import { useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useMemoFirebase, updateDocument } from '@/firebase';
 import { collection, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
 import type { Appointment, DoctorSchedule } from '@/lib/definitions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarCheck, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { FormattedDate } from '@/components/shared/formatted-date';
 import { createNotification } from '@/lib/notifications';
 import { format } from 'date-fns';
+import { PageHeader } from '@/components/shared/page-header';
+import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 
 export default function MyAppointmentsPage() {
     const { user, loading: userLoading } = useAuth();
@@ -83,13 +73,10 @@ export default function MyAppointmentsPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2">
-                    <CalendarCheck className="h-8 w-8" />
-                    My Appointments
-                </h1>
-                <p className="text-muted-foreground">View your upcoming and past appointments.</p>
-            </div>
+            <PageHeader 
+                title={<><CalendarCheck className="h-8 w-8" />My Appointments</>}
+                description="View your upcoming and past appointments."
+            />
             
             <Card>
                 <CardContent className="pt-6">
@@ -124,23 +111,13 @@ export default function MyAppointmentsPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {(apt.status === 'pending' || apt.status === 'confirmed') && (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="outline" size="sm">Cancel</Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                This action cannot be undone. This will cancel your appointment with {apt.doctorName}.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>No</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleCancelAppointment(apt.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Yes, Cancel</AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                <ConfirmationDialog
+                                                    trigger={<Button variant="outline" size="sm">Cancel</Button>}
+                                                    title="Are you sure?"
+                                                    description={`This will cancel your appointment with ${apt.doctorName}. This action cannot be undone.`}
+                                                    onConfirm={() => handleCancelAppointment(apt.id)}
+                                                    confirmText="Yes, Cancel"
+                                                />
                                             )}
                                         </TableCell>
                                     </TableRow>

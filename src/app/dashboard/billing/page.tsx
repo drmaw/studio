@@ -6,19 +6,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DollarSign, PlusCircle, TestTube, Bed, StethoscopeIcon, Trash2, Pencil, Loader2 } from "lucide-react";
+import { PlusCircle, TestTube, Bed, StethoscopeIcon, Pencil, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +23,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase, addDocument, updateDocument, deleteDocument } from "@/firebase";
 import { collection, serverTimestamp, doc } from "firebase/firestore";
 import type { FeeItem } from "@/lib/definitions";
+import { PageHeader } from "@/components/shared/page-header";
+import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
+import { CurrencyInput } from "@/components/shared/currency-input";
+import { EmptyState } from "@/components/shared/empty-state";
 
 
 function EditFeeItemDialog({ 
@@ -85,7 +78,7 @@ function EditFeeItemDialog({
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="cost" className="text-right">Cost (BDT)</Label>
-                        <Input id="cost" type="number" value={cost} onChange={e => setCost(e.target.value)} className="col-span-3" />
+                        <CurrencyInput id="cost" value={cost} onChange={e => setCost(e.target.value)} className="col-span-3" />
                     </div>
                 </div>
                 <DialogFooter>
@@ -185,32 +178,29 @@ function FeeCategory({
                                                 }
                                             />
                                             
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
+                                            <ConfirmationDialog
+                                                trigger={
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            This action cannot be undone. This will permanently delete the fee item.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => onDeleteItem(item.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
+                                                }
+                                                title="Are you sure?"
+                                                description="This action cannot be undone. This will permanently delete the fee item."
+                                                onConfirm={() => onDeleteItem(item.id)}
+                                                confirmText="Delete"
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24">
-                                        No items have been added to this category.
+                                    <TableCell colSpan={3}>
+                                        <EmptyState
+                                            icon={TestTube}
+                                            message="No items added"
+                                            description="No items have been added to this category yet."
+                                            className="py-4"
+                                        />
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -225,17 +215,13 @@ function FeeCategory({
                         className="flex-1"
                         disabled={isSubmitting}
                     />
-                    <div className="relative w-32">
-                        <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                            type="number"
-                            placeholder="Cost"
-                            value={newItemCost}
-                            onChange={(e) => setNewItemCost(e.target.value)}
-                            className="pl-7"
-                            disabled={isSubmitting}
-                        />
-                    </div>
+                    <CurrencyInput
+                        placeholder="Cost"
+                        value={newItemCost}
+                        onChange={(e) => setNewItemCost(e.target.value)}
+                        className="w-32"
+                        disabled={isSubmitting}
+                    />
                     <Button onClick={handleAddItem} size="icon" disabled={isSubmitting}>
                         {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
                         <span className="sr-only">Add Item</span>
@@ -316,10 +302,10 @@ export default function BillingPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold">Billing & Fees</h1>
-                <p className="text-muted-foreground">Manage the price chart for various services offered at your hospital.</p>
-            </div>
+            <PageHeader 
+                title="Billing & Fees"
+                description="Manage the price chart for various services offered at your hospital."
+            />
             <Card>
                 <CardContent className="pt-6">
                     <Accordion type="multiple" defaultValue={['Investigations']} className="w-full">

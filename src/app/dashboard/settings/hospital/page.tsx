@@ -4,18 +4,15 @@ import { StaffManagementTab } from "@/components/dashboard/settings/staff-manage
 import { DoctorSchedulesTab } from "@/components/dashboard/settings/doctor-schedules-tab";
 import { FacilityManagementTab } from "@/components/dashboard/settings/facility-management-tab";
 import { GeneralSettingsTab } from "@/components/dashboard/settings/general-settings-tab";
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
-
+import { PageHeader } from "@/components/shared/page-header";
 
 export default function HospitalSettingsPage() {
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold">Hospital Settings</h1>
-                <p className="text-muted-foreground">Manage your organization's staff, services, and schedules.</p>
-            </div>
+            <PageHeader 
+                title="Hospital Settings"
+                description="Manage your organization's staff, services, and schedules."
+            />
             <Tabs defaultValue="general">
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="general">General</TabsTrigger>

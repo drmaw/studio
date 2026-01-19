@@ -3,27 +3,19 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Shield, EyeOff, Sparkles, Trash2, Bell, Loader2 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Shield, Sparkles, Loader2 } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore, useAuth as useFirebaseAuth, updateDocument } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '../shared/page-header';
+import { ConfirmationDialog } from '../shared/confirmation-dialog';
+import { UpgradeToPremiumButton } from '../shared/upgrade-to-premium-button';
 
 export function AccountSettingsTab() {
   const { toast } = useToast();
@@ -68,20 +60,6 @@ export function AccountSettingsTab() {
     }
   };
 
-
-  const handleUpgrade = async () => {
-    if (!user || !firestore) return;
-    const userRef = doc(firestore, 'users', user.id);
-    const success = await updateDocument(userRef, { isPremium: true });
-    
-    if (success) {
-        toast({
-            title: "Congratulations!",
-            description: "You've been upgraded to a Premium account."
-        });
-    }
-  };
-
   const handleAccountDeletion = async () => {
     if (!user || !firestore || !auth) {
         toast({
@@ -116,10 +94,10 @@ export function AccountSettingsTab() {
 
   return (
     <div className="space-y-6">
-       <div>
-            <h1 className="text-3xl font-bold">Account Settings</h1>
-            <p className="text-muted-foreground">Manage your account preferences, privacy, and subscription.</p>
-        </div>
+        <PageHeader
+            title="Account Settings"
+            description="Manage your account preferences, privacy, and subscription."
+        />
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -178,10 +156,12 @@ export function AccountSettingsTab() {
                             <h3 className="font-semibold">Upgrade to Premium</h3>
                             <p className="text-sm text-muted-foreground">Get more storage and exclusive features.</p>
                         </div>
-                        <Button onClick={handleUpgrade}>
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Upgrade Now
-                        </Button>
+                        <UpgradeToPremiumButton asChild>
+                            <Button>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Upgrade Now
+                            </Button>
+                        </UpgradeToPremiumButton>
                     </div>
                 )}
             </CardContent>
@@ -196,23 +176,13 @@ export function AccountSettingsTab() {
                         <h3 className="font-semibold text-destructive">Delete Account</h3>
                         <p className="text-sm text-destructive/80">Permanently delete your account and all associated data.</p>
                     </div>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive">Delete Account</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This action cannot be undone. This will schedule your account for permanent deletion in 30 days. You will be logged out immediately.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleAccountDeletion} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <ConfirmationDialog 
+                        trigger={<Button variant="destructive">Delete Account</Button>}
+                        title="Are you absolutely sure?"
+                        description="This action cannot be undone. This will schedule your account for permanent deletion in 30 days. You will be logged out immediately."
+                        onConfirm={handleAccountDeletion}
+                        confirmText="Delete"
+                    />
                 </div>
             </CardContent>
         </Card>

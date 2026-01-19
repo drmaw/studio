@@ -9,8 +9,9 @@ import type { PrivacyLogEntry } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, where } from "firebase/firestore";
-import { useMemo } from "react";
 import { FormattedDate } from "@/components/shared/formatted-date";
+import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
 
 function LogEntry({ log }: { log: PrivacyLogEntry }) {
     const actorInitials = log.actorName.split(' ').map(n => n[0]).join('');
@@ -59,9 +60,12 @@ function LogCategory({ title, icon, logs, isLoading, className }: { title: strin
                         </div>
                     </ScrollArea>
                 ) : (
-                    <div className="h-72 flex items-center justify-center text-muted-foreground border rounded-md">
-                        <p>No activity recorded.</p>
-                    </div>
+                    <EmptyState 
+                        icon={History}
+                        message="No Activity"
+                        description="No activity has been recorded for this action yet."
+                        className="h-72 justify-center flex flex-col"
+                    />
                 )}
             </CardContent>
         </Card>
@@ -98,15 +102,10 @@ export default function PrivacyLogPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2">
-                    <History className="h-8 w-8" />
-                    Privacy Log
-                </h1>
-                <p className="text-muted-foreground">
-                    An audit trail of all activity related to your health records.
-                </p>
-            </div>
+            <PageHeader 
+                title={<><History className="h-8 w-8" />Privacy Log</>}
+                description="An audit trail of all activity related to your health records."
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <LogCategory title="Profile Searches" icon={<Search className="h-5 w-5 text-primary"/>} logs={searchLogs || []} isLoading={searchLoading} className="bg-card"/>

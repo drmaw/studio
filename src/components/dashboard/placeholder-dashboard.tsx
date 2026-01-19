@@ -4,6 +4,7 @@
 import type { User, Role } from "@/lib/definitions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { professionalRolesConfig } from "@/lib/roles";
+import { PageHeader } from "../shared/page-header";
 
 export function PlaceholderDashboard({ user, role }: { user: User, role: Role }) {
     const roleInfo = professionalRolesConfig[role];
@@ -24,10 +25,10 @@ export function PlaceholderDashboard({ user, role }: { user: User, role: Role })
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2"><Icon className="h-8 w-8" /> Welcome to the {title} Dashboard, {user.name}</h1>
-                <p className="text-muted-foreground">{description}</p>
-            </div>
+            <PageHeader 
+                title={<><Icon className="h-8 w-8" /> Welcome to the {title} Dashboard, {user.name}</>}
+                description={description}
+            />
             <Card>
                 <CardHeader>
                     <CardTitle>Dashboard Under Construction</CardTitle>
