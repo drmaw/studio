@@ -141,6 +141,16 @@ service cloud.firestore {
         }
     }
 
+    // Secure Messaging
+    match /organizations/{orgId}/conversations/{convoId} {
+      allow read, write: if request.auth.uid in resource.data.participants;
+
+      match /messages/{messageId} {
+        allow read: if request.auth.uid in get(parent(messageId)).data.participants;
+        allow create: if request.auth.uid == request.resource.data.senderId && request.auth.uid in get(parent(messageId)).data.participants;
+      }
+    }
+
     // Schedules, facilities, and fees are managed by org owners/managers.
     // Any member of the org can read them.
     match /organizations/{orgId}/schedules/{docId} {

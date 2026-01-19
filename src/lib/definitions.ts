@@ -278,3 +278,26 @@ export type LabTestResult = {
   reportedByName: string;
   createdAt: FieldValue;
 };
+
+export type Conversation = {
+    id: string;
+    organizationId: string;
+    participants: string[]; // Array of user UIDs
+    participantNames: string[];
+    lastMessage?: {
+        text: string;
+        senderId: string;
+        timestamp: FieldValue;
+    };
+    createdAt: FieldValue;
+    updatedAt: FieldValue;
+};
+
+export type Message = {
+    id: string;
+    conversationId: string;
+    senderId: string;
+    senderName: string;
+    text: string;
+    createdAt: FieldValue;
+};

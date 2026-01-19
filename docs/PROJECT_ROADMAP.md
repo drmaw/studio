@@ -63,14 +63,14 @@ This foundational phase established the core multi-tenant architecture required 
 
 **Goal**: Give patients more direct control and better tools to manage their healthcare journey.
 
-*   **Step 5.1: Implement Patient Appointment Self-Scheduling**:
+*   **[✓] Step 5.1: Implement Patient Appointment Self-Scheduling**:
     *   **Data Flow**: Patient (UI) → Selects Organization/Doctor/Slot → `Appointment` document created with `pending` status → Doctor is notified.
     *   **[✓] Task 5.1.1: Build Patient-Facing Booking UI**: Create a new page where patients can browse organizations, view doctor profiles, and see their available schedules.
-    *   **Task 5.1.2: Implement Patient Booking Logic**: Allow patients to request an appointment, creating an `Appointment` document with a 'pending' status.
+    *   **[✓] Task 5.1.2: Implement Patient Booking Logic**: Allow patients to request an appointment, creating an `Appointment` document with a 'pending' status.
 
 *   **Step 5.2: Develop Secure Messaging Module**:
     *   **Data Flow**: User (Messaging UI) → Create `Message` document within a `Conversation` subcollection → Real-time listener updates UI for other participant.
-    *   **Task 5.2.1: Blueprinting**: Define `Conversation` and `Message` entities and configure security rules.
+    *   **[✓] Task 5.2.1: Blueprinting**: Define `Conversation` and `Message` entities and configure security rules.
     *   **Task 5.2.2: Build Messaging UI**: Create a new "Messages" page showing a list of conversations and the selected conversation's messages.
     *   **Task 5.2.3: Implement Real-Time Messaging**: Use Firestore's real-time listeners to display new messages instantly.
 
@@ -152,4 +152,3 @@ This foundational phase established the core multi-tenant architecture required 
 
 *   **Step 8.3: Implement Query Pagination for All Long Lists**:
     *   **Task**: Refactor all list views (Invoices, Staff, Medical History, etc.) to load data in pages using `limit()` and `startAfter()` queries, adding "Load More" buttons.
-```

@@ -266,6 +266,38 @@
         "createdAt": { "type": "object" }
       },
       "required": ["patientId", "organizationId", "testName", "resultValue", "reportedById", "createdAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Represents a secure messaging conversation between two or more users.",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array", "items": { "type": "string" }, "description": "Array of user UIDs." },
+        "participantNames": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": {
+          "type": "object",
+          "properties": {
+            "text": { "type": "string" },
+            "timestamp": { "type": "object" }
+          }
+        },
+        "createdAt": { "type": "object" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["participants", "participantNames", "createdAt", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A single message within a conversation.",
+      "type": "object",
+      "properties": {
+        "conversationId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["conversationId", "senderId", "senderName", "text", "createdAt"]
     }
   },
   "auth": {
@@ -336,6 +368,14 @@
       {
         "path": "/organizations/{organizationId}/lab_test_orders/{orderId}/results/{resultId}",
         "definition": { "schema": { "$ref": "#/entities/LabTestResult" }, "description": "Results for a specific laboratory test order." }
+      },
+      {
+        "path": "/organizations/{organizationId}/conversations/{conversationId}",
+        "definition": { "schema": { "$ref": "#/entities/Conversation" }, "description": "Secure messaging conversations within an organization." }
+      },
+      {
+        "path": "/organizations/{organizationId}/conversations/{conversationId}/messages/{messageId}",
+        "definition": { "schema": { "$ref": "#/entities/Message" }, "description": "Individual messages within a conversation." }
       }
     ]
   }
