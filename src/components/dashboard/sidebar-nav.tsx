@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, CalendarCheck, DollarSign, Shield, BookOpenCheck, BedDouble, ScrollText } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, CalendarCheck, DollarSign, Shield, BookOpenCheck, BedDouble, ScrollText, MessageSquare } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Role } from "@/lib/definitions";
@@ -65,6 +65,12 @@ export function SidebarNav() {
         label: "My Appointments",
         icon: CalendarCheck,
         roles: ['patient'],
+    },
+    {
+        href: "/dashboard/messages",
+        label: "Messages",
+        icon: MessageSquare,
+        roles: ['patient', ...professionalRoleHierarchy],
     },
     {
         href: "/dashboard/patient-booking",

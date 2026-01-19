@@ -71,7 +71,7 @@ This foundational phase established the core multi-tenant architecture required 
 *   **Step 5.2: Develop Secure Messaging Module**:
     *   **Data Flow**: User (Messaging UI) → Create `Message` document within a `Conversation` subcollection → Real-time listener updates UI for other participant.
     *   **[✓] Task 5.2.1: Blueprinting**: Define `Conversation` and `Message` entities and configure security rules.
-    *   **Task 5.2.2: Build Messaging UI**: Create a new "Messages" page showing a list of conversations and the selected conversation's messages.
+    *   **[✓] Task 5.2.2: Build Messaging UI**: Create a new "Messages" page showing a list of conversations and the selected conversation's messages.
     *   **Task 5.2.3: Implement Real-Time Messaging**: Use Firestore's real-time listeners to display new messages instantly.
 
 ---
