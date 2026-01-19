@@ -2,25 +2,28 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore, updateDocument } from '@/firebase';
-import { collectionGroup, query, where, orderBy, doc, getDoc, getDocs, limit, startAfter, type DocumentSnapshot } from 'firebase/firestore';
-import type { Appointment } from '@/lib/definitions';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { useFirestore, updateDocument, useCollectionGroup, useMemoFirebase } from '@/firebase';
+import { collectionGroup, query, where, orderBy, doc, getDocs, limit, startAfter, type DocumentSnapshot } from 'firebase/firestore';
+import type { Appointment, DoctorSchedule, Organization, User } from '@/lib/definitions';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarCheck, Loader2 } from 'lucide-react';
+import { CalendarCheck, Loader2, Hospital, CalendarDays, Clock, BookOpenCheck, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { FormattedDate } from '@/components/shared/formatted-date';
 import { createNotification } from '@/lib/notifications';
 import { format } from 'date-fns';
 import { PageHeader } from '@/components/shared/page-header';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { BookAppointmentDialog } from "@/components/dashboard/book-appointment-dialog";
 
 const PAGE_SIZE = 10;
 
 export default function MyAppointmentsPage() {
+    // --- Hooks for My Appointments list ---
     const { user, loading: userLoading } = useAuth();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -28,14 +31,14 @@ export default function MyAppointmentsPage() {
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
 
     const fetchAppointments = async (loadMore = false) => {
         if (!user || !firestore) return;
 
-        if (loadMore) setIsLoadingMore(true); else setIsLoading(true);
+        if (loadMore) setIsLoadingMore(true); else setIsLoadingAppointments(true);
 
         const baseQuery = [
             collectionGroup(firestore, 'appointments'),
@@ -62,7 +65,7 @@ export default function MyAppointmentsPage() {
             console.error("Error fetching appointments: ", error);
             toast({ variant: 'destructive', title: "Error", description: "Could not fetch appointments." });
         } finally {
-            if(loadMore) setIsLoadingMore(false); else setIsLoading(false);
+            if(loadMore) setIsLoadingMore(false); else setIsLoadingAppointments(false);
         }
     };
     
@@ -109,17 +112,53 @@ export default function MyAppointmentsPage() {
         });
     };
     
-    const pageIsLoading = userLoading || isLoading;
+    const pageIsLoading = userLoading || isLoadingAppointments;
+    
+    // --- Hooks and logic for Booking a new appointment ---
+    const schedulesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collectionGroup(firestore, 'schedules'));
+    }, [firestore]);
+
+    const { data: allSchedules, isLoading: schedulesLoading } = useCollectionGroup<DoctorSchedule>(schedulesQuery);
+
+    const organizationsWithSchedules = useMemo(() => {
+        if (!allSchedules) return [];
+        const orgs = new Map<string, { name: string; schedules: DoctorSchedule[] }>();
+        
+        allSchedules.forEach(schedule => {
+            // Exclude personal organizations
+            if (schedule.organizationId.startsWith('org-ind-')) return;
+            
+            if (!orgs.has(schedule.organizationId)) {
+                orgs.set(schedule.organizationId, { name: schedule.organizationName, schedules: [] });
+            }
+            orgs.get(schedule.organizationId)!.schedules.push(schedule);
+        });
+        
+        return Array.from(orgs.entries()).map(([id, data]) => ({ id, ...data }));
+    }, [allSchedules]);
+
+    const constructPartialOrg = (id: string, name: string): Organization => ({
+        id,
+        name,
+        ownerId: '', 
+        status: 'active',
+        createdAt: new Date(),
+    });
 
     return (
         <div className="space-y-6">
             <PageHeader 
                 title={<><CalendarCheck className="h-8 w-8" />My Appointments</>}
-                description="View your upcoming and past appointments."
+                description="View your upcoming appointments and book new ones."
             />
             
             <Card>
-                <CardContent className="pt-6">
+                <CardHeader>
+                    <CardTitle>Appointment History</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -165,7 +204,7 @@ export default function MyAppointmentsPage() {
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow><TableCell colSpan={5} className="text-center h-24">You have no appointments. Click 'Book Appointment' in the sidebar to create one.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={5} className="text-center h-24">You have no appointments. Book one below.</TableCell></TableRow>
                             )}
                         </TableBody>
                     </Table>
@@ -177,6 +216,60 @@ export default function MyAppointmentsPage() {
                         </Button>
                     )}
                 </CardFooter>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Book a New Appointment</CardTitle>
+                    <CardDescription>Browse available doctors and book an appointment yourself.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {schedulesLoading ? (
+                        <div className="flex justify-center items-center p-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+                        </div>
+                    ) : (
+                        <Accordion type="single" collapsible className="w-full space-y-4">
+                            {organizationsWithSchedules.map(org => (
+                                <AccordionItem key={org.id} value={org.id} className="border-b-0">
+                                     <Card className="bg-background-soft">
+                                        <AccordionTrigger className="p-6 hover:no-underline">
+                                            <div className="flex items-center gap-4">
+                                                <Hospital className="h-6 w-6 text-primary" />
+                                                <h3 className="text-xl font-semibold">{org.name}</h3>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="p-6 pt-0">
+                                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {org.schedules.map(schedule => (
+                                                    <Card key={schedule.id} className="flex flex-col bg-card">
+                                                        <CardHeader>
+                                                            <CardTitle className="flex items-center gap-2"><UserIcon /> {schedule.doctorName}</CardTitle>
+                                                            <CardDescription>Room: {schedule.roomNumber} | Fee: {schedule.fee} BDT</CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="flex-1 space-y-2">
+                                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                                <CalendarDays className="h-4 w-4" />
+                                                                <span>{schedule.days.join(', ')}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                                <Clock className="h-4 w-4" />
+                                                                <span>{schedule.startTime} - {schedule.endTime}</span>
+                                                            </div>
+                                                        </CardContent>
+                                                        <CardFooter>
+                                                            {user && <BookAppointmentDialog schedule={schedule} organization={constructPartialOrg(org.id, org.name)} patient={user} />}
+                                                        </CardFooter>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        </AccordionContent>
+                                     </Card>
+                                </AccordionItem>
+                            ))}
+                        </Accordion>
+                    )}
+                </CardContent>
             </Card>
         </div>
     )
