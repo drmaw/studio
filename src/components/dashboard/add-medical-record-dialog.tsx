@@ -17,9 +17,12 @@ import { Textarea } from "@/components/ui/textarea"
 import type { User } from "@/lib/definitions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
-import { Loader2, Plus } from "lucide-react"
+import { Loader2, Plus, ChevronsUpDown } from "lucide-react"
 import { useFirestore, commitBatch, writeBatch } from "@/firebase"
 import { collection, serverTimestamp, doc } from "firebase/firestore"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { icd10Codes } from "@/lib/medical-codes"
 
 export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doctor: User }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,6 +31,15 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
+
+  // State for the diagnosis combobox
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+
+  const filteredCodes = icd10Codes.filter(code => 
+    code.description.toLowerCase().includes(searchValue.toLowerCase()) ||
+    code.code.toLowerCase().includes(searchValue.toLowerCase())
+  );
 
   const handleSave = () => {
     if (!diagnosis || !firestore || !doctor.organizationId) {
@@ -104,12 +116,46 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
         <div className="py-4 space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="diagnosis">Diagnosis</Label>
-                <Input 
-                    id="diagnosis"
-                    value={diagnosis}
-                    onChange={(e) => setDiagnosis(e.target.value)}
-                    placeholder="e.g., Acute Bronchitis"
-                />
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={popoverOpen}
+                            className="w-full justify-between"
+                        >
+                            <span className="truncate">{diagnosis || "Select diagnosis..."}</span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[450px] p-0">
+                         <div className="p-2 border-b">
+                            <Input 
+                                placeholder="Search diagnosis..."
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
+                        <ScrollArea className="h-60">
+                            <div className="p-1">
+                            {filteredCodes.length > 0 ? filteredCodes.map((code) => (
+                                <div
+                                    key={code.code}
+                                    onClick={() => {
+                                        setDiagnosis(`${code.code} - ${code.description}`)
+                                        setPopoverOpen(false)
+                                        setSearchValue('')
+                                    }}
+                                    className="cursor-pointer p-2 hover:bg-accent rounded-md text-sm"
+                                >
+                                    <span className="font-bold">{code.code}:</span> {code.description}
+                                </div>
+                            )) : <div className="p-2 text-center text-sm text-muted-foreground">No diagnosis found.</div>}
+                            </div>
+                        </ScrollArea>
+                    </PopoverContent>
+                </Popover>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
