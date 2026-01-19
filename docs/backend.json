@@ -221,6 +221,7 @@
             "patientId": { "type": "string" },
             "organizationId": { "type": "string" },
             "facilityId": { "type": "string" },
+            "facilityCostPerDay": { "type": "number" },
             "admissionDate": { "type": "object" },
             "dischargeDate": { "type": "object" },
             "status": { "type": "string", "enum": ["admitted", "discharged"] }

@@ -246,6 +246,7 @@ export type Admission = {
   organizationId: string;
   facilityId: string;
   facilityName: string;
+  facilityCostPerDay: number;
   admissionDate: FieldValue;
   dischargeDate?: FieldValue;
   status: 'admitted' | 'discharged';

@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input";
 import { BedDouble, Loader2, Search, UserX, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase, updateDocument } from "@/firebase";
-import { collection, query, where, orderBy, doc, serverTimestamp } from "firebase/firestore";
-import type { Admission } from "@/lib/definitions";
+import { useFirestore, useCollection, useMemoFirebase, commitBatch, writeBatch } from "@/firebase";
+import { collection, query, where, orderBy, doc, serverTimestamp, getDocs, limit } from "firebase/firestore";
+import type { Admission, Invoice } from "@/lib/definitions";
 import { PageHeader } from "@/components/shared/page-header";
 import { usePatientSearch } from "@/hooks/use-patient-search";
 import { PatientInfoCard } from "@/components/shared/patient-info-card";
@@ -48,32 +48,88 @@ export default function AdmissionsPage() {
     
     const searchedPatient = searchResult !== 'not_found' ? searchResult : null;
 
-    const handleDischarge = (admission: Admission) => {
-        if (!currentUser || !firestore) return;
+    const handleDischarge = async (admission: Admission) => {
+        if (!currentUser || !firestore || !admission.facilityCostPerDay) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Required information for discharge is missing.' });
+            return;
+        };
 
         setDischargingId(admission.id);
 
-        const admissionRef = doc(firestore, 'organizations', currentUser.organizationId, 'admissions', admission.id);
-        const updateData = {
-            status: 'discharged' as const,
-            dischargeDate: serverTimestamp(),
-        };
+        try {
+            const batch = writeBatch(firestore);
 
-        updateDocument(admissionRef, updateData, () => {
-            toast({
-                title: 'Patient Discharged',
-                description: `${admission.patientName} has been discharged.`,
+            // 1. Update admission status
+            const admissionRef = doc(firestore, 'organizations', currentUser.organizationId, 'admissions', admission.id);
+            batch.update(admissionRef, {
+                status: 'discharged' as const,
+                dischargeDate: serverTimestamp(),
             });
-            setDischargingId(null);
-        }, () => {
+
+            // 2. Calculate duration and add billing for additional days if necessary
+            const admissionDate = (admission.admissionDate as any).toDate();
+            const dischargeDate = new Date();
+            const diffTime = dischargeDate.getTime() - admissionDate.getTime();
+            const totalDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            const additionalDays = totalDays - 1;
+
+            if (additionalDays > 0) {
+                const invoicesRef = collection(firestore, 'organizations', currentUser.organizationId, 'invoices');
+                const invoiceQuery = query(
+                    invoicesRef,
+                    where('patientId', '==', admission.patientId),
+                    where('status', 'in', ['draft', 'open']),
+                    limit(1)
+                );
+                const invoiceSnapshot = await getDocs(invoiceQuery);
+
+                if (!invoiceSnapshot.empty) {
+                    const invoiceDoc = invoiceSnapshot.docs[0];
+                    const invoiceRef = invoiceDoc.ref;
+                    const currentTotal = (invoiceDoc.data() as Invoice).totalAmount;
+                    const additionalCost = additionalDays * admission.facilityCostPerDay;
+
+                    const newItemRef = doc(collection(invoiceRef, 'items'));
+                    const stayItem = {
+                        name: `In-patient Stay: ${admission.facilityName} (x${additionalDays} days)`,
+                        quantity: additionalDays,
+                        unitCost: admission.facilityCostPerDay,
+                        totalCost: additionalCost,
+                        createdAt: serverTimestamp(),
+                    };
+                    batch.set(newItemRef, stayItem);
+                    batch.update(invoiceRef, { totalAmount: currentTotal + additionalCost });
+                }
+            }
+
+            // 3. Commit batch
+            commitBatch(batch, `discharge patient ${admission.patientId}`, () => {
+                toast({
+                    title: 'Patient Discharged',
+                    description: `${admission.patientName} has been discharged and final billing has been calculated.`,
+                });
+                setDischargingId(null);
+            }, (error) => {
+                console.error('Discharge commit failed:', error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Discharge Failed',
+                    description: 'The patient could not be discharged. Please try again.',
+                });
+                setDischargingId(null);
+            });
+
+        } catch (error) {
+            console.error("Discharge failed:", error);
             toast({
                 variant: 'destructive',
                 title: 'Discharge Failed',
-                description: 'The patient could not be discharged. Please try again.',
+                description: 'An unexpected error occurred during the discharge process.',
             });
             setDischargingId(null);
-        });
+        }
     };
+
 
     return (
         <div className="space-y-6">
@@ -164,7 +220,7 @@ export default function AdmissionsPage() {
                                                     </Button>
                                                 }
                                                 title={`Discharge ${admission.patientName}?`}
-                                                description="This will mark the patient as discharged and free up their assigned bed. This action cannot be undone."
+                                                description="This will mark the patient as discharged and bill them for the duration of their stay. This action cannot be undone."
                                                 onConfirm={() => handleDischarge(admission)}
                                                 confirmText="Confirm Discharge"
                                             />

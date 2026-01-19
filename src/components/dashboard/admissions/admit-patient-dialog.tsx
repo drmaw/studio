@@ -57,6 +57,7 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
       organizationId: organizationId,
       facilityId: selectedFacility.id,
       facilityName: selectedFacility.name,
+      facilityCostPerDay: selectedFacility.cost,
       admissionDate: serverTimestamp(),
       status: 'admitted' as const,
       createdAt: serverTimestamp(),
