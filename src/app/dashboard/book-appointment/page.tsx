@@ -1,6 +1,6 @@
-
 'use client'
 
+import { useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -32,20 +32,25 @@ export default function BookAppointmentPage() {
         handleSearch,
     } = usePatientSearch();
 
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, hasRole } = useAuth();
     const firestore = useFirestore();
+    const searchParams = useSearchParams();
+
+    const adminOrgId = searchParams.get('orgId');
+    const isViewingAsAdmin = hasRole('admin') && !!adminOrgId;
+    const effectiveOrgId = isViewingAsAdmin ? adminOrgId : currentUser?.organizationId;
 
     const orgDocRef = useMemoFirebase(() => {
-        if (!firestore || !currentUser) return null;
-        return doc(firestore, 'organizations', currentUser.organizationId);
-    }, [firestore, currentUser]);
+        if (!firestore || !effectiveOrgId) return null;
+        return doc(firestore, 'organizations', effectiveOrgId);
+    }, [firestore, effectiveOrgId]);
 
     const { data: organization, isLoading: orgLoading } = useDoc<Organization>(orgDocRef);
     
     const schedulesQuery = useMemoFirebase(() => {
-        if (!firestore || !currentUser) return null;
-        return query(collection(firestore, 'organizations', currentUser.organizationId, 'schedules'));
-    }, [firestore, currentUser]);
+        if (!firestore || !effectiveOrgId) return null;
+        return query(collection(firestore, 'organizations', effectiveOrgId, 'schedules'));
+    }, [firestore, effectiveOrgId]);
 
     const { data: schedules, isLoading: schedulesLoading } = useCollection<DoctorSchedule>(schedulesQuery);
     
@@ -139,7 +144,7 @@ export default function BookAppointmentPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center p-8 text-muted-foreground">No doctor schedules found for your organization.</div>
+                                <div className="text-center p-8 text-muted-foreground">No doctor schedules found for this organization.</div>
                             )}
                         </CardContent>
                     </Card>
