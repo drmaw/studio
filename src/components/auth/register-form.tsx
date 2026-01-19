@@ -20,7 +20,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth, useFirestore, commitBatch, writeBatch } from "@/firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
 import { doc, serverTimestamp } from "firebase/firestore";
 import type { User, Patient, Organization, Membership, Role } from "@/lib/definitions";
 
@@ -68,9 +68,10 @@ export function RegisterForm() {
       return;
     }
 
+    let firebaseUser: import("firebase/auth").User | null = null;
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      const firebaseUser = userCredential.user;
+      firebaseUser = userCredential.user;
       
       const healthId = generateHealthId();
       const batch = writeBatch(firestore);
@@ -83,11 +84,13 @@ export function RegisterForm() {
       const memberDocRef = doc(firestore, "organizations", orgId, "members", firebaseUser.uid);
 
       // 1. Create the core User profile
-      const newUser: Omit<User, 'id' | 'organizationId' | 'organizationName'> = {
+      const newUser: Omit<User, 'id'> = {
           healthId: healthId,
           name: values.name,
           email: firebaseUser.email!,
           roles: ['patient'] as Role[],
+          organizationId: orgId,
+          organizationName: `${values.name}'s Personal Records`,
           avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
           createdAt: serverTimestamp(),
           status: 'active',
@@ -140,9 +143,13 @@ export function RegisterForm() {
             description: "You can now log in with your credentials.",
         });
         router.push("/login");
-      }, () => {
-        // This error handler is for the batch commit. 
-        // The createUser call will be caught by the outer try/catch
+      }, async (error) => {
+        console.error("Firestore batch commit failed:", error);
+        // If Firestore write fails, delete the created Firebase Auth user
+        if (firebaseUser) {
+            await deleteUser(firebaseUser);
+            console.log("Orphaned Firebase Auth user deleted.");
+        }
         toast({
             variant: "destructive",
             title: "Registration Failed",
