@@ -3,25 +3,23 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "Represents a user profile in Digi Health.",
+      "description": "Represents a user's core, global profile in Digi Health, containing information that is independent of any single organization.",
       "type": "object",
       "properties": {
         "healthId": { "type": "string", "description": "A unique 10-digit user-facing identifier." },
         "name": { "type": "string", "description": "User's full name." },
         "email": { "type": "string", "format": "email" },
-        "roles": { "type": "array", "items": { "type": "string" } },
-        "organizationId": { "type": "string" },
         "avatarUrl": { "type": "string", "format": "uri" },
         "demographics": { "type": "object" },
         "isPremium": { "type": "boolean" },
         "status": { "type": "string", "enum": ["active", "suspended"], "description": "The current status of the user account." },
         "createdAt": { "type": "object" }
       },
-      "required": ["healthId", "name", "email", "roles", "organizationId", "createdAt", "status"]
+      "required": ["healthId", "name", "email", "createdAt", "status"]
     },
     "Patient": {
       "title": "Patient",
-      "description": "Represents supplementary, patient-specific medical data linked to a user document.",
+      "description": "Represents supplementary, patient-specific medical data linked to a user document that is global and not organization-specific.",
       "type": "object",
       "properties": {
         "chronicConditions": {
@@ -62,9 +60,21 @@
       },
       "required": ["name", "ownerId", "status", "createdAt"]
     },
+    "Membership": {
+        "title": "Membership",
+        "description": "Represents a user's affiliation with a specific organization, defining their roles and status within that context.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "userName": { "type": "string" },
+            "roles": { "type": "array", "items": { "type": "string" } },
+            "status": { "type": "string", "enum": ["active", "pending", "inactive"] }
+        },
+        "required": ["userId", "userName", "roles", "status"]
+    },
     "MedicalRecord": {
       "title": "MedicalRecord",
-      "description": "A single medical record for a patient.",
+      "description": "A single medical record for a patient, created within the context of a specific organization.",
       "type": "object",
       "properties": {
         "patientId": { "type": "string" },
@@ -80,7 +90,7 @@
     },
     "RecordFile": {
       "title": "RecordFile",
-      "description": "A file (image or PDF) uploaded by a user.",
+      "description": "A file (image or PDF) uploaded by a patient to their personal record.",
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -89,12 +99,9 @@
         "url": { "type": "string", "format": "uri" },
         "size": { "type": "string" },
         "uploadedBy": { "type": "string" },
-        "uploaderName": { "type": "string" },
-        "patientId": { "type": "string" },
-        "organizationId": { "type": "string" },
         "createdAt": { "type": "object" }
       },
-      "required": ["name", "fileType", "recordType", "url", "size", "uploadedBy", "uploaderName", "patientId", "organizationId", "createdAt"]
+      "required": ["name", "fileType", "recordType", "url", "size", "uploadedBy", "createdAt"]
     },
     "Vitals": {
         "title": "Vitals",
@@ -102,7 +109,6 @@
         "type": "object",
         "properties": {
             "patientId": { "type": "string" },
-            "organizationId": { "type": "string" },
             "date": { "type": "string" },
             "bpSystolic": { "type": ["number", "null"] },
             "bpDiastolic": { "type": ["number", "null"] },
@@ -112,11 +118,11 @@
             "sCreatinine": { "type": ["number", "null"] },
             "createdAt": { "type": "object" }
         },
-        "required": ["patientId", "organizationId", "date", "createdAt"]
+        "required": ["patientId", "date", "createdAt"]
     },
     "PrivacyLog": {
         "title": "PrivacyLog",
-        "description": "An audit log entry for privacy-related actions.",
+        "description": "An audit log entry for privacy-related actions on a patient's record.",
         "type": "object",
         "properties": {
             "actorId": { "type": "string" },
@@ -131,44 +137,27 @@
     },
     "RoleApplication": {
       "title": "RoleApplication",
-      "description": "Represents a user's application for an additional role.",
+      "description": "Represents a user's application for a role within a specific organization.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "userName": { "type": "string" },
         "requestedRole": { "type": "string" },
+        "organizationId": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "details": { "type": "object" },
-        "reason": { "type": "string", "description": "The reason for the application's status (e.g., rejection)." },
-        "createdAt": { "type": "object" },
-        "reviewedAt": { "type": "object" }
+        "createdAt": { "type": "object" }
       },
-      "required": ["userId", "userName", "requestedRole", "status", "createdAt"]
-    },
-    "RoleRemovalRequest": {
-      "title": "RoleRemovalRequest",
-      "description": "Represents a user's request to have a professional role removed.",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
-        "roleToRemove": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
-        "createdAt": { "type": "object" },
-        "reviewedAt": { "type": "object" }
-      },
-      "required": ["userId", "userName", "roleToRemove", "status", "createdAt"]
+      "required": ["userId", "userName", "requestedRole", "organizationId", "status", "createdAt"]
     },
     "DoctorSchedule": {
       "title": "DoctorSchedule",
-      "description": "Defines a doctor's schedule at a specific chamber in an organization.",
+      "description": "Defines a doctor's schedule at a specific organization.",
       "type": "object",
       "properties": {
         "doctorId": { "type": "string" },
-        "doctorAuthId": { "type": "string" },
         "doctorName": { "type": "string" },
         "organizationId": { "type": "string" },
-        "organizationName": { "type": "string" },
         "roomNumber": { "type": "string" },
         "fee": { "type": "number" },
         "days": { "type": "array", "items": { "type": "string" } },
@@ -176,11 +165,11 @@
         "endTime": { "type": "string" },
         "createdAt": { "type": "object" }
       },
-      "required": ["doctorId", "doctorAuthId", "doctorName", "organizationId", "organizationName", "roomNumber", "fee", "days", "startTime", "endTime", "createdAt"]
+      "required": ["doctorId", "doctorName", "organizationId", "roomNumber", "fee", "days", "startTime", "endTime", "createdAt"]
     },
     "Appointment": {
       "title": "Appointment",
-      "description": "Represents a scheduled appointment between a patient and a doctor.",
+      "description": "Represents a scheduled appointment within an organization.",
       "type": "object",
       "properties": {
         "patientId": { "type": "string" },
@@ -188,56 +177,39 @@
         "doctorId": { "type": "string" },
         "doctorName": { "type": "string" },
         "organizationId": { "type": "string" },
-        "organizationName": { "type": "string" },
         "scheduleId": { "type": "string" },
         "appointmentDate": { "type": "string", "format": "date" },
-        "appointmentTime": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled", "completed"] },
-        "reason": { "type": "string" },
         "createdAt": { "type": "object" }
       },
-      "required": ["patientId", "patientName", "doctorId", "doctorName", "organizationId", "organizationName", "scheduleId", "appointmentDate", "status", "createdAt"]
+      "required": ["patientId", "patientName", "doctorId", "doctorName", "organizationId", "scheduleId", "appointmentDate", "status", "createdAt"]
     },
-    "FeeItem": {
-      "title": "FeeItem",
-      "description": "Represents a single billable item in an organization's price chart.",
-      "type": "object",
-      "properties": {
-        "organizationId": { "type": "string" },
-        "category": { "type": "string", "enum": ["investigation", "admission", "doctor_fee", "procedure"] },
-        "name": { "type": "string" },
-        "cost": { "type": "number" },
-        "createdAt": { "type": "object" }
-      },
-      "required": ["organizationId", "category", "name", "cost", "createdAt"]
+    "Invoice": {
+        "title": "Invoice",
+        "description": "A bill for services rendered to a patient by an organization.",
+        "type": "object",
+        "properties": {
+            "patientId": { "type": "string" },
+            "organizationId": { "type": "string" },
+            "status": { "type": "string", "enum": ["draft", "open", "paid", "void"] },
+            "totalAmount": { "type": "number" },
+            "createdAt": { "type": "object" }
+        },
+        "required": ["patientId", "organizationId", "status", "totalAmount", "createdAt"]
     },
-    "Facility": {
-      "title": "Facility",
-      "description": "Represents a single facility like a ward or cabin in an organization.",
-      "type": "object",
-      "properties": {
-        "organizationId": { "type": "string" },
-        "type": { "type": "string", "enum": ["ward", "cabin"] },
-        "name": { "type": "string" },
-        "beds": { "type": "number" },
-        "cost": { "type": "number" },
-        "createdAt": { "type": "object" }
-      },
-      "required": ["organizationId", "type", "name", "beds", "cost", "createdAt"]
-    },
-    "Notification": {
-      "title": "Notification",
-      "description": "Represents a user notification.",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "href": { "type": "string", "format": "uri" },
-        "isRead": { "type": "boolean" },
-        "createdAt": { "type": "object" }
-      },
-      "required": ["userId", "title", "description", "isRead", "createdAt"]
+    "Admission": {
+        "title": "Admission",
+        "description": "Represents a patient's admission to a facility within an organization.",
+        "type": "object",
+        "properties": {
+            "patientId": { "type": "string" },
+            "organizationId": { "type": "string" },
+            "facilityId": { "type": "string" },
+            "admissionDate": { "type": "object" },
+            "dischargeDate": { "type": "object" },
+            "status": { "type": "string", "enum": ["admitted", "discharged"] }
+        },
+        "required": ["patientId", "organizationId", "facilityId", "admissionDate", "status"]
     }
   },
   "auth": {
@@ -247,35 +219,19 @@
     "structure": [
       {
         "path": "/users/{userId}",
-        "definition": { "schema": { "$ref": "#/entities/User" }, "description": "Top-level collection for all user profiles, where {userId} is the Firebase Auth UID." }
-      },
-      {
-        "path": "/users/{userId}/role_applications/{applicationId}",
-        "definition": { "schema": { "$ref": "#/entities/RoleApplication" }, "description": "Subcollection for a user's role applications." }
-      },
-      {
-        "path": "/users/{userId}/role_removal_requests/{requestId}",
-        "definition": { "schema": { "$ref": "#/entities/RoleRemovalRequest" }, "description": "Subcollection for a user's role removal requests." }
-      },
-      {
-        "path": "/users/{userId}/notifications/{notificationId}",
-        "definition": { "schema": { "$ref": "#/entities/Notification" }, "description": "Subcollection for user notifications." }
+        "definition": { "schema": { "$ref": "#/entities/User" }, "description": "Top-level collection for core user profiles." }
       },
       {
         "path": "/patients/{patientId}",
-        "definition": { "schema": { "$ref": "#/entities/Patient" }, "description": "Top-level collection for all patient records, where {patientId} is the Firebase Auth UID." }
+        "definition": { "schema": { "$ref": "#/entities/Patient" }, "description": "Top-level collection for global patient-specific data." }
       },
-      {
-        "path": "/patients/{patientId}/medical_records/{recordId}",
-        "definition": { "schema": { "$ref": "#/entities/MedicalRecord" }, "description": "Subcollection for a patient's medical records." }
-      },
-      {
+       {
         "path": "/patients/{patientId}/record_files/{fileId}",
-        "definition": { "schema": { "$ref": "#/entities/RecordFile" }, "description": "Subcollection for files uploaded by a patient." }
+        "definition": { "schema": { "$ref": "#/entities/RecordFile" }, "description": "Subcollection for personal files uploaded by a patient." }
       },
       {
         "path": "/patients/{patientId}/vitals/{vitalId}",
-        "definition": { "schema": { "$ref": "#/entities/Vitals" }, "description": "Subcollection for a patient's vital signs history." }
+        "definition": { "schema": { "$ref": "#/entities/Vitals" }, "description": "Subcollection for a patient's self-logged vital signs." }
       },
       {
         "path": "/patients/{patientId}/privacy_log/{logId}",
@@ -286,20 +242,24 @@
         "definition": { "schema": { "$ref": "#/entities/Organization" }, "description": "Top-level collection for all healthcare organizations." }
       },
       {
+        "path": "/organizations/{organizationId}/members/{userId}",
+        "definition": { "schema": { "$ref": "#/entities/Membership" }, "description": "Subcollection defining user roles within an organization." }
+      },
+      {
         "path": "/organizations/{organizationId}/schedules/{scheduleId}",
-        "definition": { "schema": { "$ref": "#/entities/DoctorSchedule" }, "description": "Subcollection for an organization's doctor schedules." }
+        "definition": { "schema": { "$ref": "#/entities/DoctorSchedule" }, "description": "Doctor schedules specific to an organization." }
       },
       {
-        "path": "/organizations/{organizationId}/fee_items/{feeItemId}",
-        "definition": { "schema": { "$ref": "#/entities/FeeItem" }, "description": "Subcollection for an organization's price chart items." }
+        "path": "/organizations/{organizationId}/appointments/{appointmentId}",
+        "definition": { "schema": { "$ref": "#/entities/Appointment" }, "description": "Appointments specific to an organization." }
       },
       {
-        "path": "/organizations/{organizationId}/facilities/{facilityId}",
-        "definition": { "schema": { "$ref": "#/entities/Facility" }, "description": "Subcollection for an organization's facilities like wards and cabins." }
+        "path": "/organizations/{organizationId}/medical_records/{patientId}/records/{recordId}",
+        "definition": { "schema": { "$ref": "#/entities/MedicalRecord" }, "description": "Medical records created by an organization for a specific patient." }
       },
       {
-        "path": "/appointments/{appointmentId}",
-        "definition": { "schema": { "$ref": "#/entities/Appointment" }, "description": "Top-level collection for all appointments." }
+        "path": "/organizations/{organizationId}/role_applications/{applicationId}",
+        "definition": { "schema": { "$ref": "#/entities/RoleApplication" }, "description": "Applications for roles within a specific organization." }
       }
     ]
   }

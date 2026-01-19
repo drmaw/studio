@@ -1,34 +1,36 @@
+
 # Digi Health: Project Guide
 
-Welcome to the Digi Health project! This guide is designed to help a new developer understand the structure of the application, how data flows through it, and the core concepts that power it.
+Welcome to the Digi Health project! This guide is designed to help a new developer understand the structure of the application, how data flows through it, and the core architectural concepts that power it. This is a multi-tenant Hospital Information System (HIS) designed for scalability.
 
 ---
 
 ## 1. What is Digi Health?
 
-**Digi Health** is a comprehensive digital health platform built for Bangladesh. It serves as a centralized system for managing personal health records and acts as a lightweight Hospital Information System (HIS).
+**Digi Health** is a comprehensive digital health platform built for Bangladesh. It serves as a centralized system for managing personal health records and acts as a lightweight Hospital Information System (HIS) for multiple healthcare organizations.
 
-The primary goal is to connect patients, doctors, and healthcare organizations seamlessly, providing secure access to medical data and streamlining healthcare management.
+The primary goal is to connect patients, doctors, and healthcare organizations seamlessly, providing secure, isolated, and efficient access to medical data.
 
 ---
 
-## 2. Core Concepts
+## 2. Core Architectural Concepts
 
-To understand the app, you need to be familiar with these key terms:
+This is not a simple monolithic app. It's a **multi-tenant system** where data is strictly isolated between different hospitals. Understanding these concepts is critical.
 
-*   **Health ID:** A unique, randomly generated 10-digit numeric ID assigned to every user. This is the main identifier for patients.
-*   **Roles:** The system uses roles to control what a user can see and do. Key roles include:
-    *   `patient`: The default role for all users.
-    *   `doctor`: Can search for patients and manage their medical records.
-    *   `hospital_owner`: Can manage hospital staff, schedules, and facilities.
-    *   `admin`: Has super-user access to the entire platform.
-*   **Organization:** Represents a healthcare entity like a hospital or clinic. Every user belongs to an organization. For individual patients, a personal organization is created to hold their records securely.
+*   **User (The Person):** Represents a single person's identity (`/users/{userId}`). It holds their name, login credentials (via Firebase Auth), and core demographic data. A User can exist without belonging to any hospital.
+
+*   **Organization (The Hospital):** Represents a healthcare entity like a hospital or clinic (`/organizations/{orgId}`). This is the primary data silo. All clinical data is owned by and stored under an organization.
+
+*   **Membership (The Relationship):** This is the most important concept. A `Membership` links a **User** to an **Organization** and defines their **Roles** *within that specific hospital*.
+    *   A single User can have multiple Memberships (e.g., Dr. Jane is a `doctor` at Hospital A and a `cardiologist` at Hospital B).
+    *   This data is stored in `/organizations/{orgId}/members/{userId}`.
+    *   This model allows for real-world scenarios and scalable, organization-scoped security rules.
+
+*   **Active Organization Context:** Because a user can belong to multiple organizations, the application UI must maintain an "active organization" context in the user's session. All actions (like searching for a patient or viewing appointments) are performed within the context of this active organization.
 
 ---
 
 ## 3. Technology Stack
-
-This is a modern web application built with:
 
 *   **Framework:** [Next.js](https://nextjs.org/) (using the App Router)
 *   **Language:** [TypeScript](https://www.typescriptlang.org/)
@@ -39,69 +41,71 @@ This is a modern web application built with:
 
 ---
 
-## 4. Project Structure
-
-The codebase is organized into several key directories inside `src/`:
+## 4. Project Structure (`src/`)
 
 *   `app/`: **Pages & Routing**
-    *   This is where all the pages of the application live, following the Next.js App Router structure. For example, `app/dashboard/profile/page.tsx` is the user's profile page.
-    *   `layout.tsx` files define the UI shell for different sections of the app (e.g., the main dashboard sidebar).
+    *   Follows the Next.js App Router structure. `app/dashboard/page.tsx` is the user's main dashboard.
 
 *   `components/`: **Reusable UI Components**
-    *   `ui/`: Generic components from ShadCN (e.g., `Button`, `Card`, `Input`).
-    *   `dashboard/`: Larger components specific to a dashboard view (e.g., `PatientDashboard`, `DoctorDashboard`).
-    *   `shared/`: Components that are reused across multiple pages (e.g., `PageHeader`, `ConfirmationDialog`).
+    *   `ui/`: Generic components from ShadCN (e.g., `Button`, `Card`).
+    *   `dashboard/`: Larger components specific to a dashboard view.
+    *   `shared/`: Components reused across multiple pages.
 
 *   `firebase/`: **Firebase Integration**
-    *   This is the central hub for all Firebase-related code.
-    *   `config.ts`: Contains the Firebase project configuration.
-    *   `index.ts`: Initializes Firebase and exports all the necessary hooks and functions for the rest of the app to use.
-    *   `provider.tsx`: A React Context provider that makes Firebase services available to all components.
+    *   The central hub for all Firebase code.
+    *   `index.ts`: Initializes Firebase and exports all necessary hooks and functions.
     *   `firestore/`: Contains custom hooks (`useDoc`, `useCollection`) for reading data and wrapper functions (`addDocument`, `updateDocument`) for writing data.
 
 *   `hooks/`: **Custom React Hooks**
-    *   `use-auth.ts`: The most important hook for authentication. It provides the currently logged-in user's complete profile (combining Auth and Firestore data).
-    *   `use-patient-search.ts`: A hook encapsulating the logic for finding patients by Health ID or mobile number.
+    *   `use-auth.ts`: **The most important hook for authentication.** It combines the base user from Firebase Auth with their detailed profile from Firestore and manages their list of memberships.
 
 *   `lib/`: **Utilities & Definitions**
-    *   `definitions.ts`: Contains all TypeScript type definitions for our data models (e.g., `User`, `Patient`, `MedicalRecord`). This is the "single source of truth" for data shapes.
+    *   `definitions.ts`: TypeScript type definitions for all data models. This is the "single source of truth" for data shapes.
     *   `roles.ts`: Defines the role hierarchy and configurations.
-    *   `utils.ts`: General utility functions.
 
 *   `docs/`: **Project Blueprints**
-    *   `backend.json`: A crucial file that defines the entire Firestore database schema. It serves as a blueprint for data structures used throughout the app.
+    *   `backend.json`: **The architectural diagram.** This crucial file defines the entire Firestore database schema, including all entities and their relationships.
+    *   `firestore.rules`: **The security foundation.** These rules enforce the organization-centric data access model defined in `backend.json`.
 
 ---
 
-## 5. Data & Authentication Flow
+## 5. Data & Security Flow
 
-### Authentication
-1.  A user signs in via the `LoginForm` (`src/components/auth/login-form.tsx`).
-2.  The `FirebaseProvider` detects the authentication state change.
-3.  The `useAuth` hook (`src/hooks/use-auth.ts`) combines the basic user info from Firebase Auth with the detailed user profile from the `/users/{userId}` document in Firestore.
-4.  This combined `user` object, which includes their roles and other details, is made available to all components, which can then render the correct UI.
+### Authentication & Authorization
+1.  A user signs in via the `LoginForm`.
+2.  The `useAuth` hook fetches the user's core profile and their list of `Memberships` from all organizations they belong to.
+3.  The user selects an "active organization" to act within (e.g., "Work at Hospital A").
+4.  All subsequent actions in the app are performed using the roles and permissions associated with that active membership.
 
-### Data Flow (Firestore)
+### Data Siloing (The Core Principle)
 
-*   **Reading Data:** Components **never** access Firestore directly. Instead, they use custom hooks:
-    *   `useDoc(docRef)`: To get a single document in real-time (e.g., fetching a specific patient's profile).
-    *   `useCollection(query)`: To get a list of documents from a collection in real-time (e.g., fetching all medical records for a patient).
-    *   These hooks handle loading states, errors, and automatic UI updates when the data changes in the database.
+*   **Global Data (What is universal):**
+    *   `/users/{userId}`: Core identity.
+    *   `/patients/{patientId}`: Global health data (allergies, chronic conditions).
+    *   `/patients/{patientId}/record_files`: A patient's personal, self-uploaded documents.
+*   **Organization-Scoped Data (What is siloed):**
+    *   `/organizations/{orgId}/medical_records`: Clinical notes created *by* a hospital *about* a patient. Hospital A cannot see records from Hospital B.
+    *   `/organizations/{orgId}/appointments`: Appointments are specific to one hospital.
+    *   `/organizations/{orgId}/schedules`: Doctor schedules are managed per-hospital.
+    *   `/organizations/{orgId}/members`: User roles are defined per-hospital.
 
-*   **Writing Data:** To ensure a responsive UI, the app uses a **"non-blocking"** or **"fire-and-forget"** approach for writing data.
-    *   Components use wrapper functions from `src/firebase/firestore/writes.ts` like `addDocument`, `updateDocument`, and `deleteDocument`.
-    *   These functions are **not** `await`ed in the component. They immediately update the local data cache (for a fast UI response) and handle the database submission in the background.
-    *   Error handling is managed centrally, so components don't need complex `try/catch` blocks.
+### Data Flow Example: Viewing a Medical Record
+
+1.  A doctor logs in and selects "Hospital A" as their active organization.
+2.  They search for a patient. The search query is **scoped to `/organizations/hospital-a/`**, making it fast and secure.
+3.  When they open the patient's chart, the app queries `/organizations/hospital-a/medical_records/{patientId}/...` to get the records.
+4.  `firestore.rules` verifies that the doctor has a `doctor` role within `members` subcollection of "Hospital A" before allowing the read operation.
+5.  If the same doctor switches their active organization to "Hospital B", they will only see records created by Hospital B.
 
 ---
 
 ## 6. Getting Started
 
-As a new developer, here’s a suggested path to get comfortable with the codebase:
+As a new developer, here’s a suggested path to get comfortable with this multi-tenant codebase:
 
-1.  **Start at the Entry Point:** Look at `src/app/dashboard/layout.tsx` and `src/app/dashboard/page.tsx`. This is the main entry point for a logged-in user.
-2.  **Understand the User:** Examine `src/hooks/use-auth.ts`. This hook is the foundation of user session management and provides the `user` object to the entire app.
-3.  **Trace the Data:** Open `src/components/dashboard/patient-dashboard.tsx`. See how it uses the `user` object from `useAuth` and fetches additional data (like `Vitals` and `Patient`) using the `useDoc` and `useCollection` hooks.
-4.  **Follow an Action:** Look at the "Add Vitals" functionality in `src/components/dashboard/vitals-tracker.tsx`. Notice how it calls the `addDocument` function to write data to Firestore without `await`ing the result.
+1.  **Start at the Blueprints:** Carefully study `docs/backend.json` and `firestore.rules`. Understanding the data silos and relationships is essential.
+2.  **Understand the User Session:** Examine `src/hooks/use-auth.ts`. This hook is the foundation of session management. See how it fetches memberships and establishes the user's context.
+3.  **Trace a Scoped Query:** Open a component like `src/components/dashboard/doctor-dashboard.tsx`. Notice how it will need to use the "active organization" ID from the `useAuth` hook to query for data (e.g., schedules or appointments) within that specific organization.
+4.  **Follow a Write Operation:** Look at "Add Medical Record" (`src/components/dashboard/add-medical-record-dialog.tsx`). See how it must write the new record to the path `/organizations/{activeOrgId}/medical_records/...`.
 
-By following this path, you'll get a good overview of how pages are built, how data is managed, and how the core features of the application work together.
+By following this path, you'll understand the core multi-tenant architecture that allows Digi Health to scale securely and efficiently.

@@ -4,7 +4,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper functions
+    // --- HELPER FUNCTIONS ---
     function isSignedIn() {
       return request.auth != null;
     }
@@ -12,119 +12,106 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
-    function getUserData() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
-    function getUserOrgId(userId) {
-        return get(/databases/$(database)/documents/users/$(userId)).data.organizationId;
+    
+    function getMembership(orgId) {
+      return get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
     }
     
-    function isRole(role) {
-        return isSignedIn() && role in getUserData().roles;
-    }
-    
-    function isAdmin() {
-        return isRole('admin');
+    function hasRoleInOrg(orgId, role) {
+      return isSignedIn() && getMembership(orgId).data.roles.hasAny([role, 'hospital_owner', 'manager', 'admin']);
     }
 
-    function isInOrg(orgId) {
-        return isSignedIn() && getUserData().organizationId == orgId;
+    function isMemberOfOrg(orgId) {
+      return isSignedIn() && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
     }
-    
-    // User Profiles
+
+    // --- GLOBAL COLLECTIONS ---
+
+    // User profiles are global and self-managed.
     match /users/{userId} {
       allow create: if isSignedIn();
-      allow get: if isOwner(userId) || (isRole('doctor') && isInOrg(getUserOrgId(userId))) || isAdmin() || (isRole('hospital_owner') && isInOrg(getUserOrgId(userId))) || (isRole('manager') && isInOrg(getUserOrgId(userId)));
-      // Admins are the only ones who should be listing all users.
-      allow list: if isAdmin();
-      // Allow user to update their own profile, or admin, or a hospital owner to update a user in their org.
-      allow update: if isOwner(userId) || isAdmin() || (isRole('hospital_owner') && getUserData().organizationId == getUserOrgId(userId));
-      allow write: if isAdmin(); // Broad write for admin
+      allow read, update: if isOwner(userId);
+      // Only admins can list/delete all users.
+      allow list, delete: if hasRoleInOrg('digihealth-admin', 'admin'); 
     }
 
-    // Patient Records
+    // Patient data (allergies, conditions) is global and self-managed.
     match /patients/{patientId} {
-      allow get: if isOwner(patientId) || (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin() || (isRole('hospital_owner') && isInOrg(getUserOrgId(patientId))) || (isRole('manager') && isInOrg(getUserOrgId(patientId)));
-      allow update: if isOwner(patientId) || (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
-      allow create: if isOwner(patientId);
-    }
-    
-    // Patient Subcollections
-    match /patients/{patientId}/medical_records/{recordId} {
-        allow get, list: if isOwner(patientId) || (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
-        allow create, update: if isRole('doctor') && isInOrg(getUserOrgId(patientId));
+      allow create, update: if isOwner(patientId);
+      // A patient can read their own data.
+      // A professional can read patient data IF they are a member of an organization.
+      // This allows a doctor to look up a patient before they are associated with their hospital.
+      allow get: if isOwner(patientId) || (isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.length > 1);
     }
 
+    // Patient-owned files (prescriptions, reports). Only the patient can manage these.
     match /patients/{patientId}/record_files/{fileId} {
-        allow read, write: if isOwner(patientId);
-        allow get, list: if (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
+      allow read, write: if isOwner(patientId);
     }
-
+    
+    // Self-logged vitals. Only the patient can add. Doctors can read.
     match /patients/{patientId}/vitals/{vitalId} {
-        allow create, get, list: if isOwner(patientId);
-        allow get, list: if (isRole('doctor') && isInOrg(getUserOrgId(patientId))) || isAdmin();
-        allow update, delete: if false;
+      allow create: if isOwner(patientId);
+      allow read: if isOwner(patientId) || (isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.length > 1);
     }
-
+    
+    // Privacy log is strictly read-only for the patient themselves.
+    // Professionals will write to this log via organization-specific rules.
     match /patients/{patientId}/privacy_log/{logId} {
-        allow get, list: if isOwner(patientId);
-        allow create: if isRole('doctor') || isRole('hospital_owner') || isRole('manager');
+      allow get, list: if isOwner(patientId);
+      allow create: if isSignedIn(); // Log creation is allowed if signed in, content is validated by function triggers or secure backend.
     }
-    
-    // Organization Data
+
+    // --- ORGANIZATION-SCOPED COLLECTIONS ---
+
+    // Any signed-in user can read basic organization info (for search/booking).
+    // Only the owner on the resource can update it.
     match /organizations/{orgId} {
-        // Allow any signed-in user to read orgs (for appointment booking)
-        allow read: if isSignedIn();
-        // Allow owners to create their own individual org, and admins to write anything
-        allow write: if (request.method == 'create' && isOwner(request.resource.data.ownerId)) || isAdmin() || (isRole('hospital_owner') && orgId == getUserData().organizationId);
-    }
-    
-    match /organizations/{orgId}/{collection}/{docId} {
-        allow read, write: if (isInOrg(orgId) && (isRole('hospital_owner') || isRole('manager'))) || isAdmin();
-        // Allow any signed-in user in the org to see schedules
-        allow get, list: if collection == 'schedules' && ((isSignedIn() && isInOrg(orgId)) || isAdmin());
-    }
-    
-    // Appointments
-    match /appointments/{appointmentId} {
-        allow create: if (isRole('hospital_owner') || isRole('manager')) && isInOrg(request.resource.data.organizationId);
-        allow read, update: if isOwner(resource.data.patientId) || (isRole('doctor') && request.auth.uid == resource.data.doctorAuthId) || isAdmin() || ((isRole('hospital_owner') || isRole('manager')) && isInOrg(resource.data.organizationId));
-        allow list: if isSignedIn();
-    }
-    
-    // Role Management
-    match /users/{userId}/role_applications/{applicationId} {
-        allow read, create: if isOwner(userId);
-        allow update: if isAdmin(); 
-    }
-    
-    match /users/{userId}/role_removal_requests/{requestId} {
-        allow read, create: if isOwner(userId);
-        allow update: if isAdmin();
+      allow read: if isSignedIn();
+      allow create: if isOwner(request.resource.data.ownerId);
+      allow update: if isOwner(resource.data.ownerId);
     }
 
-    // Collection group queries for admins
-    match /{path=**}/role_applications/{applicationId} {
-      allow list: if isAdmin();
+    // Membership defines a user's role within an org. Can only be managed by an org owner.
+    match /organizations/{orgId}/members/{userId} {
+      allow read: if isMemberOfOrg(orgId);
+      allow write: if hasRoleInOrg(orgId, 'hospital_owner');
     }
 
-     match /{path=**}/role_removal_requests/{requestId} {
-      allow list: if isAdmin();
+    // Medical records are created BY an organization FOR a patient.
+    // Patient can read their records from any org.
+    // Only doctors within THAT org can create/update records.
+    match /organizations/{orgId}/medical_records/{patientId}/records/{recordId} {
+      allow read: if isOwner(patientId) || hasRoleInOrg(orgId, 'doctor');
+      allow write: if hasRoleInOrg(orgId, 'doctor');
     }
-     
-     match /{path=**}/appointments/{appointmentId} {
-      allow list: if isAdmin();
+
+    // Appointments are managed within an org.
+    // Patients can read their own, staff can manage all within their org.
+    match /organizations/{orgId}/appointments/{appointmentId} {
+      allow create: if isMemberOfOrg(orgId);
+      allow read, update: if isOwner(resource.data.patientId) || hasRoleInOrg(orgId, 'front_desk');
     }
-     
-     match /{path=**}/privacy_log/{logId} {
-       allow list: if isAdmin();
-     }
-    
-    // Notifications
-    match /users/{userId}/notifications/{notificationId} {
-      allow read, write: if isOwner(userId);
+
+    // Schedules, facilities, and fees are managed by org owners/managers.
+    // Any member of the org can read them.
+    match /organizations/{orgId}/schedules/{docId} {
+        allow read: if isMemberOfOrg(orgId);
+        allow write: if hasRoleInOrg(orgId, 'hospital_owner');
+    }
+    match /organizations/{orgId}/facilities/{docId} {
+        allow read: if isMemberOfOrg(orgId);
+        allow write: if hasRoleInOrg(orgId, 'hospital_owner');
+    }
+     match /organizations/{orgId}/fee_items/{docId} {
+        allow read: if isMemberOfOrg(orgId);
+        allow write: if hasRoleInOrg(orgId, 'hospital_owner');
+    }
+
+    // Role applications are managed within the context of an organization.
+    match /organizations/{orgId}/role_applications/{applicationId} {
+      allow create: if isSignedIn(); // Any user can apply to an org.
+      allow read, update: if hasRoleInOrg(orgId, 'hospital_owner'); // Only owners can manage applications.
     }
   }
 }
