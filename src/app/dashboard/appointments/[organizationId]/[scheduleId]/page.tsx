@@ -27,13 +27,13 @@ export default function DoctorAppointmentsPage() {
 
     const { data: appointments, isLoading: appointmentsLoading } = useCollection<Appointment>(
         useMemoFirebase(() => {
-            if (!firestore || !scheduleId) return null;
+            if (!firestore || !scheduleId || !organizationId) return null;
             return query(
-                collection(firestore, 'appointments'),
+                collection(firestore, 'organizations', organizationId, 'appointments'),
                 where('scheduleId', '==', scheduleId),
                 orderBy('appointmentDate', 'desc')
             );
-        }, [firestore, scheduleId])
+        }, [firestore, organizationId, scheduleId])
     );
 
     const { data: schedule, isLoading: scheduleLoading } = useDoc<DoctorSchedule>(
@@ -44,9 +44,9 @@ export default function DoctorAppointmentsPage() {
     );
 
     const handleStatusChange = (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
-        if (!firestore) return;
+        if (!firestore || !organizationId) return;
         setUpdatingId(appointment.id);
-        const appointmentRef = doc(firestore, 'appointments', appointment.id);
+        const appointmentRef = doc(firestore, 'organizations', organizationId, 'appointments', appointment.id);
         const updateData = { status };
         
         updateDocument(appointmentRef, updateData, () => {
@@ -99,14 +99,13 @@ export default function DoctorAppointmentsPage() {
                             <TableRow>
                                 <TableHead>Date & Time</TableHead>
                                 <TableHead>Patient</TableHead>
-                                <TableHead>Reason</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
-                                <TableRow><TableCell colSpan={5} className="text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                                <TableRow><TableCell colSpan={4} className="text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                             ) : appointments && appointments.length > 0 ? (
                                 appointments.map(apt => (
                                     <TableRow key={apt.id}>
@@ -115,7 +114,6 @@ export default function DoctorAppointmentsPage() {
                                             <div className="text-sm text-muted-foreground">{apt.appointmentTime}</div>
                                         </TableCell>
                                         <TableCell>{apt.patientName}</TableCell>
-                                        <TableCell>{apt.reason}</TableCell>
                                         <TableCell>
                                             <Badge variant={
                                                 apt.status === 'confirmed' ? 'default' :
@@ -138,7 +136,7 @@ export default function DoctorAppointmentsPage() {
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow><TableCell colSpan={5} className="text-center">No appointments found for this schedule.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={4} className="text-center">No appointments found for this schedule.</TableCell></TableRow>
                             )}
                         </TableBody>
                     </Table>

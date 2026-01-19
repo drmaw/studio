@@ -20,7 +20,6 @@ import { useState } from "react"
 import { Loader2, Plus } from "lucide-react"
 import { useFirestore, commitBatch, writeBatch } from "@/firebase"
 import { collection, serverTimestamp, doc } from "firebase/firestore"
-import { FormattedDate } from "../shared/formatted-date";
 
 export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doctor: User }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,16 +30,18 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
   const firestore = useFirestore();
 
   const handleSave = () => {
-    if (!diagnosis || !firestore) {
-        toast({ variant: 'destructive', title: 'Diagnosis Required', description: 'Please enter a diagnosis.'});
+    if (!diagnosis || !firestore || !doctor.organizationId) {
+        toast({ variant: 'destructive', title: 'Missing Information', description: 'Diagnosis or active organization is missing.'});
         return;
     };
     setIsSaving(true);
     
     const batch = writeBatch(firestore);
 
-    // 1. Create the medical record
-    const recordsRef = collection(firestore, "patients", patient.id, "medical_records");
+    // 1. Create the medical record in the correct organization subcollection
+    const recordsPath = `organizations/${doctor.organizationId}/medical_records/${patient.id}/records`;
+    const newRecordRef = doc(collection(firestore, recordsPath));
+
     const newRecord = {
         patientId: patient.id,
         doctorId: doctor.healthId,
@@ -51,10 +52,10 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
         notes,
         createdAt: serverTimestamp(),
     };
-    batch.set(doc(recordsRef), newRecord);
+    batch.set(newRecordRef, newRecord);
 
     // 2. Create the privacy log entry
-    const logRef = collection(firestore, 'patients', patient.id, 'privacy_log');
+    const logRef = doc(collection(firestore, 'patients', patient.id, 'privacy_log'));
     const logEntry = {
         actorId: doctor.healthId,
         actorName: doctor.name,
@@ -64,7 +65,7 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
         action: 'add_record' as const,
         timestamp: serverTimestamp(),
     };
-    batch.set(doc(logRef), logEntry);
+    batch.set(logRef, logEntry);
     
     commitBatch(batch, 'add medical record and log', () => {
         setDiagnosis('');
@@ -95,9 +96,9 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add New Medical Record</DialogTitle>
+          <DialogTitle>Add New Medical Record for {patient.name}</DialogTitle>
           <DialogDescription>
-            Create a new medical record for {patient.name}. The current date will be used.
+            This record will be created under the currently active organization: <span className="font-semibold">{doctor.organizationName}</span>.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">

@@ -22,7 +22,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth, useFirestore, commitBatch, writeBatch } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, serverTimestamp } from "firebase/firestore";
-import type { User, Patient, Organization } from "@/lib/definitions";
+import type { User, Patient, Organization, Membership } from "@/lib/definitions";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -73,19 +73,19 @@ export function RegisterForm() {
       const firebaseUser = userCredential.user;
 
       const batch = writeBatch(firestore);
+      
+      // Define document references
       const userDocRef = doc(firestore, "users", firebaseUser.uid);
       const patientDocRef = doc(firestore, "patients", firebaseUser.uid);
-      
-      const healthId = generateHealthId();
       const orgId = `org-ind-${firebaseUser.uid}`; // Personal organization ID
       const orgDocRef = doc(firestore, "organizations", orgId);
-      
-      const newUser: Omit<User, 'id'> = {
-          healthId: healthId,
+      const memberDocRef = doc(firestore, "organizations", orgId, "members", firebaseUser.uid);
+
+      // 1. Create the core User profile (without roles or orgId)
+      const newUser: Omit<User, 'id' | 'roles' | 'organizationId'> = {
+          healthId: generateHealthId(),
           name: values.name,
           email: firebaseUser.email!,
-          roles: ['patient'],
-          organizationId: orgId, // Assign personal org ID
           avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
           createdAt: serverTimestamp(),
           status: 'active',
@@ -100,23 +100,33 @@ export function RegisterForm() {
           }
       };
 
+      // 2. Create the supplementary Patient record
       const newPatient: Omit<Patient, 'id'> = {
           createdAt: serverTimestamp(),
           chronicConditions: [],
           allergies: [],
       };
       
-      // Create a minimal organization for the individual user to prevent orphaned data
+      // 3. Create a minimal personal organization for data siloing
       const newOrganization: Omit<Organization, 'id'> = {
           name: `${values.name}'s Personal Records`,
           ownerId: firebaseUser.uid,
           status: 'active',
           createdAt: serverTimestamp(),
       };
+
+      // 4. Create the user's first membership within their personal organization
+      const newMembership: Omit<Membership, 'id'> = {
+          userId: firebaseUser.uid,
+          userName: values.name,
+          roles: ['patient'],
+          status: 'active',
+      };
       
       batch.set(userDocRef, newUser);
       batch.set(patientDocRef, newPatient);
-      batch.set(orgDocRef, newOrganization); // Add organization to the batch
+      batch.set(orgDocRef, newOrganization);
+      batch.set(memberDocRef, newMembership);
 
       commitBatch(batch, 'new user registration', () => {
         toast({

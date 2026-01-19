@@ -27,15 +27,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Loader2, UserPlus, Users, UserX } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { User, Role } from "@/lib/definitions";
+import type { User, Role, Membership } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase, commitBatch, updateDocument, writeBatch } from "@/firebase";
-import { collection, query, where, getDocs, doc, limit } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase, deleteDocument, setDocument, addDocument } from "@/firebase";
+import { collection, query, where, getDocs, doc, limit, getDoc } from "firebase/firestore";
 import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
 import { useSearchParams } from "next/navigation";
 
@@ -44,10 +44,12 @@ const formSchema = z.object({
   role: z.enum(['doctor', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'], { required_error: "You must select a role." }),
 });
 
+type StaffMember = User & { memberRoles: Role[] };
 
 export function StaffManagementTab() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const { toast } = useToast();
   const { user: hospitalOwner, hasRole } = useAuth();
   const firestore = useFirestore();
@@ -57,20 +59,45 @@ export function StaffManagementTab() {
   const isAdminView = hasRole('admin') && !!adminOrgId;
   const orgId = isAdminView ? adminOrgId : hospitalOwner?.organizationId;
 
-  const staffInOrgQuery = useMemoFirebase(() => {
+  const membersQuery = useMemoFirebase(() => {
     if (!firestore || !orgId) return null;
-    return query(collection(firestore, 'users'), 
-      where('organizationId', '==', orgId)
-    );
+    return collection(firestore, 'organizations', orgId, 'members');
   }, [firestore, orgId]);
 
-  const { data: staffInOrg, isLoading: staffLoading } = useCollection<User>(staffInOrgQuery);
+  const { data: members, isLoading: membersLoading } = useCollection<Membership>(membersQuery);
+  
+  useEffect(() => {
+    if (!members || !firestore) {
+        setStaff([]);
+        return;
+    };
+    
+    const fetchStaffDetails = async () => {
+        if(members.length === 0) {
+            setStaff([]);
+            return;
+        }
 
-  const staff = useMemo(() => {
-    if (!staffInOrg) return [];
-    return staffInOrg.filter(user => user.roles.some(role => assignableStaffRoles.includes(role) || role === 'hospital_owner'));
-  }, [staffInOrg]);
+        const userIds = members.map(m => m.userId);
+        const usersRef = collection(firestore, 'users');
+        const usersQuery = query(usersRef, where('__name__', 'in', userIds));
+        const userSnapshots = await getDocs(usersQuery);
+        
+        const usersById = new Map(userSnapshots.docs.map(d => [d.id, { ...d.data() as User, id: d.id }]));
 
+        const combinedStaff = members.map(member => {
+            const user = usersById.get(member.userId);
+            return {
+                ...user,
+                id: member.userId,
+                memberRoles: member.roles
+            } as StaffMember;
+        }).filter(s => s.id);
+
+        setStaff(combinedStaff);
+    }
+    fetchStaffDetails();
+  }, [members, firestore]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -81,64 +108,56 @@ export function StaffManagementTab() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!orgId || !firestore) return;
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     const usersRef = collection(firestore, 'users');
-    // Find the user by their unique Health ID
     const userSearchQuery = query(usersRef, where('healthId', '==', values.healthId), limit(1));
     const userSnapshot = await getDocs(userSearchQuery);
 
-    if (!userSnapshot.empty) {
-        const userDoc = userSnapshot.docs[0];
-        const userToAdd = userDoc.data() as User;
-        
-        if (userToAdd.organizationId !== orgId && !userToAdd.organizationId.startsWith('org-ind-')) {
-          toast({
-              variant: "destructive",
-              title: "User Belongs to Another Organization",
-              description: `${userToAdd.name} is already a member of another hospital. They must be removed from their current organization before they can be hired.`,
-              duration: 6000,
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        const batch = writeBatch(firestore);
-        
-        const userDocRef = doc(firestore, 'users', userDoc.id);
-        const updatedRoles = Array.from(new Set([...userToAdd.roles, values.role]));
-        batch.update(userDocRef, { 
-            organizationId: orgId,
-            roles: updatedRoles
+    if (userSnapshot.empty) {
+        toast({
+            variant: "destructive",
+            title: "User Not Found",
+            description: "No user found with that Health ID.",
         });
-
-        commitBatch(batch, `add staff ${userToAdd.id} to org ${orgId}`, () => {
-          toast({
-              title: "Staff Added",
-              description: `${userToAdd.name} has been assigned the ${values.role.replace(/_/g, ' ')} role in your organization.`,
-          });
-          form.reset();
-          setIsLoading(false);
-        }, () => {
-            setIsLoading(false);
-            toast({
-                variant: 'destructive',
-                title: 'Failed to Add Staff',
-                description: 'The user could not be added to your organization.',
-            });
-        });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "User Not Found",
-        description: "No user found with that Health ID.",
-      });
-      setIsLoading(false);
+        setIsSubmitting(false);
+        return;
     }
+
+    const userDoc = userSnapshot.docs[0];
+    const userToAdd = userDoc.data() as User;
+    
+    const memberRef = doc(firestore, 'organizations', orgId, 'members', userDoc.id);
+    const memberSnap = await getDoc(memberRef);
+
+    const newRoles = Array.from(new Set([...(memberSnap.data()?.roles || []), values.role]));
+
+    const membershipData: Omit<Membership, 'id'> = {
+        userId: userDoc.id,
+        userName: userToAdd.name,
+        roles: newRoles,
+        status: 'active',
+    };
+
+    setDocument(memberRef, membershipData, { merge: true }, () => {
+        toast({
+            title: "Staff Added",
+            description: `${userToAdd.name} has been assigned the ${values.role.replace(/_/g, ' ')} role in your organization.`,
+        });
+        form.reset();
+        setIsSubmitting(false);
+    }, () => {
+         setIsSubmitting(false);
+        toast({
+            variant: 'destructive',
+            title: 'Failed to Add Staff',
+            description: 'The user could not be added to your organization.',
+        });
+    });
   }
 
-  const handleRemoveStaff = (staffMember: User) => {
-    if (!hospitalOwner || !firestore) return;
+  const handleRemoveStaff = (staffMember: StaffMember) => {
+    if (!hospitalOwner || !orgId || !firestore) return;
 
     if (staffMember.id === hospitalOwner.id && !isAdminView) {
         toast({ variant: 'destructive', title: 'Action Not Allowed', description: 'The hospital owner cannot be removed from their own organization.'});
@@ -146,16 +165,9 @@ export function StaffManagementTab() {
     }
 
     setRemovingId(staffMember.id);
-    const userDocRef = doc(firestore, 'users', staffMember.id);
+    const memberRef = doc(firestore, 'organizations', orgId, 'members', staffMember.id);
     
-    // Revert user to a standard patient role and their personal organization
-    const newRoles = ['patient'];
-    const personalOrgId = `org-ind-${staffMember.id}`;
-
-    updateDocument(userDocRef, {
-        roles: newRoles,
-        organizationId: personalOrgId,
-    }, () => {
+    deleteDocument(memberRef, () => {
         toast({
             title: "Staff Removed",
             description: `${staffMember.name} has been removed from your organization.`,
@@ -216,8 +228,8 @@ export function StaffManagementTab() {
                         </FormItem>
                     )}
                     />
-                    <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-                        {isLoading ? <Loader2 className="animate-spin" /> : "Add Staff"}
+                    <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                        {isSubmitting ? <Loader2 className="animate-spin" /> : "Add Staff"}
                     </Button>
                 </form>
             </Form>
@@ -241,20 +253,20 @@ export function StaffManagementTab() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {staffLoading && (
+                        {membersLoading && (
                             <TableRow>
                                 <TableCell colSpan={4} className="text-center">
                                     <Loader2 className="mx-auto h-6 w-6 animate-spin"/>
                                 </TableCell>
                             </TableRow>
                         )}
-                        {staff && staff.map((member) => (
+                        {!membersLoading && staff && staff.map((member) => (
                             <TableRow key={member.id}>
                                 <TableCell className="font-medium">{member.name}</TableCell>
                                 <TableCell>{member.healthId}</TableCell>
                                 <TableCell>
                                     <div className="flex flex-wrap gap-1">
-                                        {member.roles.filter(r => r !== 'patient').map(role => (
+                                        {member.memberRoles.filter(r => r !== 'patient').map(role => (
                                              <Badge key={role} variant="secondary" className="capitalize">
                                                 {role.replace(/_/g, ' ')}
                                             </Badge>
@@ -273,7 +285,7 @@ export function StaffManagementTab() {
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Remove {member.name}?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        This will remove all professional roles from this user and un-assign them from your organization. They will revert to a standard patient account. This action cannot be undone.
+                                                        This will remove all professional roles from this user and un-assign them from your organization. This action cannot be undone.
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
@@ -290,7 +302,7 @@ export function StaffManagementTab() {
                         ))}
                     </TableBody>
                 </Table>
-                 {!staffLoading && staff?.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No staff members found in your organization.</p>}
+                 {!membersLoading && staff?.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No staff members found in your organization.</p>}
             </div>
         </div>
     </div>

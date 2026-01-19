@@ -17,7 +17,6 @@ import { doc, collection, query, orderBy, serverTimestamp } from "firebase/fires
 import type { Patient, MedicalRecord, Vitals, User } from "@/lib/definitions";
 import { AddMedicalRecordDialog } from "@/components/dashboard/add-medical-record-dialog";
 import { FormattedDate } from "@/components/shared/formatted-date";
-import { useToast } from "@/hooks/use-toast";
 
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
@@ -25,7 +24,6 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   const { user: currentUser, loading: currentUserLoading, hasRole, activeRole } = useAuth();
   const router = useRouter();
   const firestore = useFirestore();
-  const { toast } = useToast();
 
   useEffect(() => {
     if (!currentUserLoading && !currentUser) {
@@ -46,11 +44,29 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   }, [firestore, patientId]);
 
   const { data: patientData, isLoading: isPatientDataLoading } = useDoc<Patient>(patientDataDocRef);
-
+  
   const recordsQuery = useMemoFirebase(() => {
-    if (!firestore || !patientId) return null;
-    return query(collection(firestore, "patients", patientId, "medical_records"), orderBy("createdAt", "desc"));
-  }, [firestore, patientId]);
+    if (!firestore || !patientId || !currentUser) return null;
+
+    // If a doctor is viewing, scope records to their active organization.
+    if (hasRole('doctor') && currentUser.id !== patientId) {
+        if (!currentUser.organizationId) return null; // Doctor must have an active org
+        return query(
+            collection(firestore, "organizations", currentUser.organizationId, "medical_records", patientId, "records"), 
+            orderBy("createdAt", "desc")
+        );
+    }
+
+    // If the patient is viewing their own records, they should see all of them.
+    // This will be implemented in Step 1.3.
+    if (currentUser.id === patientId) {
+         // TODO: Implement collectionGroup query for patient view in Step 1.3
+        return null;
+    }
+
+    return null;
+  }, [firestore, patientId, currentUser, hasRole]);
+
   
   const { data: records, isLoading: areRecordsLoading } = useCollection<MedicalRecord>(recordsQuery);
 
@@ -73,8 +89,8 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
         return;
     }
 
-    // Log only if a doctor is viewing another patient's record
-    if (hasRole('doctor') && currentUser.id !== patientId) {
+    // Log only if a doctor is viewing another patient's record and has an active org
+    if (hasRole('doctor') && currentUser.id !== patientId && currentUser.organizationId) {
         const logRef = collection(firestore, 'patients', patientId, 'privacy_log');
         const logEntry = {
             actorId: currentUser.healthId,
@@ -88,7 +104,6 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
 
         addDocument(logRef, logEntry, undefined, (error) => {
             console.error("Failed to write privacy log for record view:", error);
-            // We don't toast here as it's a background action
         });
     }
   }, [firestore, currentUser, patientUser, currentUserLoading, isPatientUserLoading, hasRole, patientId]);
@@ -108,8 +123,8 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
     notFound();
   }
   
-  // Security check: patients can only see themselves.
-  if (!currentUserLoading && hasRole('patient') && activeRole === 'patient') {
+  // Security check: non-doctors can only see themselves.
+  if (!currentUserLoading && !hasRole('doctor')) {
     if (currentUser?.id !== patientId) {
         notFound();
     }
@@ -160,11 +175,11 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
         />
       )}
 
-      {vitalsHistory && <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} patientId={patientId} organizationId={patientUser.organizationId} />}
+      {vitalsHistory && <VitalsTracker vitalsData={vitalsHistory} currentUserRole={activeRole!} patientId={patientId} organizationId={currentUser.organizationId} />}
 
       <div>
         <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Medical Records</h2>
+            <h2 className="text-2xl font-bold">Medical Records {currentUser.organizationName ? `at ${currentUser.organizationName}` : ''}</h2>
             {hasRole('doctor') && (
                 <AddMedicalRecordDialog patient={patientUser} doctor={currentUser} />
             )}
@@ -176,7 +191,9 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
             ))
           ) : (
             <Card className="flex items-center justify-center p-8 bg-background-soft">
-                <p className="text-muted-foreground">No medical records found for this patient.</p>
+                <p className="text-muted-foreground">
+                  {currentUser.id === patientId ? "Your record history will appear here once implemented." : `No medical records found for this patient at ${currentUser.organizationName || 'this organization'}.`}
+                </p>
             </Card>
           )}
         </div>

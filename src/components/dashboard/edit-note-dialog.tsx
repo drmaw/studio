@@ -18,6 +18,7 @@ import { useState } from "react"
 import { Loader2, Pencil } from "lucide-react"
 import { useFirestore, writeBatch, commitBatch } from "@/firebase"
 import { doc, serverTimestamp, collection } from "firebase/firestore"
+import { FormattedDate } from "../shared/formatted-date"
 
 export function EditNoteDialog({ record, patientId, doctor }: { record: MedicalRecord, patientId: string, doctor: User }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,12 +28,15 @@ export function EditNoteDialog({ record, patientId, doctor }: { record: MedicalR
   const firestore = useFirestore();
 
   const handleSave = () => {
-    if (!patientId || !firestore) return;
+    if (!patientId || !firestore || !record.organizationId) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Cannot save note, missing required information.'});
+      return;
+    }
     setIsSaving(true);
     
     const batch = writeBatch(firestore);
     
-    const recordRef = doc(firestore, "patients", patientId, "medical_records", record.id);
+    const recordRef = doc(firestore, "organizations", record.organizationId, "medical_records", patientId, "records", record.id);
     batch.update(recordRef, { notes: note });
     
     const logRef = doc(collection(firestore, 'patients', patientId, 'privacy_log'));
