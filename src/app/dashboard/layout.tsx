@@ -1,14 +1,17 @@
-
 'use client'
 
-import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider, SidebarTrigger, SidebarFooter } from "@/components/ui/sidebar";
 import { useAuth as useAppAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { UserNav } from "@/components/dashboard/user-nav";
-import { Stethoscope } from "lucide-react";
+import { Stethoscope, LogOut } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { useAuth as useFirebaseAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
 
 export default function DashboardLayout({
   children,
@@ -16,6 +19,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { user, isAuthLoading } = useAppAuth();
+  const router = useRouter();
+  const auth = useFirebaseAuth();
+
+  const handleLogout = async () => {
+    if (!auth) return;
+    await signOut(auth);
+    router.push('/');
+  };
 
   // The root layout handles redirection, so this layout only needs to show a loading
   // state while waiting for the initial authentication check to complete.
@@ -68,6 +79,12 @@ export default function DashboardLayout({
             <SidebarContent>
                 <SidebarNav />
             </SidebarContent>
+            <SidebarFooter>
+              <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+              </Button>
+            </SidebarFooter>
         </Sidebar>
 
         <div className="flex-1 flex flex-col">
