@@ -80,7 +80,7 @@ export default function DashboardLayout({
             <SidebarContent>
                 <SidebarNav />
             </SidebarContent>
-            <SidebarFooter>
+            <SidebarFooter className="mt-auto">
               <Button variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
