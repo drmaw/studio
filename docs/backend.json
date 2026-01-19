@@ -9,13 +9,14 @@
         "healthId": { "type": "string", "description": "A unique 10-digit user-facing identifier." },
         "name": { "type": "string", "description": "User's full name." },
         "email": { "type": "string", "format": "email" },
+        "roles": { "type": "array", "items": { "type": "string" }, "description": "An aggregate of all roles a user has across all organizations." },
         "avatarUrl": { "type": "string", "format": "uri" },
         "demographics": { "type": "object" },
         "isPremium": { "type": "boolean" },
         "status": { "type": "string", "enum": ["active", "suspended"], "description": "The current status of the user account." },
         "createdAt": { "type": "object" }
       },
-      "required": ["healthId", "name", "email", "createdAt", "status"]
+      "required": ["healthId", "name", "email", "createdAt", "status", "roles"]
     },
     "Patient": {
       "title": "Patient",

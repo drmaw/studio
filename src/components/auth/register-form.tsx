@@ -22,7 +22,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth, useFirestore, commitBatch, writeBatch } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, serverTimestamp } from "firebase/firestore";
-import type { User, Patient, Organization, Membership } from "@/lib/definitions";
+import type { User, Patient, Organization, Membership, Role } from "@/lib/definitions";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -71,7 +71,8 @@ export function RegisterForm() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
-
+      
+      const healthId = generateHealthId();
       const batch = writeBatch(firestore);
       
       // Define document references
@@ -81,11 +82,12 @@ export function RegisterForm() {
       const orgDocRef = doc(firestore, "organizations", orgId);
       const memberDocRef = doc(firestore, "organizations", orgId, "members", firebaseUser.uid);
 
-      // 1. Create the core User profile (without roles or orgId)
-      const newUser: Omit<User, 'id' | 'roles' | 'organizationId'> = {
-          healthId: generateHealthId(),
+      // 1. Create the core User profile
+      const newUser: Omit<User, 'id' | 'organizationId' | 'organizationName'> = {
+          healthId: healthId,
           name: values.name,
           email: firebaseUser.email!,
+          roles: ['patient'] as Role[],
           avatarUrl: `https://picsum.photos/seed/${firebaseUser.uid}/100/100`,
           createdAt: serverTimestamp(),
           status: 'active',
@@ -119,6 +121,7 @@ export function RegisterForm() {
       const newMembership: Omit<Membership, 'id'> = {
           userId: firebaseUser.uid,
           userName: values.name,
+          userHealthId: healthId,
           roles: ['patient'],
           status: 'active',
       };
