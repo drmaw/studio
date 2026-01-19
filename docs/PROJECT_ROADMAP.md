@@ -33,7 +33,7 @@ This foundational phase established the core multi-tenant architecture required 
     *   **[✓] Task 2.1.1**: Define `Invoice` and `InvoiceItem` entities.
     *   **[✓] Task 2.1.2**: Implement the main Invoicing Dashboard.
     *   **[✓] Task 2.1.3**: Build the Invoice Detail page.
-    *   **Task 2.1.4: Implement Discount Authority**:
+    *   **[✓] Task 2.1.4: Implement Discount Authority**:
         *   **Data Flow**: Manager (Invoice UI) → Enters discount amount & reason → `Invoice` document `discount` and `total` fields updated.
         *   **Blueprinting**: Update the `Invoice` entity in `backend.json` and `definitions.ts` to include `discountAmount` and `discountReason` fields.
         *   **UI Work**: On the `InvoiceDetailPage`, add an "Apply Discount" button visible only to `manager` and `hospital_owner` roles. This will open a dialog to enter the discount amount and a mandatory reason.
@@ -118,6 +118,16 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Task 6.4.3: Build Owner's Reconciliation Dashboard**: Create a section for owners to view and confirm pending settlements, creating an audit trail.
     *   **Task 6.4.4: Refine UI Access Control**: Review the `SidebarNav` and other UI components to enforce the Owner > Manager hierarchy, hiding sensitive settings from managers.
 
+*   **Step 6.5: Implement Human Resources (HR) Module**:
+    *   **Data Flow**: Manager (HR UI) → Updates employee contract details / Creates weekly roster → `Membership` document updated / `DutyRoster` document created. Staff → Views their upcoming shifts on their personal dashboard.
+    *   **Task 6.5.1: Develop Detailed Employee Profiles**:
+        *   **Blueprinting**: Enhance the `Membership` entity in `backend.json` and `definitions.ts` to include a private `employeeDetails` object (containing fields for joining date, salary, bank info, etc.). Access to this object will be strictly limited to `manager` and `hospital_owner` roles via security rules.
+        *   **UI Work**: Create a new "HR" or "Payroll" tab within the Hospital Settings page. Build an interface for managers to view staff members and manage their detailed employment profiles.
+    *   **Task 6.5.2: Build Duty Roster Management**:
+        *   **Blueprinting**: Define a new `DutyRoster` entity to store shift assignments for a given date/week. This will include `userId`, `shiftType` (e.g., Morning, Night), and `dutyArea` (e.g., Ward A).
+        *   **UI Work**: In the new "HR" tab, build a visual roster management tool. This will allow managers to create weekly schedules and assign staff to different shifts and locations within the hospital.
+        *   **Dashboard Integration**: On each professional's dashboard (e.g., `NurseDashboard`), add a "My Upcoming Shifts" component that displays their personal schedule for the next 7 days by querying the `rosters` collection.
+
 ---
 
 ### **Phase 7: Alignment with Global Health & Data Protection Standards**
@@ -137,7 +147,7 @@ This foundational phase established the core multi-tenant architecture required 
 
 *   **Step 7.4: Ensure Comprehensive Traceability & Transparency**
     *   **Task**: Expand the `PrivacyLog` to trigger on every significant user action (e.g., confirming appointments, changing roles) and make the log messages more descriptive.
-
+    
 *   **Step 7.5: Enable Data Interoperability (FHIR)**
     *   **Data Flow**: Digi Health System → FHIR Transformation Layer → FHIR-compliant API Endpoint → External System.
     *   **Task 7.5.1**: Map internal data models (`Patient`, `MedicalRecord`) to standard FHIR resources.
