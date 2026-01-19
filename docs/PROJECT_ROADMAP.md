@@ -23,8 +23,8 @@ This foundational phase established the core multi-tenant architecture required 
     *   **[✓] Task**: Update the `useAuth` hook to manage an "active organization" in the user's session.
     *   **[✓] Task**: Add a UI element (e.g., a dropdown in the `UserNav`) to allow users to switch between their organizations.
 
-*   **Step 1.2: Refactor All Data Queries**: Update all components to fetch data using the new, efficient, organization-scoped queries.
-    *   **Task**: Refactor `DoctorDashboard`, `BookAppointmentPage`, `HospitalSettings`, and other professional views to query data from within the active organization's sub-collections.
+*   **Step 1.2: Refactor All Data Queries (✓ Complete)**: Update all components to fetch data using the new, efficient, organization-scoped queries.
+    *   **[✓] Task**: Refactor `DoctorDashboard`, `BookAppointmentPage`, `HospitalSettings`, and other professional views to query data from within the active organization's sub-collections.
 
 *   **Step 1.3: Refactor Patient-Facing Views**: Update patient-facing pages to aggregate data from across all organizations they have interacted with.
     *   **Task**: Refactor the "My Appointments" page to query and display a unified list of appointments from all relevant organizations.
