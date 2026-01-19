@@ -126,7 +126,7 @@ This foundational phase established the core multi-tenant architecture required 
     *   **[✓] Task**: Conduct a full WCAG 2.1 AA audit and remediate all identified issues.
 
 *   **Step 7.3: Strengthen Data Protection Rights (PDPO)**
-    *   **Task 7.3.1**: Create a static `/privacy-policy` page.
+    *   **[✓] Task 7.3.1**: Create a static `/privacy-policy` page.
     *   **Task 7.3.2**: Implement a "Right to Rectification" workflow allowing patients to request corrections to their clinical records.
     *   **Task 7.3.3**: Implement an explicit consent modal for first-time data sharing.
 
@@ -152,3 +152,4 @@ This foundational phase established the core multi-tenant architecture required 
 
 *   **Step 8.3: Implement Query Pagination for All Long Lists**:
     *   **Task**: Refactor all list views (Invoices, Staff, Medical History, etc.) to load data in pages using `limit()` and `startAfter()` queries, adding "Load More" buttons.
+

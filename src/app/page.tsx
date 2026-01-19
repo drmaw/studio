@@ -146,6 +146,11 @@ export default function Home() {
 
       <footer className="py-8 bg-background border-t">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          <div className="flex justify-center gap-4 mb-2">
+            <Link href="/privacy-policy" className="hover:text-primary hover:underline">
+                Privacy Policy
+            </Link>
+          </div>
           <p>&copy; {year} Digi Health. All rights reserved.</p>
           <p className="mt-1">Compliant, Secure, and Built for Bangladesh.</p>
         </div>
