@@ -171,5 +171,17 @@ service cloud.firestore {
       allow create: if isSignedIn(); // Any user can apply to an org.
       allow read, update: if hasRoleInOrg(orgId, 'hospital_owner'); // Only owners can manage applications.
     }
+    
+    // General Inventory Management
+    match /inventory/{itemId} {
+      allow read: if isMemberOfOrg(orgId);
+      allow write: if hasRoleInOrg(orgId, 'manager');
+
+      // Audit logs for inventory changes
+      match /stock_logs/{logId} {
+        allow read: if hasRoleInOrg(orgId, 'manager');
+        allow create: if hasRoleInOrg(orgId, 'manager');
+      }
+    }
   }
 }

@@ -310,3 +310,27 @@ export type Message = {
     text: string;
     createdAt: FieldValue;
 };
+
+export type InventoryItem = {
+  id: string;
+  organizationId: string;
+  name: string;
+  category: string;
+  quantity: number;
+  reorderLevel: number;
+  unit: string; // e.g., boxes, units, ml
+  location?: string; // e.g., Main Store, Pharmacy
+  updatedAt: FieldValue;
+};
+
+export type StockLog = {
+  id: string;
+  itemId: string;
+  itemName: string;
+  userId: string;
+  userName: string;
+  changeType: 'add' | 'remove' | 'adjustment';
+  quantityChanged: number;
+  reason?: string;
+  timestamp: FieldValue;
+};

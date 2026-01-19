@@ -332,6 +332,38 @@
         "createdAt": { "type": "object" }
       },
       "required": ["organizationId", "type", "name", "totalBeds", "costPerDay", "createdAt"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Represents a single stock item in the hospital's general inventory.",
+      "type": "object",
+      "properties": {
+        "organizationId": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "quantity": { "type": "number" },
+        "reorderLevel": { "type": "number" },
+        "unit": { "type": "string", "description": "e.g., boxes, units, ml" },
+        "location": { "type": "string", "description": "e.g., Main Store, Pharmacy" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["organizationId", "name", "category", "quantity", "reorderLevel", "unit", "updatedAt"]
+    },
+    "StockLog": {
+      "title": "StockLog",
+      "description": "An audit trail entry for any change in stock quantity of an inventory item.",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string" },
+        "itemName": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "changeType": { "type": "string", "enum": ["add", "remove", "adjustment"] },
+        "quantityChanged": { "type": "number" },
+        "reason": { "type": "string" },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["itemId", "itemName", "userId", "userName", "changeType", "quantityChanged", "timestamp"]
     }
   },
   "auth": {
@@ -414,6 +446,14 @@
       {
         "path": "/organizations/{organizationId}/facilities/{facilityId}",
         "definition": { "schema": { "$ref": "#/entities/Facility" }, "description": "In-patient facilities like wards and cabins managed by an organization." }
+      },
+      {
+        "path": "/organizations/{organizationId}/inventory/{itemId}",
+        "definition": { "schema": { "$ref": "#/entities/InventoryItem" }, "description": "General inventory items managed by an organization." }
+      },
+      {
+        "path": "/organizations/{organizationId}/inventory/{itemId}/stock_logs/{logId}",
+        "definition": { "schema": { "$ref": "#/entities/StockLog" }, "description": "Audit log for stock changes of an inventory item." }
       }
     ]
   }
