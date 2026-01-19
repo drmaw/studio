@@ -421,6 +421,32 @@
         "updatedAt": { "type": "object" }
       },
       "required": ["updatedAt"]
+    },
+    "OrganizationStats": {
+        "title": "OrganizationStats",
+        "description": "Pre-aggregated statistics for a single organization, updated by backend processes.",
+        "type": "object",
+        "properties": {
+            "totalRevenue": { "type": "number" },
+            "outstandingBalance": { "type": "number" },
+            "voidInvoices": { "type": "number" },
+            "bedOccupancyRate": { "type": "number" },
+            "averageLengthOfStay": { "type": "number" },
+            "totalBeds": { "type": "number" },
+            "occupiedBeds": { "type": "number" },
+            "dailyRevenue": { 
+                "type": "array", 
+                "items": { 
+                    "type": "object",
+                    "properties": {
+                        "date": { "type": "string" },
+                        "revenue": { "type": "number" }
+                    }
+                }
+            },
+            "updatedAt": { "type": "object" }
+        },
+        "required": ["updatedAt"]
     }
   },
   "auth": {
@@ -523,6 +549,10 @@
       {
         "path": "/stats/platform",
         "definition": { "schema": { "$ref": "#/entities/PlatformStats" }, "description": "Singleton document for global platform statistics." }
+      },
+       {
+        "path": "/organizations/{organizationId}/stats/summary",
+        "definition": { "schema": { "$ref": "#/entities/OrganizationStats" }, "description": "Singleton document for pre-aggregated organization statistics." }
       }
     ]
   },

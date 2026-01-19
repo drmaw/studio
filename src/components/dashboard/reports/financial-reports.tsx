@@ -1,15 +1,14 @@
 
 'use client';
 
-import { useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
-import type { Invoice } from '@/lib/definitions';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import type { OrganizationStats } from '@/lib/definitions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
+import { doc } from 'firebase/firestore';
 
 function StatCard({ title, value, icon: Icon, formatAsCurrency = true }: { title: string, value: number, icon: React.ElementType, formatAsCurrency?: boolean }) {
     return (
@@ -31,47 +30,14 @@ export function FinancialReports() {
     const { organizationId } = useAuth();
     const firestore = useFirestore();
 
-    const invoicesQuery = useMemoFirebase(() => {
+    // In a real-world app, this summary doc would be updated by backend Cloud Functions.
+    // Here we read from it directly for maximum UI performance.
+    const statsDocRef = useMemoFirebase(() => {
         if (!firestore || !organizationId) return null;
-        return query(collection(firestore, 'organizations', organizationId, 'invoices'));
+        return doc(firestore, 'organizations', organizationId, 'stats', 'summary');
     }, [firestore, organizationId]);
 
-    const { data: invoices, isLoading } = useCollection<Invoice>(invoicesQuery);
-
-    const financialStats = useMemo(() => {
-        if (!invoices) return { totalRevenue: 0, outstandingBalance: 0, voidInvoices: 0, dailyRevenue: [] };
-
-        const stats = {
-            totalRevenue: 0,
-            outstandingBalance: 0,
-            voidInvoices: 0,
-        };
-
-        const dailyRevenueMap = new Map<string, number>();
-        const thirtyDaysAgo = subDays(new Date(), 30);
-
-        invoices.forEach(invoice => {
-            if (invoice.status === 'paid') {
-                stats.totalRevenue += invoice.totalAmount;
-                const invoiceDate = (invoice.createdAt as any)?.toDate();
-                if (invoiceDate && invoiceDate > thirtyDaysAgo) {
-                    const dateString = format(invoiceDate, 'yyyy-MM-dd');
-                    dailyRevenueMap.set(dateString, (dailyRevenueMap.get(dateString) || 0) + invoice.totalAmount);
-                }
-            } else if (invoice.status === 'open') {
-                stats.outstandingBalance += invoice.totalAmount;
-            } else if (invoice.status === 'void') {
-                stats.voidInvoices += 1;
-            }
-        });
-        
-        const dailyRevenue = Array.from(dailyRevenueMap.entries())
-            .map(([date, revenue]) => ({ date, revenue }))
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-
-        return { ...stats, dailyRevenue };
-    }, [invoices]);
+    const { data: stats, isLoading } = useDoc<OrganizationStats>(statsDocRef);
 
     if (isLoading) {
         return (
@@ -81,6 +47,13 @@ export function FinancialReports() {
         );
     }
     
+    const financialStats = {
+        totalRevenue: stats?.totalRevenue ?? 0,
+        outstandingBalance: stats?.outstandingBalance ?? 0,
+        voidInvoices: stats?.voidInvoices ?? 0,
+        dailyRevenue: stats?.dailyRevenue ?? []
+    };
+
     return (
         <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -91,6 +64,7 @@ export function FinancialReports() {
 
             <div>
                 <h3 className="text-lg font-medium mb-4">Revenue Over Last 30 Days</h3>
+                <p className="text-sm text-muted-foreground mb-4">Note: This is sample data. In a real application, this would be updated by a backend process.</p>
                 <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={financialStats.dailyRevenue}>
                         <CartesianGrid strokeDasharray="3 3" />

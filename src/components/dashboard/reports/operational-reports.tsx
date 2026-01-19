@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
-import type { Admission, Facility } from '@/lib/definitions';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import type { OrganizationStats } from '@/lib/definitions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, BedDouble, CalendarOff, PieChart } from 'lucide-react';
-import { Pie, ResponsiveContainer, Cell, Legend } from 'recharts';
+import { Pie, ResponsiveContainer, Cell, Legend, Tooltip } from 'recharts';
+import { doc } from 'firebase/firestore';
+
 
 function StatCard({ title, value, icon: Icon }: { title: string, value: string | number, icon: React.ElementType }) {
     return (
@@ -30,43 +30,15 @@ export function OperationalReports() {
     const { organizationId } = useAuth();
     const firestore = useFirestore();
 
-    const facilitiesQuery = useMemoFirebase(() => {
+    // In a real-world app, this summary doc would be updated by backend Cloud Functions.
+    // Here we read from it directly for maximum UI performance.
+    const statsDocRef = useMemoFirebase(() => {
         if (!firestore || !organizationId) return null;
-        return query(collection(firestore, 'organizations', organizationId, 'facilities'));
+        return doc(firestore, 'organizations', organizationId, 'stats', 'summary');
     }, [firestore, organizationId]);
-    const { data: facilities, isLoading: facilitiesLoading } = useCollection<Facility>(facilitiesQuery);
 
-    const admissionsQuery = useMemoFirebase(() => {
-        if (!firestore || !organizationId) return null;
-        return query(collection(firestore, 'organizations', organizationId, 'admissions'));
-    }, [firestore, organizationId]);
-    const { data: admissions, isLoading: admissionsLoading } = useCollection<Admission>(admissionsQuery);
+    const { data: stats, isLoading } = useDoc<OrganizationStats>(statsDocRef);
 
-    const isLoading = facilitiesLoading || admissionsLoading;
-
-    const operationalStats = useMemo(() => {
-        if (!facilities || !admissions) return { occupancyRate: 0, alos: 0, totalBeds: 0, occupiedBeds: 0 };
-        
-        // Bed Occupancy
-        const totalBeds = facilities.reduce((acc, facility) => acc + facility.totalBeds, 0);
-        const occupiedBeds = facilities.reduce((acc, facility) => {
-            return acc + Object.values(facility.beds || {}).filter(b => b.status === 'occupied').length;
-        }, 0);
-        const occupancyRate = totalBeds > 0 ? (occupiedBeds / totalBeds) * 100 : 0;
-
-        // Average Length of Stay (ALOS)
-        const dischargedAdmissions = admissions.filter(a => a.status === 'discharged' && a.dischargeDate && a.admissionDate);
-        const totalStayDuration = dischargedAdmissions.reduce((acc, admission) => {
-            const admissionDate = (admission.admissionDate as any).toDate();
-            const dischargeDate = (admission.dischargeDate as any).toDate();
-            const duration = dischargeDate.getTime() - admissionDate.getTime();
-            return acc + duration;
-        }, 0);
-        const alos = dischargedAdmissions.length > 0 ? (totalStayDuration / dischargedAdmissions.length) / (1000 * 60 * 60 * 24) : 0;
-        
-        return { occupancyRate, alos, totalBeds, occupiedBeds };
-
-    }, [facilities, admissions]);
 
     if (isLoading) {
         return (
@@ -75,6 +47,13 @@ export function OperationalReports() {
             </div>
         );
     }
+
+    const operationalStats = {
+        occupancyRate: stats?.bedOccupancyRate ?? 0,
+        alos: stats?.averageLengthOfStay ?? 0,
+        totalBeds: stats?.totalBeds ?? 0,
+        occupiedBeds: stats?.occupiedBeds ?? 0,
+    };
     
     const occupancyData = [
         { name: 'Occupied', value: operationalStats.occupiedBeds },
@@ -84,12 +63,13 @@ export function OperationalReports() {
 
     return (
         <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
                 <StatCard title="Bed Occupancy Rate" value={`${operationalStats.occupancyRate.toFixed(1)}%`} icon={BedDouble} />
                 <StatCard title="Average Length of Stay (Days)" value={operationalStats.alos.toFixed(1)} icon={CalendarOff} />
             </div>
              <div>
                 <h3 className="text-lg font-medium mb-4 flex items-center gap-2"><PieChart className="h-5 w-5" />Current Bed Status</h3>
+                <p className="text-sm text-muted-foreground mb-4">Note: This is sample data. In a real application, this would be updated by a backend process.</p>
                 <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                         <Pie
