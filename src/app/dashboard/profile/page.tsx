@@ -200,6 +200,11 @@ export default function ProfilePage() {
         setIsSaving(false);
     }, () => {
         setIsSaving(false);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Your profile could not be saved. Please try again.",
+        });
     });
   }
 
