@@ -76,6 +76,7 @@ const generateTimeSlots = (start: string, end: string, intervalMinutes: number):
 
 export function BookAppointmentDialog({ schedule, organization, patient }: { schedule: DoctorSchedule, organization: Organization, patient: User }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isBooking, setIsBooking] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
   
@@ -87,7 +88,7 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) return;
-    
+    setIsBooking(true);
     const appointmentRef = collection(firestore, 'appointments');
     const formattedDate = format(values.appointmentDate, 'dd-MM-yyyy');
 
@@ -96,6 +97,7 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
         patientName: patient.name,
         doctorId: schedule.doctorId,
         doctorName: schedule.doctorName,
+        doctorAuthId: schedule.doctorAuthId,
         organizationId: organization.id,
         organizationName: organization.name,
         scheduleId: schedule.id,
@@ -135,10 +137,12 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
             setIsOpen(false);
             form.reset();
         }
+        setIsBooking(false);
+    }, () => {
+        setIsBooking(false);
     });
   }
 
-  const { isSubmitting } = form.formState;
   const scheduleDays = schedule.days.map(d => d.toLowerCase());
   const dayNameToNumber: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
@@ -241,8 +245,8 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
 
                 <DialogFooter className="pt-4">
                     <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button type="submit" disabled={isBooking}>
+                        {isBooking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Confirm Booking
                     </Button>
                 </DialogFooter>

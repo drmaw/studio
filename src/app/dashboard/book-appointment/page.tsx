@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Search, QrCode, UserX, Loader2, Hospital, CalendarDays, Clock, BookOpenCheck, User as UserIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
-import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useDoc, useFirestore, useMemoFirebase, addDocument } from "@/firebase";
 import { collection, doc, query } from "firebase/firestore";
 import { BookAppointmentDialog } from "@/components/dashboard/book-appointment-dialog";
 import { usePatientSearch } from "@/hooks/use-patient-search";
@@ -21,7 +22,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { QrScannerDialog } from "@/components/dashboard/qr-scanner-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PatientInfoCard } from "@/components/shared/patient-info-card";
-import type { DoctorSchedule, Organization } from "@/lib/definitions";
+import type { DoctorSchedule, Organization, User } from "@/lib/definitions";
 
 export default function BookAppointmentPage() {
     const {

@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useCollection, useDoc, useFirestore, useMemoFirebase, updateDocument } from "@/firebase";
 import { collection, doc, orderBy, query, where } from "firebase/firestore";
@@ -23,6 +23,7 @@ export default function DoctorAppointmentsPage() {
     const organizationId = params.organizationId as string;
     const firestore = useFirestore();
     const { toast } = useToast();
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     const { data: appointments, isLoading: appointmentsLoading } = useCollection<Appointment>(
         useMemoFirebase(() => {
@@ -44,6 +45,7 @@ export default function DoctorAppointmentsPage() {
 
     const handleStatusChange = (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
         if (!firestore) return;
+        setUpdatingId(appointment.id);
         const appointmentRef = doc(firestore, 'appointments', appointment.id);
         const updateData = { status };
         
@@ -59,6 +61,9 @@ export default function DoctorAppointmentsPage() {
                 title: `Appointment ${status}`,
                 description: `The appointment has been ${status}.`
             });
+            setUpdatingId(null);
+        }, () => {
+            setUpdatingId(null);
         });
     };
     
@@ -116,11 +121,11 @@ export default function DoctorAppointmentsPage() {
                                         <TableCell className="text-right space-x-1">
                                             {apt.status === 'pending' && (
                                                 <>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:bg-green-100 hover:text-green-700" onClick={() => handleStatusChange(apt, 'confirmed')}>
-                                                        <Check className="h-4 w-4" />
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:bg-green-100 hover:text-green-700" onClick={() => handleStatusChange(apt, 'confirmed')} disabled={updatingId === apt.id}>
+                                                        {updatingId === apt.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleStatusChange(apt, 'cancelled')}>
-                                                        <X className="h-4 w-4" />
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleStatusChange(apt, 'cancelled')} disabled={updatingId === apt.id}>
+                                                        {updatingId === apt.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
                                                     </Button>
                                                 </>
                                             )}

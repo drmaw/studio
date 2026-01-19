@@ -42,6 +42,8 @@ export function UpgradeToPremiumButton({ asChild = false, children, className, .
                 description: 'You are now a premium member.',
             });
             setIsUpgrading(false);
+        }, () => {
+            setIsUpgrading(false);
         });
     };
 

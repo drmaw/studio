@@ -26,6 +26,7 @@ export function AccountSettingsTab() {
 
   const [isVitalsVisible, setIsVitalsVisible] = useState(true);
   const [isDiscoverable, setIsDiscoverable] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   useEffect(() => {
     if (user?.demographics?.privacySettings) {
@@ -37,20 +38,24 @@ export function AccountSettingsTab() {
   const handlePrivacyChange = (key: 'vitalsVisible' | 'discoverable', value: boolean) => {
     if (!user || !firestore) return;
     
+    // Optimistically update UI
+    if (key === 'vitalsVisible') setIsVitalsVisible(value);
+    if (key === 'discoverable') setIsDiscoverable(value);
+
     const newSettings = {
         ...user.demographics?.privacySettings,
         [key]: value
     };
-
-    if (key === 'vitalsVisible') setIsVitalsVisible(value);
-    if (key === 'discoverable') setIsDiscoverable(value);
-
     
     const userRef = doc(firestore, 'users', user.id);
     updateDocument(userRef, {
         'demographics.privacySettings': newSettings
     }, () => {
         toast({ title: 'Privacy setting updated.' });
+    }, () => {
+        // Revert UI on error
+        if (key === 'vitalsVisible') setIsVitalsVisible(!value);
+        if (key === 'discoverable') setIsDiscoverable(!value);
     });
   };
 
@@ -64,7 +69,7 @@ export function AccountSettingsTab() {
         return;
     };
 
-    
+    setIsDeleting(true);
     const userRef = doc(firestore, "users", user.id);
     updateDocument(userRef, {
         status: 'suspended',
@@ -77,6 +82,8 @@ export function AccountSettingsTab() {
 
         await signOut(auth);
         router.push('/'); // Force redirect to home page after logout.
+    }, () => {
+        setIsDeleting(false);
     });
   };
   
@@ -169,7 +176,9 @@ export function AccountSettingsTab() {
                         <p className="text-sm text-destructive/80">Permanently delete your account and all associated data.</p>
                     </div>
                     <ConfirmationDialog 
-                        trigger={<Button variant="destructive">Delete Account</Button>}
+                        trigger={<Button variant="destructive" disabled={isDeleting}>
+                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete Account'}
+                        </Button>}
                         title="Are you absolutely sure?"
                         description="This action cannot be undone. This will schedule your account for permanent deletion in 30 days. You will be logged out immediately."
                         onConfirm={handleAccountDeletion}

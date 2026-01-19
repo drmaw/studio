@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Cake, User as UserIcon, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Plus, X, File, Trash2, CalendarIcon } from "lucide-react";
+import { Cake, User as UserIcon, MapPin, Droplet, Fingerprint, Users, Edit, Save, XCircle, Phone, HeartPulse, Siren, Plus, X, File, Trash2, CalendarIcon, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -72,6 +72,7 @@ export default function ProfilePage() {
   
   const [age, setAge] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>({});
   const [allergyInput, setAllergyInput] = useState('');
   
@@ -177,7 +178,7 @@ export default function ProfilePage() {
 
   const handleSave = () => {
     if (!user || !firestore) return;
-    
+    setIsSaving(true);
     const batch = writeBatch(firestore);
     const userRef = doc(firestore, "users", user.id);
     const patientRef = doc(firestore, "patients", user.id);
@@ -196,6 +197,9 @@ export default function ProfilePage() {
             description: "Your personal and medical information has been saved.",
         });
         setIsEditing(false);
+        setIsSaving(false);
+    }, () => {
+        setIsSaving(false);
     });
   }
 
@@ -460,13 +464,13 @@ export default function ProfilePage() {
                     {isEditing && (
                         <CardFooter className="bg-muted/50 p-4 border-t flex justify-end">
                             <div className="flex gap-2">
-                                <Button onClick={handleCancel} variant="outline">
+                                <Button onClick={handleCancel} variant="outline" disabled={isSaving}>
                                     <XCircle className="mr-2 h-4 w-4" />
                                     Cancel
                                 </Button>
 
-                                <Button onClick={handleSave}>
-                                    <Save className="mr-2 h-4 w-4" />
+                                <Button onClick={handleSave} disabled={isSaving}>
+                                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Save Changes
                                 </Button>
                             </div>

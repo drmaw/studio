@@ -77,6 +77,8 @@ export function HealthIdCard({ user, patient }: { user: User, patient: Patient |
                         description: 'Your new picture has been saved.',
                     });
                     setIsUploading(false);
+                }, () => {
+                    setIsUploading(false);
                 });
             })
             .catch(error => {

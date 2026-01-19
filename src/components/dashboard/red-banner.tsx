@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, Edit, Save, Trash2, XCircle } from "lucide-react";
+import { AlertTriangle, Edit, Save, Trash2, XCircle, Loader2 } from "lucide-react";
 import type { Role } from "@/lib/definitions";
 import { useFirestore, updateDocument } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -23,10 +23,12 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
     const [redFlag, setRedFlag] = useState(initialRedFlag);
     const [comment, setComment] = useState(initialRedFlag?.comment || '');
     const [isEditing, setIsEditing] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const firestore = useFirestore();
 
     const handleSave = () => {
         if (!patientId || !firestore || !redFlag) return;
+        setIsProcessing(true);
         const patientRef = doc(firestore, 'patients', patientId);
         const updateData = { redFlag: { title: redFlag.title, comment: comment } };
         
@@ -37,11 +39,15 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
                 title: "Alert Saved",
                 description: "The critical alert has been updated.",
             });
+            setIsProcessing(false);
+        }, () => {
+            setIsProcessing(false);
         });
     };
 
     const handleDelete = () => {
         if (!patientId || !firestore) return;
+        setIsProcessing(true);
         const patientRef = doc(firestore, 'patients', patientId);
         const updateData = { redFlag: null };
 
@@ -51,6 +57,9 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
                 title: "Alert Removed",
                 description: "The critical alert has been removed for this patient.",
             });
+            setIsProcessing(false);
+        }, () => {
+            setIsProcessing(false);
         });
     };
 
@@ -83,20 +92,24 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
                     <div className="flex items-center gap-2 flex-shrink-0">
                         {isEditing ? (
                             <>
-                                <Button size="sm" variant="secondary" onClick={() => { setIsEditing(false); setComment(redFlag.comment); }}>
+                                <Button size="sm" variant="secondary" onClick={() => { setIsEditing(false); setComment(redFlag.comment); }} disabled={isProcessing}>
                                     <XCircle className="mr-2 h-4 w-4" /> Cancel
                                 </Button>
-                                <Button size="sm" onClick={handleSave}>
-                                    <Save className="mr-2 h-4 w-4" /> Save
+                                <Button size="sm" onClick={handleSave} disabled={isProcessing}>
+                                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                     Save
                                 </Button>
                             </>
                         ) : (
                             <>
-                                <Button size="sm" variant="ghost" className="text-destructive-foreground hover:bg-destructive/80 hover:text-destructive-foreground" onClick={() => setIsEditing(true)}>
+                                <Button size="sm" variant="ghost" className="text-destructive-foreground hover:bg-destructive/80 hover:text-destructive-foreground" onClick={() => setIsEditing(true)} disabled={isProcessing}>
                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                 </Button>
                                 <ConfirmationDialog
-                                    trigger={<Button size="sm" variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</Button>}
+                                    trigger={<Button size="sm" variant="destructive" disabled={isProcessing}>
+                                        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                        Delete
+                                    </Button>}
                                     title="Are you sure?"
                                     description="This action cannot be undone. This will permanently delete the critical alert for this patient."
                                     onConfirm={handleDelete}

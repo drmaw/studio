@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from 'react';
-import { useFirestore, useCollectionGroup, useMemoFirebase, commitBatch, updateDocument, writeBatch } from '@/firebase';
+import { useFirestore, useCollectionGroup, useMemoFirebase, commitBatch, updateDocument, writeBatch, addDocument } from '@/firebase';
 import { collectionGroup, query, where, doc, serverTimestamp, getDoc, collection } from 'firebase/firestore';
 import type { Role, RoleApplication, RoleRemovalRequest, User, Organization } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +26,7 @@ import { FormattedDate } from '@/components/shared/formatted-date';
 import { createNotification } from '@/lib/notifications';
 
 
-function RejectApplicationDialog({ application, onReject }: { application: RoleApplication, onReject: (app: RoleApplication, reason: string) => void }) {
+function RejectApplicationDialog({ application, onReject }: { application: RoleApplication, onReject: (app: RoleApplication, reason: string, callbacks: {onSuccess: () => void, onError: () => void}) => void }) {
     const [isOpen, setIsOpen] = useState(false);
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,9 +34,15 @@ function RejectApplicationDialog({ application, onReject }: { application: RoleA
     const handleReject = () => {
         if (!reason) return;
         setIsSubmitting(true);
-        onReject(application, reason);
-        setIsSubmitting(false);
-        setIsOpen(false);
+        onReject(application, reason, {
+            onSuccess: () => {
+                setIsSubmitting(false);
+                setIsOpen(false);
+            },
+            onError: () => {
+                setIsSubmitting(false);
+            }
+        });
     }
     
     return (
@@ -67,7 +73,17 @@ function RejectApplicationDialog({ application, onReject }: { application: RoleA
     )
 }
 
-function ApplicationCard({ application, onApprove, onReject }: { application: RoleApplication, onApprove: (app: RoleApplication) => void, onReject: (app: RoleApplication, reason: string) => void }) {
+function ApplicationCard({ application, onApprove, onReject }: { application: RoleApplication, onApprove: (app: RoleApplication, callbacks: {onSuccess: () => void, onError: () => void}) => void, onReject: (app: RoleApplication, reason: string, callbacks: {onSuccess: () => void, onError: () => void}) => void }) {
+    const [isApproving, setIsApproving] = useState(false);
+
+    const handleApprove = () => {
+        setIsApproving(true);
+        onApprove(application, {
+            onSuccess: () => setIsApproving(false),
+            onError: () => setIsApproving(false)
+        });
+    }
+
     return (
         <Card className="bg-background">
             <CardHeader className="flex flex-row items-start justify-between gap-4">
@@ -95,14 +111,32 @@ function ApplicationCard({ application, onApprove, onReject }: { application: Ro
                 </div>
                 <div className="mt-4 flex justify-end gap-2">
                     <RejectApplicationDialog application={application} onReject={onReject} />
-                    <Button size="sm" onClick={() => onApprove(application)}><Check className="mr-2 h-4 w-4" /> Approve</Button>
+                    <Button size="sm" onClick={handleApprove} disabled={isApproving}>
+                        {isApproving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                         Approve
+                    </Button>
                 </div>
             </CardContent>
         </Card>
     )
 }
 
-function RemovalRequestCard({ request, onApprove, onReject }: { request: RoleRemovalRequest, onApprove: (req: RoleRemovalRequest) => void, onReject: (req: RoleRemovalRequest) => void }) {
+function RemovalRequestCard({ request, onApprove, onReject }: { request: RoleRemovalRequest, onApprove: (req: RoleRemovalRequest, callbacks: {onSuccess: () => void, onError: () => void}) => void, onReject: (req: RoleRemovalRequest, callbacks: {onSuccess: () => void, onError: () => void}) => void }) {
+    const [isProcessing, setIsProcessing] = useState(false);
+    
+    const handleAction = (action: 'approve' | 'reject') => {
+        setIsProcessing(true);
+        const callbacks = {
+            onSuccess: () => setIsProcessing(false),
+            onError: () => setIsProcessing(false)
+        };
+        if (action === 'approve') {
+            onApprove(request, callbacks);
+        } else {
+            onReject(request, callbacks);
+        }
+    }
+
     return (
          <Card className="bg-background">
             <CardHeader className="flex flex-row items-start justify-between gap-4">
@@ -122,8 +156,14 @@ function RemovalRequestCard({ request, onApprove, onReject }: { request: RoleRem
                     <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> <span>Requested: <FormattedDate date={request.createdAt} formatString="dd-MM-yyyy, hh:mm a" fallback="N/A" /></span></div>
                 </div>
                  <div className="mt-4 flex justify-end gap-2">
-                    <Button variant="secondary" size="sm" onClick={() => onReject(request)}><X className="mr-2 h-4 w-4" /> Reject</Button>
-                    <Button variant="destructive" size="sm" onClick={() => onApprove(request)}><Trash2 className="mr-2 h-4 w-4" /> Approve Removal</Button>
+                    <Button variant="secondary" size="sm" onClick={() => handleAction('reject')} disabled={isProcessing}>
+                        {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />} 
+                        Reject
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleAction('approve')} disabled={isProcessing}>
+                        {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />} 
+                        Approve Removal
+                    </Button>
                 </div>
             </CardContent>
         </Card>
@@ -148,7 +188,7 @@ export function RoleManagementTab() {
 
     const { data: removalRequests, isLoading: removalsLoading } = useCollectionGroup<RoleRemovalRequest>(removalsQuery);
     
-    const handleApproveApplication = async (app: RoleApplication) => {
+    const handleApproveApplication = async (app: RoleApplication, callbacks: {onSuccess: () => void, onError: () => void}) => {
         if (!firestore) return;
         const batch = writeBatch(firestore);
         
@@ -186,10 +226,11 @@ export function RoleManagementTab() {
         commitBatch(batch, `approve role application for ${app.userId}`, () => {
             createNotification(firestore, app.userId, 'Application Approved', `Your application for the ${app.requestedRole.replace(/_/g, ' ')} role has been approved.`, '/dashboard/profile');
             toast({ title: 'Application Approved', description: `${app.userName} is now a ${app.requestedRole}.` });
-        });
+            callbacks.onSuccess();
+        }, callbacks.onError);
     };
 
-    const handleRejectApplication = (app: RoleApplication, reason: string) => {
+    const handleRejectApplication = (app: RoleApplication, reason: string, callbacks: {onSuccess: () => void, onError: () => void}) => {
         if (!firestore) return;
         const appRef = doc(firestore, 'users', app.userId, 'role_applications', app.id);
         const updateData = { status: 'rejected', reason: reason, reviewedAt: serverTimestamp() };
@@ -197,10 +238,11 @@ export function RoleManagementTab() {
         updateDocument(appRef, updateData, () => {
             createNotification(firestore, app.userId, 'Application Rejected', `Your application for the ${app.requestedRole.replace(/_/g, ' ')} role has been rejected.`, '/dashboard/profile');
             toast({ variant: 'destructive', title: 'Application Rejected' });
-        });
+            callbacks.onSuccess();
+        }, callbacks.onError);
     };
 
-    const handleApproveRemoval = async (req: RoleRemovalRequest) => {
+    const handleApproveRemoval = async (req: RoleRemovalRequest, callbacks: {onSuccess: () => void, onError: () => void}) => {
         if (!firestore) return;
         const batch = writeBatch(firestore);
 
@@ -219,10 +261,11 @@ export function RoleManagementTab() {
         commitBatch(batch, `approve role removal for ${req.userId}`, () => {
             createNotification(firestore, req.userId, 'Role Removed', `Your ${req.roleToRemove.replace(/_/g, ' ')} role has been successfully removed.`, '/dashboard/profile');
             toast({ title: 'Role Removal Approved' });
-        });
+            callbacks.onSuccess();
+        }, callbacks.onError);
     };
 
-    const handleRejectRemoval = (req: RoleRemovalRequest) => {
+    const handleRejectRemoval = (req: RoleRemovalRequest, callbacks: {onSuccess: () => void, onError: () => void}) => {
         if (!firestore) return;
         const requestRef = doc(firestore, 'users', req.userId, 'role_removal_requests', req.id);
         const updateData = { status: 'rejected', reviewedAt: serverTimestamp() };
@@ -230,7 +273,8 @@ export function RoleManagementTab() {
         updateDocument(requestRef, updateData, () => {
             createNotification(firestore, req.userId, 'Role Removal Rejected', `Your request to remove the ${req.roleToRemove.replace(/_/g, ' ')} role has been rejected.`, '/dashboard/profile');
             toast({ variant: 'destructive', title: 'Role Removal Rejected' });
-        });
+            callbacks.onSuccess();
+        }, callbacks.onError);
     };
 
     const isLoading = appsLoading || removalsLoading;

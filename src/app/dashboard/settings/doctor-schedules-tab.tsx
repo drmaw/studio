@@ -27,6 +27,7 @@ import { getDocs, collection, query, where, limit, doc, serverTimestamp } from "
 import type { User, DoctorSchedule, Organization } from "@/lib/definitions";
 import { useSearchParams } from "next/navigation";
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
+import { CurrencyInput } from "@/components/shared/currency-input";
 
 const weekDays = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
 

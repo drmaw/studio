@@ -18,7 +18,7 @@ import type { User } from "@/lib/definitions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Loader2, Plus } from "lucide-react"
-import { useFirestore, commitBatch, writeBatch } from "@/firebase"
+import { useFirestore, commitBatch, writeBatch, addDocument } from "@/firebase"
 import { collection, serverTimestamp, doc } from "firebase/firestore"
 
 export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doctor: User }) {
@@ -73,6 +73,8 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
             title: "Record Added",
             description: "The new medical record has been saved successfully.",
         });
+        setIsSaving(false);
+    }, () => {
         setIsSaving(false);
     });
   }

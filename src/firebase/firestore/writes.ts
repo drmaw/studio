@@ -22,7 +22,8 @@ import { FirestorePermissionError } from '../errors';
 export function addDocument<T>(
     ref: CollectionReference<T>, 
     data: WithFieldValue<T>,
-    onSuccess?: (docRef: DocumentReference<T>) => void
+    onSuccess?: (docRef: DocumentReference<T>) => void,
+    onError?: (error: Error) => void
 ) {
     addDoc(ref, data)
         .then(docRef => {
@@ -34,6 +35,7 @@ export function addDocument<T>(
                 operation: 'create',
                 requestResourceData: data,
             }));
+            if (onError) onError(serverError);
         });
 }
 
@@ -42,7 +44,8 @@ export function setDocument<T>(
     ref: DocumentReference<T>, 
     data: WithFieldValue<T>, 
     options: SetOptions,
-    onSuccess?: () => void
+    onSuccess?: () => void,
+    onError?: (error: Error) => void
 ) {
     setDoc(ref, data, options)
         .then(() => {
@@ -54,6 +57,7 @@ export function setDocument<T>(
                 operation: options && 'merge' in options ? 'update' : 'create',
                 requestResourceData: data,
             }));
+            if (onError) onError(serverError);
         });
 }
 
@@ -61,7 +65,8 @@ export function setDocument<T>(
 export function updateDocument<T = DocumentData>(
     ref: DocumentReference<T>, 
     data: UpdateData<T>,
-    onSuccess?: () => void
+    onSuccess?: () => void,
+    onError?: (error: Error) => void
 ) {
     updateDoc(ref, data)
         .then(() => {
@@ -73,13 +78,15 @@ export function updateDocument<T = DocumentData>(
                 operation: 'update',
                 requestResourceData: data,
             }));
+            if (onError) onError(serverError);
         });
 }
 
 
 export function deleteDocument(
     ref: DocumentReference<any>,
-    onSuccess?: () => void
+    onSuccess?: () => void,
+    onError?: (error: Error) => void
 ) {
     deleteDoc(ref)
         .then(() => {
@@ -90,6 +97,7 @@ export function deleteDocument(
                 path: ref.path,
                 operation: 'delete',
             }));
+            if (onError) onError(serverError);
         });
 }
 
@@ -97,7 +105,8 @@ export function deleteDocument(
 export function commitBatch(
     batch: WriteBatch, 
     operationDescription: string,
-    onSuccess?: () => void
+    onSuccess?: () => void,
+    onError?: (error: Error) => void
 ) {
     batch.commit()
         .then(() => {
@@ -108,6 +117,7 @@ export function commitBatch(
                 path: `batch operation: ${operationDescription}`,
                 operation: 'write',
             }));
+            if (onError) onError(serverError);
         });
 }
 

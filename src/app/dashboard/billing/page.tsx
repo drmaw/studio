@@ -35,7 +35,7 @@ function EditFeeItemDialog({
     trigger
 }: { 
     item: FeeItem;
-    onSave: (updatedItem: FeeItem) => void;
+    onSave: (updatedItem: FeeItem, callbacks: { onSuccess: () => void; onError: () => void; }) => void;
     trigger: React.ReactNode;
 }) {
     const { toast } = useToast();
@@ -56,9 +56,15 @@ function EditFeeItemDialog({
         }
 
         setIsSaving(true);
-        onSave({ ...item, name, cost: parsedCost });
-        setIsSaving(false);
-        setIsOpen(false);
+        onSave({ ...item, name, cost: parsedCost }, {
+            onSuccess: () => {
+                setIsSaving(false);
+                setIsOpen(false);
+            },
+            onError: () => {
+                setIsSaving(false);
+            }
+        });
     };
 
     return (
@@ -112,8 +118,8 @@ function FeeCategory({
     placeholder: string;
     description: string;
     category: FeeItem['category'];
-    onAddItem: (category: FeeItem['category'], name: string, cost: number) => void;
-    onUpdateItem: (item: FeeItem) => void;
+    onAddItem: (category: FeeItem['category'], name: string, cost: number, callbacks: { onSuccess: () => void; onError: () => void; }) => void;
+    onUpdateItem: (item: FeeItem, callbacks: { onSuccess: () => void; onError: () => void; }) => void;
     onDeleteItem: (itemId: string) => void;
 }) {
     const { toast } = useToast();
@@ -133,10 +139,16 @@ function FeeCategory({
         }
 
         setIsSubmitting(true);
-        onAddItem(category, newItemName, cost);
-        setNewItemName('');
-        setNewItemCost('');
-        setIsSubmitting(false);
+        onAddItem(category, newItemName, cost, {
+            onSuccess: () => {
+                setNewItemName('');
+                setNewItemCost('');
+                setIsSubmitting(false);
+            },
+            onError: () => {
+                setIsSubmitting(false);
+            }
+        });
     };
 
     return (
@@ -249,7 +261,7 @@ export default function BillingPage() {
     const doctorFees = useMemo(() => feeItems?.filter(item => item.category === 'doctor_fee') || [], [feeItems]);
 
 
-    const handleAddItem = (category: FeeItem['category'], name: string, cost: number) => {
+    const handleAddItem = (category: FeeItem['category'], name: string, cost: number, callbacks: { onSuccess: () => void, onError: () => void }) => {
         if (!user || !firestore) return;
         const feeItemsRef = collection(firestore, 'organizations', user.organizationId, 'fee_items');
         const newItem = {
@@ -266,11 +278,12 @@ export default function BillingPage() {
                     title: 'Item Added',
                     description: `"${name}" has been added.`,
                 });
+                callbacks.onSuccess();
             }
-        });
+        }, callbacks.onError);
     };
     
-    const handleUpdateItem = (item: FeeItem) => {
+    const handleUpdateItem = (item: FeeItem, callbacks: { onSuccess: () => void; onError: () => void; }) => {
         if (!user || !firestore) return;
         const itemRef = doc(firestore, 'organizations', user.organizationId, 'fee_items', item.id);
         const updateData = { name: item.name, cost: item.cost };
@@ -280,7 +293,8 @@ export default function BillingPage() {
                 title: 'Item Updated',
                 description: 'The fee item has been updated successfully.',
             });
-        });
+            callbacks.onSuccess();
+        }, callbacks.onError);
     };
     
     const handleDeleteItem = (itemId: string) => {

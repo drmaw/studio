@@ -19,9 +19,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useAuth, useFirestore, commitBatch } from "@/firebase";
+import { useAuth, useFirestore, commitBatch, writeBatch } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { doc, serverTimestamp } from "firebase/firestore";
 import type { User, Patient, Organization } from "@/lib/definitions";
 
 const formSchema = z.object({
@@ -118,14 +118,17 @@ export function RegisterForm() {
       batch.set(patientDocRef, newPatient);
       batch.set(orgDocRef, newOrganization); // Add organization to the batch
 
-      const success = await commitBatch(batch, 'new user registration');
-      if (success) {
+      commitBatch(batch, 'new user registration', () => {
         toast({
             title: "Registration Successful",
             description: "You can now log in with your credentials.",
         });
         router.push("/login");
-      }
+      }, () => {
+        // This error handler is for the batch commit. 
+        // The createUser call will be caught by the outer try/catch
+        setIsLoading(false);
+      });
       
     } catch (error: any) {
       console.error("Registration failed:", error);
@@ -139,8 +142,7 @@ export function RegisterForm() {
         title: "Registration Failed",
         description: message,
       });
-    } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }
 

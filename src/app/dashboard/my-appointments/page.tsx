@@ -16,11 +16,13 @@ import { createNotification } from '@/lib/notifications';
 import { format } from 'date-fns';
 import { PageHeader } from '@/components/shared/page-header';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
+import { useState } from 'react';
 
 export default function MyAppointmentsPage() {
     const { user, loading: userLoading } = useAuth();
     const firestore = useFirestore();
     const { toast } = useToast();
+    const [cancellingId, setCancellingId] = useState<string | null>(null);
 
     const appointmentsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -35,10 +37,14 @@ export default function MyAppointmentsPage() {
 
     const handleCancelAppointment = async (appointmentId: string) => {
         if (!firestore || !user) return;
+        setCancellingId(appointmentId);
         const appointmentRef = doc(firestore, 'appointments', appointmentId);
         
         const appointmentSnap = await getDoc(appointmentRef);
-        if (!appointmentSnap.exists()) return;
+        if (!appointmentSnap.exists()) {
+            setCancellingId(null);
+            return;
+        };
         const appointment = appointmentSnap.data() as Appointment;
 
         const updateData = { status: 'cancelled' };
@@ -67,6 +73,9 @@ export default function MyAppointmentsPage() {
                 title: 'Appointment Cancelled',
                 description: 'Your appointment has been successfully cancelled.',
             });
+            setCancellingId(null);
+        }, () => {
+            setCancellingId(null);
         });
     };
     
@@ -113,7 +122,9 @@ export default function MyAppointmentsPage() {
                                         <TableCell className="text-right">
                                             {(apt.status === 'pending' || apt.status === 'confirmed') && (
                                                 <ConfirmationDialog
-                                                    trigger={<Button variant="outline" size="sm">Cancel</Button>}
+                                                    trigger={<Button variant="outline" size="sm" disabled={cancellingId === apt.id}>
+                                                        {cancellingId === apt.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Cancel'}
+                                                    </Button>}
                                                     title="Are you sure?"
                                                     description={`This will cancel your appointment with ${apt.doctorName}. This action cannot be undone.`}
                                                     onConfirm={() => handleCancelAppointment(apt.id)}

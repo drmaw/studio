@@ -5,9 +5,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Trash2, Loader2, Image as ImageIcon, MoreHorizontal, Download } from 'lucide-react';
+import { UploadCloud, Loader2, Image as ImageIcon, MoreHorizontal, Download, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -43,6 +42,7 @@ export default function MyHealthRecordsPage() {
     const [viewerOpen, setViewerOpen] = useState(false);
     const [viewerStartIndex, setViewerStartIndex] = useState(0);
     const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
+    const [isDeleting, setIsDeleting] = useState(false);
     
     const recordsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -116,6 +116,9 @@ export default function MyHealthRecordsPage() {
                  setSelectedFile(null);
                 setRecordType('');
                 setIsUploading(false);
+            }, () => {
+                setIsUploading(false);
+                toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload your file.'});
             });
         }).catch(error => {
             console.error("Upload failed: ", error);
@@ -139,7 +142,7 @@ export default function MyHealthRecordsPage() {
 
     const handleDeleteSelected = () => {
         if (!user || !firestore || selectedRecords.length === 0) return;
-        
+        setIsDeleting(true);
         const batch = writeBatch(firestore);
         selectedRecords.forEach(id => {
             const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
@@ -152,6 +155,9 @@ export default function MyHealthRecordsPage() {
                 description: 'The selected health records have been removed.',
             });
             setSelectedRecords([]);
+            setIsDeleting(false);
+        }, () => {
+            setIsDeleting(false);
         });
     };
 
@@ -264,8 +270,8 @@ export default function MyHealthRecordsPage() {
                                 </span>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm">
-                                            <MoreHorizontal className="h-4 w-4" />
+                                        <Button variant="outline" size="sm" disabled={isDeleting}>
+                                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
                                             <span className="sr-only">Actions</span>
                                         </Button>
                                     </DropdownMenuTrigger>

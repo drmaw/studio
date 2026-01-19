@@ -21,6 +21,7 @@ export function UsersTable() {
     const { toast } = useToast();
     const { data: users, isLoading } = useCollection<User>(useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]));
     const [filter, setFilter] = useState('');
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
@@ -33,11 +34,15 @@ export function UsersTable() {
 
     const handleUpdateUserStatus = (userId: string, status: 'active' | 'suspended') => {
         if (!firestore) return;
+        setUpdatingId(userId);
         const userRef = doc(firestore, 'users', userId);
         const updateData = { status };
         
         updateDocument(userRef, updateData, () => {
             toast({ title: "User Status Updated", description: `User has been ${status}.` });
+            setUpdatingId(null);
+        }, () => {
+            setUpdatingId(null);
         });
     };
 
@@ -79,17 +84,19 @@ export function UsersTable() {
                                         <Badge variant={user.status === 'suspended' ? 'destructive' : 'default'} className="capitalize">{user.status || 'active'}</Badge>
                                      </TableCell>
                                      <TableCell className="text-right">
-                                         <DropdownMenu>
-                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                             <DropdownMenuContent>
-                                                <DropdownMenuItem asChild><Link href={`/dashboard/patients/${user.id}`}><Eye className="mr-2 h-4 w-4"/>View Profile</Link></DropdownMenuItem>
-                                                {user.status === 'suspended' ? (
-                                                    <DropdownMenuItem onClick={() => handleUpdateUserStatus(user.id, 'active')}><UserRoundCheck className="mr-2 h-4 w-4" />Activate User</DropdownMenuItem>
-                                                ) : (
-                                                    <DropdownMenuItem onClick={() => handleUpdateUserStatus(user.id, 'suspended')} className="text-destructive focus:text-destructive"><UserRoundX className="mr-2 h-4 w-4" />Suspend User</DropdownMenuItem>
-                                                )}
-                                             </DropdownMenuContent>
-                                         </DropdownMenu>
+                                        {updatingId === user.id ? <Loader2 className="h-4 w-4 animate-spin ml-auto" /> : (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem asChild><Link href={`/dashboard/patients/${user.id}`}><Eye className="mr-2 h-4 w-4"/>View Profile</Link></DropdownMenuItem>
+                                                    {user.status === 'suspended' ? (
+                                                        <DropdownMenuItem onClick={() => handleUpdateUserStatus(user.id, 'active')}><UserRoundCheck className="mr-2 h-4 w-4" />Activate User</DropdownMenuItem>
+                                                    ) : (
+                                                        <DropdownMenuItem onClick={() => handleUpdateUserStatus(user.id, 'suspended')} className="text-destructive focus:text-destructive"><UserRoundX className="mr-2 h-4 w-4" />Suspend User</DropdownMenuItem>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                      </TableCell>
                                  </TableRow>
                              ))}
