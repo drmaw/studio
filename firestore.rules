@@ -34,195 +34,148 @@ service cloud.firestore {
         // For professionals, check the consent flag on the patient's membership doc for that org.
         return isOwner(patientId) || getPatientMembership(orgId, patientId).data.consent.shareRecords == true;
     }
+    
+    function isAdmin() {
+      return hasRoleInOrg('digihealth-admin', 'admin');
+    }
 
 
     // --- GLOBAL COLLECTIONS ---
 
-    // User profiles are global and self-managed.
     match /users/{userId} {
       allow create: if isSignedIn();
       allow read, update: if isOwner(userId);
-      // Only admins can list/delete all users.
-      allow list, delete: if hasRoleInOrg('digihealth-admin', 'admin');
-
-      // Rules for user-specific subcollections that they should be able to manage.
-      match /role_applications/{applicationId} {
-        // User can manage their own applications. Admin can read/update all.
-        allow read, write: if isOwner(userId) || hasRoleInOrg('digihealth-admin', 'admin');
-      }
-      match /role_removal_requests/{requestId} {
-        // User can manage their own requests. Admin can read/update all.
-        allow read, write: if isOwner(userId) || hasRoleInOrg('digihealth-admin', 'admin');
-      }
+      allow list, delete: if isAdmin();
+      
+      // User-private subcollections
       match /notifications/{notificationId} {
-        // User can manage their own notifications.
         allow read, write: if isOwner(userId);
       }
     }
 
-    // Patient data (allergies, conditions) is global and self-managed.
     match /patients/{patientId} {
       allow create, update: if isOwner(patientId);
-      // A patient can read their own data.
-      // A professional can read patient data IF they are a member of an organization.
-      // This allows a doctor to look up a patient before they are associated with their hospital.
       allow get: if isOwner(patientId) || (isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.length > 1);
-    }
-
-    // Patient-owned files (prescriptions, reports). Only the patient can manage these.
-    match /patients/{patientId}/record_files/{fileId} {
-      allow read, write: if isOwner(patientId);
-    }
-    
-    // Self-logged vitals. Only the patient can add. Doctors can read.
-    match /patients/{patientId}/vitals/{vitalId} {
-      allow create: if isOwner(patientId);
-      allow read: if isOwner(patientId) || (isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.length > 1);
-    }
-    
-    // Privacy log is strictly read-only for the patient themselves.
-    // Professionals will write to this log via organization-specific rules.
-    match /patients/{patientId}/privacy_log/{logId} {
-      allow get, list: if isOwner(patientId);
-      allow create: if isSignedIn(); // Log creation is allowed if signed in, content is validated by function triggers or secure backend.
+      
+      // Patient-private subcollections
+      match /record_files/{fileId} {
+        allow read, write: if isOwner(patientId);
+      }
+      match /vitals/{vitalId} {
+        allow create: if isOwner(patientId);
+        allow read: if isOwner(patientId) || (isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.length > 1);
+      }
+      match /privacy_log/{logId} {
+        allow get, list: if isOwner(patientId);
+        allow create: if isSignedIn();
+      }
     }
     
-    // --- STATS & PUBLIC DATA ---
     match /stats/{statId} {
-        // Publicly readable statistics
         allow get: if true;
-        // Only backend/admin processes can write. For now, deny all writes from client.
         allow write: if false; 
     }
 
-    // --- ORGANIZATION-SCOPED COLLECTIONS ---
+    // --- ORGANIZATION-SCOPED COLLECTIONS (NON-GROUP QUERIES) ---
 
-    // Any signed-in user can read basic organization info (for search/booking).
-    // Only the owner on the resource can update it.
     match /organizations/{orgId} {
       allow read: if isSignedIn();
       allow create: if isOwner(request.resource.data.ownerId);
       allow update: if isOwner(resource.data.ownerId);
-    }
-
-    // Membership defines a user's role within an org.
-    // Patients can update their own consent. Org owners/managers can manage other fields.
-    match /organizations/{orgId}/members/{userId} {
-      allow read: if isMemberOfOrg(orgId);
-      allow create: if hasRoleInOrg(orgId, 'manager');
-      // A manager or owner can update the roles, status, user's denormalized name, and employee details.
-      // A patient can only update their own consent settings.
-      allow update: if
-          (hasRoleInOrg(orgId, 'manager') &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roles', 'status', 'userName', 'userHealthId', 'employeeDetails'])) ||
-          (isOwner(userId) &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['consent']));
-      allow delete: if hasRoleInOrg(orgId, 'manager');
-    }
-
-    // Medical records are created BY an organization FOR a patient.
-    // Patients can always read their own records from any org.
-    // Professionals can only read if the patient has given consent for that org.
-    match /organizations/{orgId}/medical_records/{patientId}/records/{recordId} {
-      allow read: if isOwner(patientId) || (hasRoleInOrg(orgId, 'doctor') && hasPatientConsent(orgId, patientId));
-      allow write: if hasRoleInOrg(orgId, 'doctor');
-    }
-
-    // Appointments are managed within an org.
-    // Patients can read their own, staff can manage all within their org.
-    match /organizations/{orgId}/appointments/{appointmentId} {
-      allow create: if isMemberOfOrg(orgId);
-      allow read, update: if isOwner(resource.data.patientId) || hasRoleInOrg(orgId, 'front_desk');
-    }
-    
-    // Invoices are managed within an org.
-    // Patients can read their own, staff can manage all within their org.
-    match /organizations/{orgId}/invoices/{invoiceId} {
-        allow read: if isOwner(resource.data.patientId) || hasRoleInOrg(orgId, 'manager');
-        allow write: if hasRoleInOrg(orgId, 'manager');
-
-        // Rules for invoice line items
-        match /items/{itemId} {
-            allow read: if isOwner(get(parent).data.patientId) || hasRoleInOrg(orgId, 'manager');
+      
+        match /invoices/{invoiceId} {
+            allow read: if isOwner(resource.data.patientId) || hasRoleInOrg(orgId, 'manager');
             allow write: if hasRoleInOrg(orgId, 'manager');
+            match /items/{itemId} {
+                allow read: if isOwner(get(parent).data.patientId) || hasRoleInOrg(orgId, 'manager');
+                allow write: if hasRoleInOrg(orgId, 'manager');
+            }
+        }
+        match /admissions/{admissionId} {
+            allow read: if isOwner(resource.data.patientId) || isMemberOfOrg(orgId);
+            allow write: if hasRoleInOrg(orgId, 'manager') || hasRoleInOrg(orgId, 'nurse');
+        }
+        match /lab_test_orders/{orderId} {
+            allow create: if hasRoleInOrg(orgId, 'doctor');
+            allow read: if isMemberOfOrg(orgId);
+            allow update: if hasRoleInOrg(orgId, 'doctor') || hasRoleInOrg(orgId, 'lab_technician');
+            match /results/{resultId} {
+                allow create: if hasRoleInOrg(orgId, 'lab_technician');
+                allow read: if isMemberOfOrg(orgId) || isOwner(get(/databases/$(database)/documents/organizations/$(orgId)/lab_test_orders/$(orderId)).data.patientId);
+                allow update: if hasRoleInOrg(orgId, 'lab_technician');
+            }
+        }
+        match /facilities/{docId} {
+            allow read: if isMemberOfOrg(orgId);
+            allow write: if hasRoleInOrg(orgId, 'hospital_owner');
+        }
+        match /inventory/{itemId} {
+            allow read: if isMemberOfOrg(orgId);
+            allow write: if hasRoleInOrg(orgId, 'manager');
+            match /stock_logs/{logId} {
+                allow read: if hasRoleInOrg(orgId, 'manager');
+                allow create: if hasRoleInOrg(orgId, 'manager');
+            }
+        }
+        match /settlements/{settlementId} {
+            allow create: if hasRoleInOrg(orgId, 'manager');
+            allow read: if hasRoleInOrg(orgId, 'manager') || hasRoleInOrg(orgId, 'hospital_owner');
+            allow update: if hasRoleInOrg(orgId, 'hospital_owner');
+        }
+        match /rosters/{rosterId} {
+            allow write: if hasRoleInOrg(orgId, 'manager');
+            allow read: if hasRoleInOrg(orgId, 'manager') || isOwner(resource.data.userId);
         }
     }
     
-    // Admissions are managed within an org.
-    // Patients can read their own admission status. Staff can manage all.
-    match /organizations/{orgId}/admissions/{admissionId} {
-      allow read: if isOwner(resource.data.patientId) || isMemberOfOrg(orgId);
-      allow write: if hasRoleInOrg(orgId, 'manager') || hasRoleInOrg(orgId, 'nurse');
+    // === COLLECTION GROUP RULES ===
+
+    // A user can read their own memberships across all organizations
+    match /{path=**}/members/{userId} {
+      allow read: if isOwner(userId);
+      // Create, update, delete must be scoped to an organization for role-based security
+      allow create: if hasRoleInOrg(path[1], 'manager');
+      allow update: if 
+          (hasRoleInOrg(path[1], 'manager') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roles', 'status', 'userName', 'userHealthId', 'employeeDetails'])) ||
+          (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['consent']));
+      allow delete: if hasRoleInOrg(path[1], 'manager');
     }
 
-    // Lab Test Orders and Results
-    match /organizations/{orgId}/lab_test_orders/{orderId} {
-        allow create: if hasRoleInOrg(orgId, 'doctor');
-        allow read: if isMemberOfOrg(orgId);
-        allow update: if hasRoleInOrg(orgId, 'doctor') || hasRoleInOrg(orgId, 'lab_technician');
-        
-        match /results/{resultId} {
-            allow create: if hasRoleInOrg(orgId, 'lab_technician');
-            allow read: if isMemberOfOrg(orgId) || isOwner(get(/databases/$(database)/documents/organizations/$(orgId)/lab_test_orders/$(orderId)).data.patientId);
-            allow update: if hasRoleInOrg(orgId, 'lab_technician');
-        }
+    // A user can read their own medical records across all organizations
+    match /{path=**}/records/{recordId} {
+        allow read: if resource.data.patientId == request.auth.uid || (hasRoleInOrg(path[1], 'doctor') && hasPatientConsent(path[1], resource.data.patientId));
+        allow write: if hasRoleInOrg(path[1], 'doctor');
     }
-
-    // Secure Messaging
-    match /organizations/{orgId}/conversations/{convoId} {
+    
+    // A user can read their own appointments across all organizations
+    match /{path=**}/appointments/{appointmentId} {
+      allow create: if isMemberOfOrg(path[1]); // Must be member of the org to create an appointment
+      allow read, update: if resource.data.patientId == request.auth.uid || hasRoleInOrg(path[1], 'front_desk');
+    }
+    
+    // Any signed-in user can list schedules (for booking)
+    match /{path=**}/schedules/{scheduleId} {
+        allow read: if isSignedIn();
+        allow write: if hasRoleInOrg(path[1], 'hospital_owner');
+    }
+    
+    // Secure messaging rules using collection group
+    match /{path=**}/conversations/{convoId} {
       allow read, write: if request.auth.uid in resource.data.participants;
-
       match /messages/{messageId} {
         allow read: if request.auth.uid in get(parent(messageId)).data.participants;
         allow create: if request.auth.uid == request.resource.data.senderId && request.auth.uid in get(parent(messageId)).data.participants;
       }
     }
-
-    // Schedules, facilities, and fees are managed by org owners/managers.
-    // Any member of the org can read them.
-    match /organizations/{orgId}/schedules/{docId} {
-        allow read: if isMemberOfOrg(orgId);
-        allow write: if hasRoleInOrg(orgId, 'hospital_owner');
-    }
-    match /organizations/{orgId}/facilities/{docId} {
-        allow read: if isMemberOfOrg(orgId);
-        allow write: if hasRoleInOrg(orgId, 'hospital_owner');
-    }
-     match /organizations/{orgId}/fee_items/{docId} {
-        allow read: if isMemberOfOrg(orgId);
-        allow write: if hasRoleInOrg(orgId, 'hospital_owner');
-    }
-
-    // Role applications were moved under /users, but this path might still exist in old data.
-    // This rule is restrictive to prevent access. A better approach is to ensure all new
-    // applications are written to /users/{userId}/role_applications.
-    match /organizations/{orgId}/role_applications/{applicationId} {
-      allow read, write: if false; 
+    
+    // Role Applications are global for admins, but also private to the user
+    match /{path=**}/role_applications/{applicationId} {
+      allow read, write: if isOwner(path[1]) || isAdmin();
     }
     
-    // General Inventory Management
-    match /organizations/{orgId}/inventory/{itemId} {
-      allow read: if isMemberOfOrg(orgId);
-      allow write: if hasRoleInOrg(orgId, 'manager');
-
-      // Audit logs for inventory changes
-      match /stock_logs/{logId} {
-        allow read: if hasRoleInOrg(orgId, 'manager');
-        allow create: if hasRoleInOrg(orgId, 'manager');
-      }
-    }
-    
-    // Cash Settlements
-    match /organizations/{orgId}/settlements/{settlementId} {
-      allow create: if hasRoleInOrg(orgId, 'manager');
-      allow read: if hasRoleInOrg(orgId, 'manager') || hasRoleInOrg(orgId, 'hospital_owner');
-      allow update: if hasRoleInOrg(orgId, 'hospital_owner');
-    }
-
-    // Duty Roster
-    match /organizations/{orgId}/rosters/{rosterId} {
-      allow write: if hasRoleInOrg(orgId, 'manager');
-      allow read: if hasRoleInOrg(orgId, 'manager') || isOwner(resource.data.userId);
+    // Role Removal Requests are global for admins, but also private to the user
+    match /{path=**}/role_removal_requests/{requestId} {
+      allow read, write: if isOwner(path[1]) || isAdmin();
     }
   }
 }
