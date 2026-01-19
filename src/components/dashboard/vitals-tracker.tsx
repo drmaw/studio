@@ -15,6 +15,8 @@ import { useFirestore } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { FormattedDate } from '../shared/formatted-date';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 type VitalsTrackerProps = {
@@ -69,7 +71,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
     name: format(parseISO(v.date), 'dd-MM'),
   })).slice().reverse();
 
-  const handleAddVitals = async (newVitalData: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => {
+  const handleAddVitals = (newVitalData: Partial<Omit<Vitals, 'id' | 'patientId' | 'organizationId' | 'date' | 'createdAt'>>) => {
     if (!patientId || !firestore) return;
 
     if (Object.values(newVitalData).every(val => val === null || val === undefined || isNaN(val as number))) {
@@ -83,45 +85,44 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
 
     setIsSubmitting(true);
     
-    try {
-        const vitalsRef = collection(firestore, 'patients', patientId, 'vitals');
-        const newVital = {
-            patientId,
-            organizationId,
-            date: new Date().toISOString(),
-            bpSystolic: newVitalData.bpSystolic ?? null,
-            bpDiastolic: newVitalData.bpDiastolic ?? null,
-            pulse: newVitalData.pulse ?? null,
-            weight: newVitalData.weight ?? null,
-            rbs: newVitalData.rbs ?? null,
-            sCreatinine: newVitalData.sCreatinine ?? null,
-            createdAt: serverTimestamp()
-        };
-        
-        await addDoc(vitalsRef, newVital);
+    const vitalsRef = collection(firestore, 'patients', patientId, 'vitals');
+    const newVital = {
+        patientId,
+        organizationId,
+        date: new Date().toISOString(),
+        bpSystolic: newVitalData.bpSystolic ?? null,
+        bpDiastolic: newVitalData.bpDiastolic ?? null,
+        pulse: newVitalData.pulse ?? null,
+        weight: newVitalData.weight ?? null,
+        rbs: newVitalData.rbs ?? null,
+        sCreatinine: newVitalData.sCreatinine ?? null,
+        createdAt: serverTimestamp()
+    };
+    
+    addDoc(vitalsRef, newVital)
+        .then(() => {
+            toast({
+              title: "Vitals Logged",
+              description: "Your latest health vitals have been recorded.",
+            });
 
-        toast({
-          title: "Vitals Logged",
-          description: "Your latest health vitals have been recorded.",
+            setBpSystolic('');
+            setBpDiastolic('');
+            setPulse('');
+            setWeight('');
+            setRbs('');
+            setSCreatinine('');
+        })
+        .catch(async (serverError) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: vitalsRef.path,
+                operation: 'create',
+                requestResourceData: newVital
+            }));
+        })
+        .finally(() => {
+            setIsSubmitting(false);
         });
-
-        setBpSystolic('');
-        setBpDiastolic('');
-        setPulse('');
-        setWeight('');
-        setRbs('');
-        setSCreatinine('');
-
-    } catch (error) {
-        console.error("Failed to log vitals:", error);
-        toast({
-            variant: "destructive",
-            title: "Log Failed",
-            description: "Could not save your vitals.",
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
   };
 
   const renderInput = () => {

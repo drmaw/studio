@@ -24,6 +24,8 @@ import { collection, getDocs, query, where, limit, doc, getDoc, addDoc, serverTi
 import { useAuth } from "@/hooks/use-auth";
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { BookAppointmentDialog } from "@/components/dashboard/book-appointment-dialog";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 
 type CombinedPatient = User & Partial<Patient>;
@@ -124,21 +126,24 @@ export default function BookAppointmentPage() {
                 setSearchedPatient(combinedData);
                 
                 // Log the search action
-                try {
-                    const logRef = collection(firestore, 'patients', combinedData.id, 'privacy_log');
-                    const logEntry = {
-                        actorId: currentUser.healthId,
-                        actorName: currentUser.name,
-                        actorAvatarUrl: currentUser.avatarUrl,
-                        patientId: combinedData.id,
-                        organizationId: currentUser.organizationId,
-                        action: 'search' as const,
-                        timestamp: serverTimestamp(),
-                    };
-                    await addDoc(logRef, logEntry);
-                } catch (logError) {
-                    console.error("Failed to write privacy log:", logError);
-                }
+                const logRef = collection(firestore, 'patients', combinedData.id, 'privacy_log');
+                const logEntry = {
+                    actorId: currentUser.healthId,
+                    actorName: currentUser.name,
+                    actorAvatarUrl: currentUser.avatarUrl,
+                    patientId: combinedData.id,
+                    organizationId: currentUser.organizationId,
+                    action: 'search' as const,
+                    timestamp: serverTimestamp(),
+                };
+                addDoc(logRef, logEntry)
+                    .catch(async (serverError) => {
+                        errorEmitter.emit('permission-error', new FirestorePermissionError({
+                            path: logRef.path,
+                            operation: 'create',
+                            requestResourceData: logEntry,
+                        }));
+                    });
 
             } else {
                 setSearchedPatient('not_found');

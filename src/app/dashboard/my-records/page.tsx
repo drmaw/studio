@@ -38,6 +38,8 @@ import { collection, serverTimestamp, query, orderBy, doc, deleteDoc, writeBatch
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FormattedDate } from '@/components/shared/formatted-date';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 export default function MyHealthRecordsPage() {
@@ -114,12 +116,20 @@ export default function MyHealthRecordsPage() {
                 createdAt: serverTimestamp(),
             };
 
-            await addDoc(recordFilesRef, newRecord);
-
-            toast({
-                title: 'Upload successful',
-                description: `Your file "${selectedFile.name}" has been uploaded.`,
-            });
+            addDoc(recordFilesRef, newRecord)
+                .then(() => {
+                    toast({
+                        title: 'Upload successful',
+                        description: `Your file "${selectedFile.name}" has been uploaded.`,
+                    });
+                })
+                .catch(async (serverError) => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: recordFilesRef.path,
+                        operation: 'create',
+                        requestResourceData: newRecord
+                    }));
+                });
             
         } catch (error) {
             console.error("Upload failed: ", error);
@@ -131,43 +141,48 @@ export default function MyHealthRecordsPage() {
         }
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = (id: string) => {
         if(!user || !firestore) return;
-        try {
-            const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
-            await deleteDoc(docRef);
-            setSelectedRecords(prev => prev.filter(selectedId => selectedId !== id));
-            toast({
-                title: 'Record deleted',
-                description: 'The selected health record has been removed.',
+        const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
+        deleteDoc(docRef)
+            .then(() => {
+                setSelectedRecords(prev => prev.filter(selectedId => selectedId !== id));
+                toast({
+                    title: 'Record deleted',
+                    description: 'The selected health record has been removed.',
+                });
+            })
+            .catch(async (serverError) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'delete',
+                }));
             });
-        } catch (error) {
-             console.error("Delete failed: ", error);
-            toast({ variant: 'destructive', title: 'Delete Failed', description: 'Could not delete the record.'});
-        }
     }
 
-    const handleDeleteSelected = async () => {
+    const handleDeleteSelected = () => {
         if (!user || !firestore || selectedRecords.length === 0) return;
         
-        try {
-            const batch = writeBatch(firestore);
-            selectedRecords.forEach(id => {
-                const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
-                batch.delete(docRef);
+        const batch = writeBatch(firestore);
+        selectedRecords.forEach(id => {
+            const docRef = doc(firestore, 'patients', user.id, 'record_files', id);
+            batch.delete(docRef);
+        });
+
+        batch.commit()
+            .then(() => {
+                 toast({
+                    title: `${selectedRecords.length} records deleted`,
+                    description: 'The selected health records have been removed.',
+                });
+                setSelectedRecords([]);
+            })
+            .catch(async (serverError) => {
+                 errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: `/patients/${user.id}/record_files`,
+                    operation: 'delete',
+                }));
             });
-    
-            await batch.commit();
-            
-            toast({
-                title: `${selectedRecords.length} records deleted`,
-                description: 'The selected health records have been removed.',
-            });
-            setSelectedRecords([]);
-        } catch (error) {
-             console.error("Batch delete failed: ", error);
-            toast({ variant: 'destructive', title: 'Delete Failed', description: 'Could not delete selected records.'});
-        }
     };
 
     const handleDownloadSelected = () => {
@@ -179,18 +194,24 @@ export default function MyHealthRecordsPage() {
         setSelectedRecords([]);
     };
 
-    const handleUpgrade = async () => {
+    const handleUpgrade = () => {
         if (!user || !firestore) return;
-        try {
-            const userRef = doc(firestore, 'users', user.id);
-            await updateDoc(userRef, { isPremium: true });
-            toast({
-                title: "Congratulations!",
-                description: "You've been upgraded to a Premium account."
+        const userRef = doc(firestore, 'users', user.id);
+        const updateData = { isPremium: true };
+        updateDoc(userRef, updateData)
+            .then(() => {
+                toast({
+                    title: "Congratulations!",
+                    description: "You've been upgraded to a Premium account."
+                });
+            })
+            .catch(async (serverError) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: userRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData
+                }));
             });
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Upgrade Failed' });
-        }
     };
     
     const toggleRecordSelection = (id: string) => {

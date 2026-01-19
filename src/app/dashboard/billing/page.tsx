@@ -34,6 +34,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, updateDoc, deleteDoc, serverTimestamp, doc } from "firebase/firestore";
 import type { FeeItem } from "@/lib/definitions";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 
 function EditFeeItemDialog({ 
@@ -51,7 +53,7 @@ function EditFeeItemDialog({
     const [cost, setCost] = useState(item.cost.toString());
     const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = async () => {
+    const handleSave = () => {
         const parsedCost = parseFloat(cost);
         if (!name || isNaN(parsedCost) || parsedCost <= 0) {
             toast({
@@ -63,7 +65,7 @@ function EditFeeItemDialog({
         }
 
         setIsSaving(true);
-        await onSave({ ...item, name, cost: parsedCost });
+        onSave({ ...item, name, cost: parsedCost });
         setIsSaving(false);
         setIsOpen(false);
     };
@@ -119,16 +121,16 @@ function FeeCategory({
     placeholder: string;
     description: string;
     category: FeeItem['category'];
-    onAddItem: (category: FeeItem['category'], name: string, cost: number) => Promise<void>;
-    onUpdateItem: (item: FeeItem) => Promise<void>;
-    onDeleteItem: (itemId: string) => Promise<void>;
+    onAddItem: (category: FeeItem['category'], name: string, cost: number) => void;
+    onUpdateItem: (item: FeeItem) => void;
+    onDeleteItem: (itemId: string) => void;
 }) {
     const { toast } = useToast();
     const [newItemName, setNewItemName] = useState('');
     const [newItemCost, setNewItemCost] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleAddItem = async () => {
+    const handleAddItem = () => {
         const cost = parseFloat(newItemCost);
         if (!newItemName || isNaN(cost) || cost <= 0) {
             toast({
@@ -140,7 +142,7 @@ function FeeCategory({
         }
 
         setIsSubmitting(true);
-        await onAddItem(category, newItemName, cost);
+        onAddItem(category, newItemName, cost);
         setNewItemName('');
         setNewItemCost('');
         setIsSubmitting(false);
@@ -263,41 +265,71 @@ export default function BillingPage() {
     const doctorFees = useMemo(() => feeItems?.filter(item => item.category === 'doctor_fee') || [], [feeItems]);
 
 
-    const handleAddItem = async (category: FeeItem['category'], name: string, cost: number) => {
+    const handleAddItem = (category: FeeItem['category'], name: string, cost: number) => {
         if (!user || !firestore) return;
         const feeItemsRef = collection(firestore, 'organizations', user.organizationId, 'fee_items');
-        await addDoc(feeItemsRef, {
+        const newItem = {
             organizationId: user.organizationId,
             category,
             name,
             cost,
             createdAt: serverTimestamp()
-        });
-        toast({
-            title: 'Item Added',
-            description: `"${name}" has been added.`,
-        });
+        };
+
+        addDoc(feeItemsRef, newItem)
+            .then(() => {
+                toast({
+                    title: 'Item Added',
+                    description: `"${name}" has been added.`,
+                });
+            })
+            .catch(async (serverError) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: feeItemsRef.path,
+                    operation: 'create',
+                    requestResourceData: newItem
+                }));
+            });
     };
     
-    const handleUpdateItem = async (item: FeeItem) => {
+    const handleUpdateItem = (item: FeeItem) => {
         if (!user || !firestore) return;
         const itemRef = doc(firestore, 'organizations', user.organizationId, 'fee_items', item.id);
-        await updateDoc(itemRef, { name: item.name, cost: item.cost });
-        toast({
-            title: 'Item Updated',
-            description: 'The fee item has been updated successfully.',
-        });
+        const updateData = { name: item.name, cost: item.cost };
+        
+        updateDoc(itemRef, updateData)
+            .then(() => {
+                toast({
+                    title: 'Item Updated',
+                    description: 'The fee item has been updated successfully.',
+                });
+            })
+            .catch(async (serverError) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: itemRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData
+                }));
+            });
     };
     
-    const handleDeleteItem = async (itemId: string) => {
+    const handleDeleteItem = (itemId: string) => {
         if (!user || !firestore) return;
         const itemRef = doc(firestore, 'organizations', user.organizationId, 'fee_items', itemId);
-        await deleteDoc(itemRef);
-        toast({
-            variant: "destructive",
-            title: 'Item Removed',
-            description: 'The item has been removed.',
-        });
+        deleteDoc(itemRef)
+            .then(() => {
+                toast({
+                    variant: "destructive",
+                    title: 'Item Removed',
+                    description: 'The item has been removed.',
+                });
+            })
+            .catch(async (serverError) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: itemRef.path,
+                    operation: 'delete',
+                }));
+            });
     };
 
     return (

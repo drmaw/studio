@@ -83,8 +83,8 @@ service cloud.firestore {
     
     match /organizations/{orgId}/{collection}/{docId} {
         allow read, write: if (isInOrg(orgId) && (isRole('hospital_owner') || isRole('manager'))) || isAdmin();
-        // Allow any signed-in user to see schedules (for appointment booking)
-        allow get, list: if collection == 'schedules' && isSignedIn();
+        // Allow any signed-in user in the org to see schedules
+        allow get, list: if collection == 'schedules' && ((isSignedIn() && isInOrg(orgId)) || isAdmin());
     }
     
     // Appointments

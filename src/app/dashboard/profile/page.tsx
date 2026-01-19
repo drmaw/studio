@@ -24,6 +24,8 @@ import { ApplyForRoleCard } from "@/components/dashboard/profile/apply-for-role-
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 const ProfileInfoRow = ({ icon: Icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | null, children?: React.ReactNode }) => {
   if (!value && !children) return null;
@@ -175,37 +177,36 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!user || !firestore) return;
     
-    try {
-        const batch = writeBatch(firestore);
-        const userRef = doc(firestore, "users", user.id);
-        const patientRef = doc(firestore, "patients", user.id);
-        
-        const { chronicConditions, allergies, ...demographicsData } = formData;
+    const batch = writeBatch(firestore);
+    const userRef = doc(firestore, "users", user.id);
+    const patientRef = doc(firestore, "patients", user.id);
+    
+    const { chronicConditions, allergies, ...demographicsData } = formData;
 
-        batch.update(userRef, { demographics: demographicsData });
-        batch.update(patientRef, {
-            chronicConditions: chronicConditions || [],
-            allergies: allergies || [],
-        });
+    batch.update(userRef, { demographics: demographicsData });
+    batch.update(patientRef, {
+        chronicConditions: chronicConditions || [],
+        allergies: allergies || [],
+    });
 
-        await batch.commit();
-
-        toast({
-            title: "Profile Updated",
-            description: "Your personal and medical information has been saved.",
+    batch.commit()
+        .then(() => {
+            toast({
+                title: "Profile Updated",
+                description: "Your personal and medical information has been saved.",
+            });
+            setIsEditing(false);
+        })
+        .catch(async (serverError) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userRef.path,
+                operation: 'update',
+                requestResourceData: { demographicsData, chronicConditions, allergies }
+            }));
         });
-        setIsEditing(false);
-    } catch (error) {
-        console.error("Failed to update profile:", error);
-        toast({
-            variant: "destructive",
-            title: "Update Failed",
-            description: "Could not save your profile changes.",
-        });
-    }
   }
 
   const handleCancel = () => {

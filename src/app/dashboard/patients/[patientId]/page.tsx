@@ -17,6 +17,8 @@ import { doc, collection, query, orderBy, addDoc, serverTimestamp } from "fireba
 import type { Patient, MedicalRecord, Vitals, User } from "@/lib/definitions";
 import { AddMedicalRecordDialog } from "@/components/dashboard/add-medical-record-dialog";
 import { FormattedDate } from "@/components/shared/formatted-date";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
@@ -84,9 +86,14 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
             timestamp: serverTimestamp(),
         };
 
-        addDoc(logRef, logEntry).catch(logError => {
-             console.error("Failed to write privacy log:", logError);
-        });
+        addDoc(logRef, logEntry)
+            .catch(async (serverError) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: logRef.path,
+                    operation: 'create',
+                    requestResourceData: logEntry,
+                }));
+            });
     }
   }, [firestore, currentUser, patientUser, currentUserLoading, isPatientUserLoading, hasRole, patientId]);
 
@@ -123,6 +130,8 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   if (!currentUser) {
       return null;
   }
+  
+  const displayName = patientUser.roles.includes('doctor') ? `Dr. ${patientUser.name}` : patientUser.name;
 
   return (
     <div className="space-y-6">
@@ -133,7 +142,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
             <AvatarFallback>{patientUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
           </Avatar>
           <div>
-            <CardTitle className="text-3xl">{patientUser.name}</CardTitle>
+            <CardTitle className="text-3xl">{displayName}</CardTitle>
             <CardDescription className="text-base">Patient Details</CardDescription>
           </div>
         </CardHeader>

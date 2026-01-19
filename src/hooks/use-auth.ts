@@ -26,18 +26,12 @@ export function useAuth() {
     // Ensure that every user, regardless of their other roles, is always considered a patient.
     // This aligns with the core concept that professional roles are additive.
     const roles = Array.from(new Set([...(userProfile.roles || []), 'patient']));
-    
-    let displayName = userProfile.name;
-    if (roles.includes('doctor') && !displayName.startsWith('Dr.')) {
-        displayName = `Dr. ${displayName}`;
-    }
 
     // Combine the base user from Auth with the profile from Firestore
     return { 
       ...firebaseUser, 
       ...userProfile,
       roles,
-      name: displayName,
       id: firebaseUser.uid 
     } as User;
   }, [firebaseUser, userProfile]);

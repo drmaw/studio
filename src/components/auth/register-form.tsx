@@ -23,6 +23,8 @@ import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import type { User, Patient, Organization } from "@/lib/definitions";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -118,19 +120,27 @@ export function RegisterForm() {
       batch.set(patientDocRef, newPatient);
       batch.set(orgDocRef, newOrganization); // Add organization to the batch
 
-      await batch.commit();
-
-
-      toast({
-        title: "Registration Successful",
-        description: "You can now log in with your credentials.",
-      });
-
-      router.push("/login");
+      batch.commit()
+        .then(() => {
+            toast({
+                title: "Registration Successful",
+                description: "You can now log in with your credentials.",
+            });
+            router.push("/login");
+        })
+        .catch(async (serverError) => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: 'batch-write',
+                operation: 'create',
+                requestResourceData: { newUser, newPatient, newOrganization }
+            }));
+        })
+        .finally(() => {
+            setIsLoading(false);
+        });
 
     } catch (error: any) {
       console.error("Registration failed:", error);
-      // Remove hardcoded admin backdoor check
       toast({
         variant: "destructive",
         title: "Registration Failed",

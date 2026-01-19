@@ -21,6 +21,8 @@ import { Loader2, Plus } from "lucide-react"
 import { useFirestore } from "@/firebase"
 import { addDoc, collection, serverTimestamp, writeBatch, doc } from "firebase/firestore"
 import { format } from 'date-fns'
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doctor: User }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,62 +32,62 @@ export function AddMedicalRecordDialog({ patient, doctor }: { patient: User, doc
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!diagnosis || !firestore) {
         toast({ variant: 'destructive', title: 'Diagnosis Required', description: 'Please enter a diagnosis.'});
         return;
     };
     setIsSaving(true);
     
-    try {
-        const batch = writeBatch(firestore);
+    const batch = writeBatch(firestore);
 
-        // 1. Create the medical record
-        const recordsRef = collection(firestore, "patients", patient.id, "medical_records");
-        const newRecord = {
-            patientId: patient.id,
-            doctorId: doctor.healthId,
-            doctorName: doctor.name,
-            organizationId: doctor.organizationId,
-            date: format(new Date(), 'dd-MM-yyyy'),
-            diagnosis,
-            notes,
-            createdAt: serverTimestamp(),
-        };
-        batch.set(doc(recordsRef), newRecord);
+    // 1. Create the medical record
+    const recordsRef = collection(firestore, "patients", patient.id, "medical_records");
+    const newRecord = {
+        patientId: patient.id,
+        doctorId: doctor.healthId,
+        doctorName: doctor.name,
+        organizationId: doctor.organizationId,
+        date: format(new Date(), 'dd-MM-yyyy'),
+        diagnosis,
+        notes,
+        createdAt: serverTimestamp(),
+    };
+    batch.set(doc(recordsRef), newRecord);
 
-        // 2. Create the privacy log entry
-        const logRef = collection(firestore, 'patients', patient.id, 'privacy_log');
-        const logEntry = {
-            actorId: doctor.healthId,
-            actorName: doctor.name,
-            actorAvatarUrl: doctor.avatarUrl,
-            patientId: patient.id,
-            organizationId: doctor.organizationId,
-            action: 'add_record' as const,
-            timestamp: serverTimestamp(),
-        };
-        batch.set(doc(logRef), logEntry);
-        
-        await batch.commit();
-
-        setDiagnosis('');
-        setNotes('');
-        setIsOpen(false);
-        toast({
-          title: "Record Added",
-          description: "The new medical record has been saved successfully.",
+    // 2. Create the privacy log entry
+    const logRef = collection(firestore, 'patients', patient.id, 'privacy_log');
+    const logEntry = {
+        actorId: doctor.healthId,
+        actorName: doctor.name,
+        actorAvatarUrl: doctor.avatarUrl,
+        patientId: patient.id,
+        organizationId: doctor.organizationId,
+        action: 'add_record' as const,
+        timestamp: serverTimestamp(),
+    };
+    batch.set(doc(logRef), logEntry);
+    
+    batch.commit()
+        .then(() => {
+            setDiagnosis('');
+            setNotes('');
+            setIsOpen(false);
+            toast({
+              title: "Record Added",
+              description: "The new medical record has been saved successfully.",
+            });
+        })
+        .catch(async (serverError) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: 'batch-write',
+                operation: 'create',
+                requestResourceData: { newRecord, logEntry }
+            }));
+        })
+        .finally(() => {
+            setIsSaving(false);
         });
-    } catch (error) {
-        console.error("Failed to save record:", error);
-        toast({
-            variant: "destructive",
-            title: "Save Failed",
-            description: "Could not save the new medical record.",
-        });
-    } finally {
-        setIsSaving(false);
-    }
   }
 
   return (

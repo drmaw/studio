@@ -16,6 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FormattedDate } from "@/components/shared/formatted-date";
 import { createNotification } from "@/lib/notifications";
 import { format } from 'date-fns';
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function DoctorAppointmentsPage() {
     const params = useParams();
@@ -42,22 +44,32 @@ export default function DoctorAppointmentsPage() {
         }, [firestore, organizationId, scheduleId])
     );
 
-    const handleStatusChange = async (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
+    const handleStatusChange = (appointment: Appointment, status: 'confirmed' | 'cancelled') => {
         if (!firestore) return;
         const appointmentRef = doc(firestore, 'appointments', appointment.id);
-        await updateDoc(appointmentRef, { status });
-
-        // Notify patient
-        const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Cancelled';
-        const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
-        const description = `Your appointment with ${appointment.doctorName} on ${formattedDate} has been ${status}.`;
+        const updateData = { status };
         
-        await createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
+        updateDoc(appointmentRef, updateData)
+            .then(() => {
+                // Notify patient
+                const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Cancelled';
+                const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
+                const description = `Your appointment with ${appointment.doctorName} on ${formattedDate} has been ${status}.`;
+                
+                createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
 
-        toast({
-            title: `Appointment ${status}`,
-            description: `The appointment has been ${status}.`
-        });
+                toast({
+                    title: `Appointment ${status}`,
+                    description: `The appointment has been ${status}.`
+                });
+            })
+            .catch(async (serverError) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: appointmentRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                }));
+            });
     };
     
     const isLoading = appointmentsLoading || scheduleLoading;

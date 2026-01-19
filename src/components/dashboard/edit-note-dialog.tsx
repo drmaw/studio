@@ -18,6 +18,8 @@ import { useState } from "react"
 import { Loader2, Pencil } from "lucide-react"
 import { useFirestore } from "@/firebase"
 import { doc, updateDoc } from "firebase/firestore"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 export function EditNoteDialog({ record, patientId }: { record: MedicalRecord, patientId: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,29 +28,31 @@ export function EditNoteDialog({ record, patientId }: { record: MedicalRecord, p
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!patientId || !firestore) return;
     setIsSaving(true);
     
-    try {
-        const recordRef = doc(firestore, "patients", patientId, "medical_records", record.id);
-        await updateDoc(recordRef, { notes: note });
-        
-        setIsOpen(false);
-        toast({
-          title: "Note Saved",
-          description: "The medical record has been updated successfully.",
+    const recordRef = doc(firestore, "patients", patientId, "medical_records", record.id);
+    const updateData = { notes: note };
+    
+    updateDoc(recordRef, updateData)
+        .then(() => {
+            setIsOpen(false);
+            toast({
+              title: "Note Saved",
+              description: "The medical record has been updated successfully.",
+            });
+        })
+        .catch(async (serverError) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: recordRef.path,
+                operation: 'update',
+                requestResourceData: updateData,
+            }));
+        })
+        .finally(() => {
+            setIsSaving(false);
         });
-    } catch (error) {
-        console.error("Failed to save note:", error);
-        toast({
-            variant: "destructive",
-            title: "Save Failed",
-            description: "Could not update the medical record.",
-        });
-    } finally {
-        setIsSaving(false);
-    }
   }
 
   return (

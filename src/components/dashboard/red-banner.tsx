@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useFirestore } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 type RedBannerProps = {
     patientId: string;
@@ -36,39 +38,49 @@ export function RedBanner({ initialRedFlag, currentUserRole, patientId }: RedBan
     const [isVisible, setIsVisible] = useState(true);
     const firestore = useFirestore();
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (!patientId || !firestore) return;
-        try {
-            const patientRef = doc(firestore, 'patients', patientId);
-            await updateDoc(patientRef, { redFlag: { title: redFlag.title, comment: comment } });
-
-            setRedFlag(prev => ({ ...prev, comment }));
-            setIsEditing(false);
-            toast({
-                title: "Alert Saved",
-                description: "The critical alert has been updated.",
+        const patientRef = doc(firestore, 'patients', patientId);
+        const updateData = { redFlag: { title: redFlag.title, comment: comment } };
+        
+        updateDoc(patientRef, updateData)
+            .then(() => {
+                setRedFlag(prev => ({ ...prev, comment }));
+                setIsEditing(false);
+                toast({
+                    title: "Alert Saved",
+                    description: "The critical alert has been updated.",
+                });
+            })
+            .catch(async (serverError) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: patientRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData
+                }));
             });
-        } catch (error) {
-            console.error("Failed to save alert:", error);
-            toast({ variant: "destructive", title: "Save Failed", description: "Could not save the alert." });
-        }
     };
 
-    const handleDelete = async () => {
+    const handleDelete = () => {
         if (!patientId || !firestore) return;
-        try {
-            const patientRef = doc(firestore, 'patients', patientId);
-            await updateDoc(patientRef, { redFlag: null });
+        const patientRef = doc(firestore, 'patients', patientId);
+        const updateData = { redFlag: null };
 
-            setIsVisible(false);
-            toast({
-                title: "Alert Removed",
-                description: "The critical alert has been removed for this patient.",
+        updateDoc(patientRef, updateData)
+            .then(() => {
+                setIsVisible(false);
+                toast({
+                    title: "Alert Removed",
+                    description: "The critical alert has been removed for this patient.",
+                });
+            })
+            .catch(async (serverError) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: patientRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData
+                }));
             });
-        } catch (error) {
-            console.error("Failed to delete alert:", error);
-            toast({ variant: "destructive", title: "Delete Failed", description: "Could not remove the alert." });
-        }
     };
 
     if (!isVisible) {

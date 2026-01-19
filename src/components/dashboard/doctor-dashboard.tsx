@@ -24,6 +24,9 @@ import { QrScannerDialog } from "./qr-scanner-dialog";
 import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, collectionGroup, doc, getDoc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { DoctorSchedule } from "@/lib/definitions";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { Skeleton } from "../ui/skeleton";
 
 
 type CombinedPatient = User & Partial<Patient>;
@@ -142,21 +145,24 @@ export function DoctorDashboard({ user }: { user: User }) {
             // Log the search action for doctors/managers/owners
             const validSearcherRoles = ['doctor', 'hospital_owner', 'manager'];
             if (user.roles.some(role => validSearcherRoles.includes(role))) {
-                try {
-                    const logRef = collection(firestore, 'patients', combinedData.id, 'privacy_log');
-                    const logEntry = {
-                        actorId: user.healthId,
-                        actorName: user.name,
-                        actorAvatarUrl: user.avatarUrl,
-                        patientId: combinedData.id,
-                        organizationId: user.organizationId,
-                        action: 'search' as const,
-                        timestamp: serverTimestamp(),
-                    };
-                    await addDoc(logRef, logEntry);
-                } catch (logError) {
-                    console.error("Failed to write privacy log:", logError);
-                }
+                const logRef = collection(firestore, 'patients', combinedData.id, 'privacy_log');
+                const logEntry = {
+                    actorId: user.healthId,
+                    actorName: user.name,
+                    actorAvatarUrl: user.avatarUrl,
+                    patientId: combinedData.id,
+                    organizationId: user.organizationId,
+                    action: 'search' as const,
+                    timestamp: serverTimestamp(),
+                };
+                addDoc(logRef, logEntry)
+                    .catch(async (serverError) => {
+                        errorEmitter.emit('permission-error', new FirestorePermissionError({
+                            path: logRef.path,
+                            operation: 'create',
+                            requestResourceData: logEntry,
+                        }));
+                    });
             }
         } else {
             setSearchResult('not_found');
@@ -185,11 +191,13 @@ export function DoctorDashboard({ user }: { user: User }) {
   if (!user) {
       return null;
   }
+  
+  const displayName = user.roles.includes('doctor') ? `Dr. ${user.name}` : user.name;
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Welcome, {user.name}</h1>
+        <h1 className="text-3xl font-bold">Welcome, {displayName}</h1>
         <p className="text-muted-foreground">Search for patients and manage your chamber schedules.</p>
       </div>
 
@@ -248,8 +256,8 @@ export function DoctorDashboard({ user }: { user: User }) {
         </h2>
         {schedulesLoading ? (
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="bg-background-soft h-48 animate-pulse" />
-                <Card className="bg-background-soft h-48 animate-pulse" />
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full" />
             </div>
         ) : chamberSchedules && chamberSchedules.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

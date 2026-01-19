@@ -26,6 +26,8 @@ import {
 import { FormattedDate } from '@/components/shared/formatted-date';
 import { createNotification } from '@/lib/notifications';
 import { format } from 'date-fns';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function MyAppointmentsPage() {
     const { user, loading: userLoading } = useAuth();
@@ -51,28 +53,37 @@ export default function MyAppointmentsPage() {
         if (!appointmentSnap.exists()) return;
         const appointment = appointmentSnap.data() as Appointment;
 
-        await updateDoc(appointmentRef, { status: 'cancelled' });
-        
-        // Notify doctor
-        const scheduleRef = doc(firestore, 'organizations', appointment.organizationId, 'schedules', appointment.scheduleId);
-        const scheduleSnap = await getDoc(scheduleRef);
-        if (scheduleSnap.exists()) {
-            const schedule = scheduleSnap.data() as DoctorSchedule;
-            const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
-            await createNotification(
-                firestore,
-                schedule.doctorAuthId,
-                'Appointment Cancelled',
-                `${user.name} has cancelled their appointment for ${formattedDate}.`,
-                `/dashboard/appointments/${appointment.organizationId}/${appointment.scheduleId}`
-            );
-        }
+        const updateData = { status: 'cancelled' };
+        updateDoc(appointmentRef, updateData)
+            .then(async () => {
+                // Notify doctor
+                const scheduleRef = doc(firestore, 'organizations', appointment.organizationId, 'schedules', appointment.scheduleId);
+                const scheduleSnap = await getDoc(scheduleRef);
+                if (scheduleSnap.exists()) {
+                    const schedule = scheduleSnap.data() as DoctorSchedule;
+                    const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
+                    await createNotification(
+                        firestore,
+                        schedule.doctorAuthId,
+                        'Appointment Cancelled',
+                        `${user.name} has cancelled their appointment for ${formattedDate}.`,
+                        `/dashboard/appointments/${appointment.organizationId}/${appointment.scheduleId}`
+                    );
+                }
 
-        toast({
-            variant: 'destructive',
-            title: 'Appointment Cancelled',
-            description: 'Your appointment has been successfully cancelled.',
-        });
+                toast({
+                    variant: 'destructive',
+                    title: 'Appointment Cancelled',
+                    description: 'Your appointment has been successfully cancelled.',
+                });
+            })
+            .catch(async (serverError) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: appointmentRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                }));
+            });
     };
     
     const isLoading = userLoading || appointmentsLoading;
