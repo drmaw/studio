@@ -72,6 +72,14 @@ service cloud.firestore {
       allow get, list: if isOwner(patientId);
       allow create: if isSignedIn(); // Log creation is allowed if signed in, content is validated by function triggers or secure backend.
     }
+    
+    // --- STATS & PUBLIC DATA ---
+    match /stats/{statId} {
+        // Publicly readable statistics
+        allow get: if true;
+        // Only backend/admin processes can write. For now, deny all writes from client.
+        allow write: if false; 
+    }
 
     // --- ORGANIZATION-SCOPED COLLECTIONS ---
 

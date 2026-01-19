@@ -405,6 +405,20 @@
         "createdAt": { "type": "object" }
       },
       "required": ["userId", "userName", "date", "shiftType", "dutyArea", "createdAt"]
+    },
+    "PlatformStats": {
+      "title": "PlatformStats",
+      "description": "Pre-aggregated statistics for the entire platform, updated by backend processes.",
+      "type": "object",
+      "properties": {
+        "totalUsers": { "type": "number" },
+        "totalDoctors": { "type": "number" },
+        "totalOrganizations": { "type": "number" },
+        "totalAppointments": { "type": "number" },
+        "pendingAppointments": { "type": "number" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["updatedAt"]
     }
   },
   "auth": {
@@ -503,6 +517,10 @@
       {
         "path": "/organizations/{organizationId}/rosters/{rosterId}",
         "definition": { "schema": { "$ref": "#/entities/DutyRoster" }, "description": "Subcollection for storing individual staff shift assignments." }
+      },
+      {
+        "path": "/stats/platform",
+        "definition": { "schema": { "$ref": "#/entities/PlatformStats" }, "description": "Singleton document for global platform statistics." }
       }
     ]
   },

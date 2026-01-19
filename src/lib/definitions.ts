@@ -366,6 +366,16 @@ export type DutyRoster = {
   createdAt: FieldValue;
 };
 
+export type PlatformStats = {
+  id: string;
+  totalUsers?: number;
+  totalDoctors?: number;
+  totalOrganizations?: number;
+  totalAppointments?: number;
+  pendingAppointments?: number;
+  updatedAt?: FieldValue;
+};
+
 
 // FHIR Resource Types (simplified for demonstration)
 export interface FHIR_Identifier {

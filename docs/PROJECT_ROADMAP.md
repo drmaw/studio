@@ -144,8 +144,8 @@ This foundational phase established the core multi-tenant architecture required 
 
 **Goal**: Refactor key parts of the application to ensure it remains fast and cost-effective at large scale.
 
-*   **Step 8.1: Implement Server-Side Aggregation for Dashboards**:
-    *   **Task**: Refactor the `AdminStats` component to read from a pre-aggregated `/stats/platform` document instead of performing client-side counts.
+*   **[✓] Step 8.1: Implement Server-Side Aggregation for Dashboards**:
+    *   **[✓] Task**: Refactor the `AdminStats` component to read from a pre-aggregated `/stats/platform` document instead of performing client-side counts.
 
 *   **Step 8.2: Denormalize Data to Optimize Read-Heavy Screens**:
     *   **Task**: Update the logic for adding staff members to copy their `name` and `avatarUrl` directly into the `Membership` document to speed up list loading in the `StaffManagementTab`.
