@@ -25,7 +25,7 @@ This foundational phase established the core multi-tenant architecture required 
 
 ---
 
-### **Phase 2: Build Core HIS Modules (✓ Complete)**
+### **Phase 2: Build Core HIS Modules (In Progress)**
 
 **Goal**: Build the essential modules that a hospital needs to operate effectively.
 
@@ -34,6 +34,10 @@ This foundational phase established the core multi-tenant architecture required 
     *   **[✓] Task 2.1.2**: Implement the main Invoicing Dashboard for creating draft invoices.
     *   **[✓] Task 2.1.3**: Build the Invoice Detail page to manage line items and invoice status.
     *   **[✓] Task 2.1.4**: Integrate admission and discharge events with the billing module.
+    *   **Task 2.1.5: Implement Discount Authority**:
+        *   **Data Flow**: Manager (Invoice UI) → Enters discount amount & reason → `Invoice` document `discount` and `total` fields updated.
+        *   **Blueprinting**: Update the `Invoice` entity in `backend.json` and `definitions.ts` to include `discountAmount` and `discountReason` fields.
+        *   **UI Work**: On the `InvoiceDetailPage`, add an "Apply Discount" button visible only to `manager` and `hospital_owner` roles. This will open a dialog to enter the discount amount and a mandatory reason. The invoice total will be recalculated automatically.
 
 *   **[✓] Step 2.2: Implement In-Patient Management (ADT - Admission, Discharge, Transfer)**:
     *   **[✓] Task 2.2.1**: Update `backend.json`, `definitions.ts`, and `firestore.rules` with the `Admission` entity and security.
@@ -108,6 +112,13 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Task 6.3.1: Create Financial Reports Dashboard**: A new "Reports" page for managers showing key financial metrics. This will involve creating backend logic (potentially a Firebase Function, not implemented by agent) to periodically aggregate data from the `invoices` collection into summary documents for efficient display. Charts will visualize revenue over time, outstanding balances, and top-performing services.
     *   **Task 6.3.2: Create Operational Reports Dashboard**: A second tab on the "Reports" page for operational metrics. This will show charts for bed occupancy rates, average patient length of stay (calculated from `admissions` data), and new patient registrations over time.
 
+*   **Step 6.4: Implement Advanced Financial Controls**:
+    *   **Data Flow**: Manager (Cashier UI) → Initiates settlement → `Settlement` document created → Owner is notified → Owner confirms physical cash transfer → `Settlement` document status updated.
+    *   **Task 6.4.1: Blueprinting**: Define a `Settlement` entity in `backend.json` and `definitions.ts` to track cash hand-offs between managers and owners.
+    *   **Task 6.4.2: Build Manager's Cashier Dashboard**: Create a new "Cashier" dashboard for managers showing real-time "cash-in-hand" since the last settlement. This will include a button to initiate a new settlement process, which creates a `Settlement` document.
+    *   **Task 6.4.3: Build Owner's Reconciliation Dashboard**: Create a new section for owners to view pending settlements. They will be able to select a pending settlement and click a "Reconcile" button to confirm they have received the cash, creating a permanent audit trail.
+    *   **Task 6.4.4: Refine UI Access Control**: Review the `SidebarNav` and other UI components to enforce the Owner > Manager hierarchy. Ensure that sensitive settings (like editing the organization's core details) are hidden from managers, while operational dashboards (Billing, Admissions) are visible to both roles.
+
 ---
 
 ### **Phase 7: Alignment with Global Health & Data Protection Standards**
@@ -165,4 +176,3 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Task 8.3.1: Paginate Invoices List**: Refactor the `BillingPage` to load invoices in batches, adding a "Load More" button to fetch subsequent pages.
     *   **Task 8.3.2: Paginate Staff List**: Refactor the `StaffManagementTab` to paginate the list of current staff members.
     *   **Task 8.3.3: Paginate All History Views**: Audit all other list views (e.g., My Appointments, Medical History, Audit Logs) and implement pagination to ensure they scale.
-
