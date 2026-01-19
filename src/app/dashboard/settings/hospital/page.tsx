@@ -8,6 +8,7 @@ import { FacilityManagementTab } from "@/components/dashboard/settings/facility-
 import { GeneralSettingsTab } from "@/components/dashboard/settings/general-settings-tab";
 import { PageHeader } from "@/components/shared/page-header";
 import { InventoryManagementTab } from "@/components/dashboard/settings/inventory-management-tab";
+import { HrManagementTab } from "@/components/dashboard/settings/hr-management-tab";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function HospitalSettingsPage() {
@@ -18,6 +19,7 @@ export default function HospitalSettingsPage() {
     const descriptions = {
         general: "View and manage your hospital's general information.",
         staff: "Hire new staff by searching their Health ID and assign them a role in your organization.",
+        hr: "Manage employee details like salary, joining date, and other contractual information.",
         schedules: "Assign doctors to chambers, set their weekly schedule, and define consultation fees.",
         facilities: "Manage your hospital's wards, cabins, beds, and their costs.",
         inventory: "Manage your hospital's general supplies and track stock levels."
@@ -30,9 +32,10 @@ export default function HospitalSettingsPage() {
                 description="Manage your organization's staff, services, and schedules."
             />
             <Tabs defaultValue={isOwner ? "general" : "staff"}>
-                <TabsList className={`grid w-full ${isOwner ? 'grid-cols-5' : 'grid-cols-3'}`}>
+                <TabsList className={`grid w-full ${isOwner ? 'grid-cols-6' : 'grid-cols-4'}`}>
                     {isOwner && <TabsTrigger value="general">General</TabsTrigger>}
                     <TabsTrigger value="staff">Staff Management</TabsTrigger>
+                    <TabsTrigger value="hr">HR</TabsTrigger>
                     <TabsTrigger value="schedules">Doctor Schedules</TabsTrigger>
                     {isOwner && <TabsTrigger value="facilities">Facility Management</TabsTrigger>}
                     <TabsTrigger value="inventory">Inventory</TabsTrigger>
@@ -60,6 +63,18 @@ export default function HospitalSettingsPage() {
                         </CardHeader>
                         <CardContent>
                             <StaffManagementTab />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="hr">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Human Resources</CardTitle>
+                            <CardDescription>{descriptions.hr}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <HrManagementTab />
                         </CardContent>
                     </Card>
                 </TabsContent>

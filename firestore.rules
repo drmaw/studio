@@ -84,13 +84,18 @@ service cloud.firestore {
     }
 
     // Membership defines a user's role within an org.
-    // Patients can update their own consent. Org owners can manage other fields.
+    // Patients can update their own consent. Org owners/managers can manage other fields.
     match /organizations/{orgId}/members/{userId} {
       allow read: if isMemberOfOrg(orgId);
-      allow create: if hasRoleInOrg(orgId, 'hospital_owner');
-      allow update: if (hasRoleInOrg(orgId, 'hospital_owner') && request.resource.data.keys().hasOnly(['roles', 'status', 'userName', 'userId']))
-                      || (isOwner(userId) && request.resource.data.keys().hasOnly(['consent']));
-      allow delete: if hasRoleInOrg(orgId, 'hospital_owner');
+      allow create: if hasRoleInOrg(orgId, 'manager');
+      // A manager or owner can update the roles, status, user's denormalized name, and employee details.
+      // A patient can only update their own consent settings.
+      allow update: if
+          (hasRoleInOrg(orgId, 'manager') &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roles', 'status', 'userName', 'employeeDetails'])) ||
+          (isOwner(userId) &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['consent']));
+      allow delete: if hasRoleInOrg(orgId, 'manager');
     }
 
     // Medical records are created BY an organization FOR a patient.

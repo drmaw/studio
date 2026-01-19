@@ -69,6 +69,13 @@ export type Organization = {
   facilityImages?: string[];
 };
 
+export type EmployeeDetails = {
+    joiningDate?: string;
+    salary?: number;
+    bankAccountNumber?: string;
+    bankName?: string;
+};
+
 export type Membership = {
     id: string;
     userId: string;
@@ -78,6 +85,7 @@ export type Membership = {
     consent?: {
         shareRecords: boolean;
     };
+    employeeDetails?: EmployeeDetails;
 };
 
 export type DetailedMembership = Membership & {

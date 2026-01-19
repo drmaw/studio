@@ -75,7 +75,17 @@
                 "properties": {
                     "shareRecords": { "type": "boolean", "description": "If true, the patient allows professionals from this organization to view their clinical records." }
                 }
-            }
+            },
+            "employeeDetails": {
+              "type": "object",
+              "description": "Private employee-specific details, like contract and salary. Writable only by managers and owners.",
+              "properties": {
+                  "joiningDate": { "type": "string", "format": "date" },
+                  "salary": { "type": "number" },
+                  "bankAccountNumber": { "type": "string" },
+                  "bankName": { "type": "string" }
+              }
+          }
         },
         "required": ["userId", "userName", "roles", "status"]
     },

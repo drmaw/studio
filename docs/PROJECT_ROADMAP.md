@@ -105,9 +105,9 @@ This foundational phase established the core multi-tenant architecture required 
 
 *   **Step 6.5: Implement Human Resources (HR) Module**:
     *   **Data Flow**: Manager (HR UI) → Updates employee contract details / Creates weekly roster → `Membership` document updated / `DutyRoster` document created. Staff → Views their upcoming shifts on their personal dashboard.
-    *   **Task 6.5.1: Develop Detailed Employee Profiles**:
-        *   **Blueprinting**: Enhance the `Membership` entity in `backend.json` and `definitions.ts` to include a private `employeeDetails` object (containing fields for joining date, salary, bank info, etc.). Access to this object will be strictly limited to `manager` and `hospital_owner` roles via security rules.
-        *   **UI Work**: Create a new "HR" or "Payroll" tab within the Hospital Settings page. Build an interface for managers to view staff members and manage their detailed employment profiles.
+    *   **[✓] Task 6.5.1: Develop Detailed Employee Profiles**:
+        *   **[✓] Blueprinting**: Enhance the `Membership` entity in `backend.json` and `definitions.ts` to include a private `employeeDetails` object (containing fields for joining date, salary, bank info, etc.). Access to this object will be strictly limited to `manager` and `hospital_owner` roles via security rules.
+        *   **[✓] UI Work**: Create a new "HR" tab within the Hospital Settings page. Build an interface for managers to view staff members and manage their detailed employment profiles.
     *   **Task 6.5.2: Build Duty Roster Management**:
         *   **Blueprinting**: Define a new `DutyRoster` entity to store shift assignments for a given date/week. This will include `userId`, `shiftType` (e.g., Morning, Night), and `dutyArea` (e.g., Ward A).
         *   **UI Work**: In the new "HR" tab, build a visual roster management tool. This will allow managers to create weekly schedules and assign staff to different shifts and locations within the hospital.
@@ -152,6 +152,7 @@ This foundational phase established the core multi-tenant architecture required 
 
 *   **Step 8.3: Implement Query Pagination for All Long Lists**:
     *   **Task**: Refactor all list views (Invoices, Staff, Medical History, etc.) to load data in pages using `limit()` and `startAfter()` queries, adding "Load More" buttons.
+
 
 
 
