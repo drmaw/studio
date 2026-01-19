@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,7 +33,7 @@ export default function HospitalSettingsPage() {
                 description="Manage your organization's staff, services, and schedules."
             />
             <Tabs defaultValue={isOwner ? "general" : "staff"}>
-                <TabsList className={`grid w-full ${isOwner ? 'grid-cols-6' : 'grid-cols-4'}`}>
+                <TabsList className={`grid w-full ${isOwner ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6' : 'grid-cols-2 md:grid-cols-4'}`}>
                     {isOwner && <TabsTrigger value="general">General</TabsTrigger>}
                     <TabsTrigger value="staff">Staff Management</TabsTrigger>
                     <TabsTrigger value="hr">HR</TabsTrigger>

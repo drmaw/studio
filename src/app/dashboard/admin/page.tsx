@@ -35,7 +35,7 @@ export default function AdminDashboardPage() {
             />
             
             <Tabs defaultValue="overview">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
                     <TabsTrigger value="overview"><BarChart className="mr-2 h-4 w-4"/>Overview</TabsTrigger>
                     <TabsTrigger value="users"><Users className="mr-2 h-4 w-4"/>Users</TabsTrigger>
                     <TabsTrigger value="roles"><Briefcase className="mr-2 h-4 w-4"/>Role Mgmt</TabsTrigger>
