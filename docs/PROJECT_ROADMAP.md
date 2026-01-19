@@ -19,15 +19,9 @@ This foundational phase established the core multi-tenant architecture required 
 
 **Goal**: Make the existing application functional again by aligning the UI with the new, organization-centric data model.
 
-*   **Step 1.1: Implement Active Organization Context (✓ Complete)**: A user can belong to multiple organizations, so the UI must know which one they are currently acting within.
-    *   **[✓] Task**: Update the `useAuth` hook to manage an "active organization" in the user's session.
-    *   **[✓] Task**: Add a UI element (e.g., a dropdown in the `UserNav`) to allow users to switch between their organizations.
-
-*   **Step 1.2: Refactor All Data Queries (✓ Complete)**: Update all components to fetch data using the new, efficient, organization-scoped queries.
-    *   **[✓] Task**: Refactor `DoctorDashboard`, `BookAppointmentPage`, `HospitalSettings`, and other professional views to query data from within the active organization's sub-collections.
-
-*   **Step 1.3: Refactor Patient-Facing Views (✓ Complete)**: Update patient-facing pages to aggregate data from across all organizations they have interacted with.
-    *   **[✓] Task**: Refactor the "My Appointments" page to query and display a unified list of appointments from all relevant organizations.
+*   **[✓] Step 1.1: Implement Active Organization Context**: Updated the `useAuth` hook and `UserNav` to manage and switch between a user's organizational memberships.
+*   **[✓] Step 1.2: Refactor All Professional-Facing Queries**: Updated all professional views (`StaffManagement`, `DoctorDashboard`, `PatientDetailPage`, etc.) to query data from within the active organization's sub-collections.
+*   **[✓] Step 1.3: Refactor Patient-Facing Views**: Updated patient-facing pages (`MyAppointments`, `PatientDetailPage`) to aggregate data from across all organizations they have interacted with.
 
 ---
 
@@ -36,8 +30,10 @@ This foundational phase established the core multi-tenant architecture required 
 **Goal**: Build the essential modules that a hospital needs to operate effectively.
 
 *   **Step 2.1: Develop Billing & Invoicing Module**:
-    *   **Task**: Update `backend.json` and `definitions.ts` with `Invoice` and `InvoiceItem` entities.
-    *   **Task**: Implement UI for billing staff to generate and manage patient invoices.
+    *   **[✓] Task 2.1.1**: Define `Invoice` and `InvoiceItem` entities in `backend.json` and `definitions.ts`.
+    *   **[✓] Task 2.1.2**: Implement the main Invoicing Dashboard for creating draft invoices.
+    *   **[✓] Task 2.1.3**: Build the Invoice Detail page to manage line items and invoice status.
+    *   **Task**: Integrate with other hospital modules (e.g., automatically add admission costs).
 
 *   **Step 2.2: Implement In-Patient Management (ADT - Admission, Discharge, Transfer)**:
     *   **Task**: Update `backend.json` and `definitions.ts` with an `Admission` entity.
@@ -57,5 +53,6 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Task**: Create a "Data & Privacy" settings page where patients can manage data sharing permissions on a per-organization basis, giving them granular control over who can access their records.
 
 ---
+
 
 
