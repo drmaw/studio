@@ -12,8 +12,8 @@ import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VitalsTracker } from "@/components/dashboard/vitals-tracker";
 import { RedBanner } from "@/components/dashboard/red-banner";
-import { useDoc, useCollection, useFirestore, useMemoFirebase, addDocument } from "@/firebase";
-import { doc, collection, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { useDoc, useCollection, useFirestore, useMemoFirebase, addDocument, useCollectionGroup } from "@/firebase";
+import { doc, collection, query, orderBy, serverTimestamp, collectionGroup, where } from "firebase/firestore";
 import type { Patient, MedicalRecord, Vitals, User } from "@/lib/definitions";
 import { AddMedicalRecordDialog } from "@/components/dashboard/add-medical-record-dialog";
 import { FormattedDate } from "@/components/shared/formatted-date";
@@ -48,27 +48,32 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   const recordsQuery = useMemoFirebase(() => {
     if (!firestore || !patientId || !currentUser) return null;
 
+    // If patient is viewing their own records, query all records for them using a collection group query
+    if (currentUser.id === patientId) {
+        return query(
+            collectionGroup(firestore, 'records'),
+            where('patientId', '==', patientId),
+            orderBy('createdAt', 'desc')
+        );
+    }
+    
     // If a doctor is viewing, scope records to their active organization.
-    if (hasRole('doctor') && currentUser.id !== patientId) {
-        if (!currentUser.organizationId) return null; // Doctor must have an active org
+    if (hasRole('doctor') && currentUser.organizationId) {
         return query(
             collection(firestore, "organizations", currentUser.organizationId, "medical_records", patientId, "records"), 
             orderBy("createdAt", "desc")
         );
     }
 
-    // If the patient is viewing their own records, they should see all of them.
-    // This will be implemented in Step 1.3.
-    if (currentUser.id === patientId) {
-         // TODO: Implement collectionGroup query for patient view in Step 1.3
-        return null;
-    }
-
     return null;
   }, [firestore, patientId, currentUser, hasRole]);
-
   
-  const { data: records, isLoading: areRecordsLoading } = useCollection<MedicalRecord>(recordsQuery);
+  // Use useCollection for single-collection queries and useCollectionGroup for group queries
+  const { data: singleOrgRecords, isLoading: singleOrgRecordsLoading } = useCollection<MedicalRecord>(recordsQuery && recordsQuery.type !== 'collection-group' ? recordsQuery : null);
+  const { data: allOrgRecords, isLoading: allOrgRecordsLoading } = useCollectionGroup<MedicalRecord>(recordsQuery && recordsQuery.type === 'collection-group' ? recordsQuery : null);
+
+  const records = currentUser?.id === patientId ? allOrgRecords : singleOrgRecords;
+  const areRecordsLoading = currentUser?.id === patientId ? allOrgRecordsLoading : singleOrgRecordsLoading;
 
   const vitalsQuery = useMemoFirebase(() => {
     if (!firestore || !patientId) return null;
@@ -143,6 +148,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
   }
   
   const displayName = patientUser.name;
+  const headingText = currentUser.id === patientId ? 'Your Medical History' : `Medical Records at ${currentUser.organizationName || 'this organization'}`;
 
   return (
     <div className="space-y-6">
@@ -179,7 +185,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
 
       <div>
         <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Medical Records {currentUser.organizationName ? `at ${currentUser.organizationName}` : ''}</h2>
+            <h2 className="text-2xl font-bold">{headingText}</h2>
             {hasRole('doctor') && (
                 <AddMedicalRecordDialog patient={patientUser} doctor={currentUser} />
             )}
@@ -192,7 +198,7 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
           ) : (
             <Card className="flex items-center justify-center p-8 bg-background-soft">
                 <p className="text-muted-foreground">
-                  {currentUser.id === patientId ? "Your record history will appear here once implemented." : `No medical records found for this patient at ${currentUser.organizationName || 'this organization'}.`}
+                  {currentUser.id === patientId ? "You have no medical records yet." : `No medical records found for this patient at ${currentUser.organizationName || 'this organization'}.`}
                 </p>
             </Card>
           )}

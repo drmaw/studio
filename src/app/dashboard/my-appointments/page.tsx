@@ -2,8 +2,8 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore, useMemoFirebase, updateDocument } from '@/firebase';
-import { collection, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
+import { useCollectionGroup, useFirestore, useMemoFirebase, updateDocument } from '@/firebase';
+import { collectionGroup, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
 import type { Appointment, DoctorSchedule } from '@/lib/definitions';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -27,47 +27,34 @@ export default function MyAppointmentsPage() {
     const appointmentsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
         return query(
-            collection(firestore, 'appointments'),
+            collectionGroup(firestore, 'appointments'),
             where('patientId', '==', user.id),
             orderBy('appointmentDate', 'desc')
         );
     }, [firestore, user]);
 
-    const { data: appointments, isLoading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
+    const { data: appointments, isLoading: appointmentsLoading } = useCollectionGroup<Appointment>(appointmentsQuery);
 
-    const handleCancelAppointment = async (appointmentId: string) => {
+    const handleCancelAppointment = (appointment: Appointment) => {
         if (!firestore || !user) return;
-        setCancellingId(appointmentId);
-        const appointmentRef = doc(firestore, 'appointments', appointmentId);
+        setCancellingId(appointment.id);
         
-        const appointmentSnap = await getDoc(appointmentRef);
-        if (!appointmentSnap.exists()) {
-            setCancellingId(null);
-            return;
-        };
-        const appointment = appointmentSnap.data() as Appointment;
+        const appointmentRef = doc(firestore, 'organizations', appointment.organizationId, 'appointments', appointment.id);
 
         const updateData = { status: 'cancelled' };
         
         updateDocument(appointmentRef, updateData, () => {
             // Notify doctor
-            if (appointment.organizationId && appointment.scheduleId) {
-                const scheduleRef = doc(firestore, 'organizations', appointment.organizationId, 'schedules', appointment.scheduleId);
-                getDoc(scheduleRef).then(scheduleSnap => {
-                    if (scheduleSnap.exists()) {
-                        const schedule = scheduleSnap.data() as DoctorSchedule;
-                        const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
-                        createNotification(
-                            firestore,
-                            schedule.doctorAuthId,
-                            'Appointment Cancelled',
-                            `${user.name} has cancelled their appointment for ${formattedDate}.`,
-                            `/dashboard/appointments/${appointment.organizationId}/${appointment.scheduleId}`
-                        );
-                    }
-                });
+            if (appointment.organizationId && appointment.scheduleId && appointment.doctorAuthId) {
+                const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
+                createNotification(
+                    firestore,
+                    appointment.doctorAuthId,
+                    'Appointment Cancelled',
+                    `${user.name} has cancelled their appointment for ${formattedDate}.`,
+                    `/dashboard/appointments/${appointment.organizationId}/${appointment.scheduleId}`
+                );
             }
-
 
             toast({
                 title: 'Appointment Cancelled',
@@ -132,7 +119,7 @@ export default function MyAppointmentsPage() {
                                                     </Button>}
                                                     title="Are you sure?"
                                                     description={`This will cancel your appointment with ${apt.doctorName}. This action cannot be undone.`}
-                                                    onConfirm={() => handleCancelAppointment(apt.id)}
+                                                    onConfirm={() => handleCancelAppointment(apt)}
                                                     confirmText="Yes, Cancel"
                                                 />
                                             )}

@@ -3,11 +3,10 @@
   "indexes": [
     {
       "collectionGroup": "appointments",
-      "queryScope": "COLLECTION",
+      "queryScope": "COLLECTION_GROUP",
       "fields": [
         { "fieldPath": "patientId", "order": "ASCENDING" },
-        { "fieldPath": "appointmentDate", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
+        { "fieldPath": "appointmentDate", "order": "DESCENDING" }
       ]
     },
     {
@@ -19,18 +18,18 @@
       ]
     },
     {
-      "collectionGroup": "users",
+      "collectionGroup": "records",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        { "fieldPath": "roles", "order": "ASCENDING" },
-        { "fieldPath": "name", "order": "ASCENDING" }
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
-     {
-      "collectionGroup": "users",
+    {
+      "collectionGroup": "members",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        { "fieldPath": "organizationId", "order": "ASCENDING" }
+        { "fieldPath": "userId", "order": "ASCENDING" }
       ]
     },
     {
@@ -72,6 +71,13 @@
       "fields": [
         { "fieldPath": "doctorId", "order": "ASCENDING" }
       ]
+    },
+    {
+        "collectionGroup": "schedules",
+        "queryScope": "COLLECTION_GROUP",
+        "fields": [
+            { "fieldPath": "doctorAuthId", "order": "ASCENDING" }
+        ]
     },
     {
       "collectionGroup": "role_applications",
