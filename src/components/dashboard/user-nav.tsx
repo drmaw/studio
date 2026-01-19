@@ -15,8 +15,8 @@ import {
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 import { useAuth as useAppAuth } from "@/hooks/use-auth";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { Settings, User as UserIcon, Bell, CheckCheck, ChevronsUpDown, Building } from "lucide-react";
+import { useCollection, useFirestore, useMemoFirebase, useAuth as useFirebaseAuth } from "@/firebase";
+import { Settings, User as UserIcon, Bell, CheckCheck, ChevronsUpDown, Building, LogOut } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "../ui/badge";
 import { collection, doc, orderBy, query, writeBatch } from "firebase/firestore";
@@ -24,6 +24,8 @@ import type { Notification } from "@/lib/definitions";
 import { ScrollArea } from "../ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { FormattedDate } from "../shared/formatted-date";
+import { useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
 
 function NotificationBell() {
   const { user } = useAppAuth();
@@ -137,6 +139,14 @@ function OrganizationSwitcher() {
 
 export function UserNav() {
   const { user, loading } = useAppAuth();
+  const router = useRouter();
+  const auth = useFirebaseAuth();
+
+  const handleLogout = async () => {
+    if (!auth) return;
+    await signOut(auth);
+    router.push('/');
+  };
 
   if (loading) {
     return (
@@ -190,6 +200,11 @@ export function UserNav() {
               </Link>
             </DropdownMenuItem>
           </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Logout</span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
