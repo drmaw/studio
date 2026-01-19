@@ -67,6 +67,7 @@
         "properties": {
             "userId": { "type": "string" },
             "userName": { "type": "string" },
+            "userHealthId": { "type": "string", "description": "Denormalized user-facing Health ID for faster list rendering." },
             "roles": { "type": "array", "items": { "type": "string" } },
             "status": { "type": "string", "enum": ["active", "pending", "inactive"] },
             "consent": {
@@ -87,7 +88,7 @@
               }
           }
         },
-        "required": ["userId", "userName", "roles", "status"]
+        "required": ["userId", "userName", "userHealthId", "roles", "status"]
     },
     "MedicalRecord": {
       "title": "MedicalRecord",

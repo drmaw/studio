@@ -100,7 +100,7 @@ service cloud.firestore {
       // A patient can only update their own consent settings.
       allow update: if
           (hasRoleInOrg(orgId, 'manager') &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roles', 'status', 'userName', 'employeeDetails'])) ||
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roles', 'status', 'userName', 'userHealthId', 'employeeDetails'])) ||
           (isOwner(userId) &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['consent']));
       allow delete: if hasRoleInOrg(orgId, 'manager');

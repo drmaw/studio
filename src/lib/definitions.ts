@@ -80,6 +80,7 @@ export type Membership = {
     id: string;
     userId: string;
     userName: string;
+    userHealthId: string;
     roles: Role[];
     status: 'active' | 'pending' | 'inactive';
     consent?: {

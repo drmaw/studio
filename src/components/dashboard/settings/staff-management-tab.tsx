@@ -27,14 +27,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Loader2, UserPlus, Users, UserX } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { User, Role, Membership } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase, deleteDocument, setDocument, addDocument } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, deleteDocument, setDocument } from "@/firebase";
 import { collection, query, where, getDocs, doc, limit, getDoc } from "firebase/firestore";
 import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
 import { useSearchParams } from "next/navigation";
@@ -44,12 +44,9 @@ const formSchema = z.object({
   role: z.enum(['doctor', 'nurse', 'lab_technician', 'pathologist', 'pharmacist', 'manager', 'assistant_manager', 'front_desk'], { required_error: "You must select a role." }),
 });
 
-type StaffMember = User & { memberRoles: Role[] };
-
 export function StaffManagementTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
-  const [staff, setStaff] = useState<StaffMember[]>([]);
   const { toast } = useToast();
   const { user: hospitalOwner, hasRole } = useAuth();
   const firestore = useFirestore();
@@ -61,43 +58,10 @@ export function StaffManagementTab() {
 
   const membersQuery = useMemoFirebase(() => {
     if (!firestore || !orgId) return null;
-    return collection(firestore, 'organizations', orgId, 'members');
+    return query(collection(firestore, 'organizations', orgId, 'members'));
   }, [firestore, orgId]);
 
   const { data: members, isLoading: membersLoading } = useCollection<Membership>(membersQuery);
-  
-  useEffect(() => {
-    if (!members || !firestore) {
-        setStaff([]);
-        return;
-    };
-    
-    const fetchStaffDetails = async () => {
-        if(members.length === 0) {
-            setStaff([]);
-            return;
-        }
-
-        const userIds = members.map(m => m.userId);
-        const usersRef = collection(firestore, 'users');
-        const usersQuery = query(usersRef, where('__name__', 'in', userIds));
-        const userSnapshots = await getDocs(usersQuery);
-        
-        const usersById = new Map(userSnapshots.docs.map(d => [d.id, { ...d.data() as User, id: d.id }]));
-
-        const combinedStaff = members.map(member => {
-            const user = usersById.get(member.userId);
-            return {
-                ...user,
-                id: member.userId,
-                memberRoles: member.roles
-            } as StaffMember;
-        }).filter(s => s.id);
-
-        setStaff(combinedStaff);
-    }
-    fetchStaffDetails();
-  }, [members, firestore]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -130,11 +94,12 @@ export function StaffManagementTab() {
     const memberRef = doc(firestore, 'organizations', orgId, 'members', userDoc.id);
     const memberSnap = await getDoc(memberRef);
 
-    const newRoles = Array.from(new Set([...(memberSnap.data()?.roles || []), values.role]));
+    const newRoles = Array.from(new Set([...(memberSnap.data()?.roles || ['patient']), values.role]));
 
     const membershipData: Omit<Membership, 'id'> = {
         userId: userDoc.id,
         userName: userToAdd.name,
+        userHealthId: userToAdd.healthId,
         roles: newRoles,
         status: 'active',
     };
@@ -156,28 +121,25 @@ export function StaffManagementTab() {
     });
   }
 
-  const handleRemoveStaff = (staffMember: StaffMember) => {
+  const handleRemoveStaff = (member: Membership) => {
     if (!hospitalOwner || !orgId || !firestore) return;
 
-    if (staffMember.id === hospitalOwner.id && !isAdminView) {
+    if (member.userId === hospitalOwner.id && !isAdminView) {
         toast({ variant: 'destructive', title: 'Action Not Allowed', description: 'The hospital owner cannot be removed from their own organization.'});
         return;
     }
-
-    const originalStaff = staff;
-    setStaff(currentStaff => currentStaff.filter(s => s.id !== staffMember.id));
-    setRemovingId(staffMember.id);
     
-    const memberRef = doc(firestore, 'organizations', orgId, 'members', staffMember.id);
+    setRemovingId(member.userId);
+    
+    const memberRef = doc(firestore, 'organizations', orgId, 'members', member.userId);
     
     deleteDocument(memberRef, () => {
         toast({
             title: "Staff Removed",
-            description: `${staffMember.name} has been removed from your organization.`,
+            description: `${member.userName} has been removed from your organization.`,
         });
         setRemovingId(null);
     }, () => {
-        setStaff(originalStaff);
         setRemovingId(null);
         toast({
             variant: 'destructive',
@@ -264,13 +226,13 @@ export function StaffManagementTab() {
                                 </TableCell>
                             </TableRow>
                         )}
-                        {!membersLoading && staff && staff.map((member) => (
+                        {!membersLoading && members && members.map((member) => (
                             <TableRow key={member.id}>
-                                <TableCell className="font-medium">{member.name}</TableCell>
-                                <TableCell>{member.healthId}</TableCell>
+                                <TableCell className="font-medium">{member.userName}</TableCell>
+                                <TableCell>{member.userHealthId}</TableCell>
                                 <TableCell>
                                     <div className="flex flex-wrap gap-1">
-                                        {member.memberRoles.filter(r => r !== 'patient').map(role => (
+                                        {member.roles.filter(r => r !== 'patient').map(role => (
                                              <Badge key={role} variant="secondary" className="capitalize">
                                                 {role.replace(/_/g, ' ')}
                                             </Badge>
@@ -278,16 +240,16 @@ export function StaffManagementTab() {
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    {member.id !== hospitalOwner?.id && (
+                                    {member.userId !== hospitalOwner?.id && (
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={removingId === member.id}>
-                                                    {removingId === member.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4" />}
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={removingId === member.userId}>
+                                                    {removingId === member.userId ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4" />}
                                                 </Button>
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
-                                                    <AlertDialogTitle>Remove {member.name}?</AlertDialogTitle>
+                                                    <AlertDialogTitle>Remove {member.userName}?</AlertDialogTitle>
                                                     <AlertDialogDescription>
                                                         This will remove all professional roles from this user and un-assign them from your organization. This action cannot be undone.
                                                     </AlertDialogDescription>
@@ -306,7 +268,7 @@ export function StaffManagementTab() {
                         ))}
                     </TableBody>
                 </Table>
-                 {!membersLoading && staff?.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No staff members found in your organization.</p>}
+                 {!membersLoading && members?.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No staff members found in your organization.</p>}
             </div>
         </div>
     </div>
