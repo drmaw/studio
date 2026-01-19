@@ -43,7 +43,21 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow read, update: if isOwner(userId);
       // Only admins can list/delete all users.
-      allow list, delete: if hasRoleInOrg('digihealth-admin', 'admin'); 
+      allow list, delete: if hasRoleInOrg('digihealth-admin', 'admin');
+
+      // Rules for user-specific subcollections that they should be able to manage.
+      match /role_applications/{applicationId} {
+        // User can manage their own applications. Admin can read/update all.
+        allow read, write: if isOwner(userId) || hasRoleInOrg('digihealth-admin', 'admin');
+      }
+      match /role_removal_requests/{requestId} {
+        // User can manage their own requests. Admin can read/update all.
+        allow read, write: if isOwner(userId) || hasRoleInOrg('digihealth-admin', 'admin');
+      }
+      match /notifications/{notificationId} {
+        // User can manage their own notifications.
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // Patient data (allergies, conditions) is global and self-managed.
@@ -179,10 +193,11 @@ service cloud.firestore {
         allow write: if hasRoleInOrg(orgId, 'hospital_owner');
     }
 
-    // Role applications are managed within the context of an organization.
+    // Role applications were moved under /users, but this path might still exist in old data.
+    // This rule is restrictive to prevent access. A better approach is to ensure all new
+    // applications are written to /users/{userId}/role_applications.
     match /organizations/{orgId}/role_applications/{applicationId} {
-      allow create: if isSignedIn(); // Any user can apply to an org.
-      allow read, update: if hasRoleInOrg(orgId, 'hospital_owner'); // Only owners can manage applications.
+      allow read, write: if false; 
     }
     
     // General Inventory Management
