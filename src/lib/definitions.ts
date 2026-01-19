@@ -254,3 +254,27 @@ export type Admission = {
   status: 'admitted' | 'discharged';
   createdAt: FieldValue;
 };
+
+export type LabTestOrder = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  organizationId: string;
+  tests: string[];
+  status: 'pending' | 'completed' | 'cancelled';
+  createdAt: FieldValue;
+};
+
+export type LabTestResult = {
+  id: string;
+  patientId: string;
+  organizationId: string;
+  testName: string;
+  resultValue: string;
+  comments?: string;
+  reportedById: string;
+  reportedByName: string;
+  createdAt: FieldValue;
+};

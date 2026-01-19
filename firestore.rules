@@ -128,6 +128,19 @@ service cloud.firestore {
       allow write: if hasRoleInOrg(orgId, 'manager') || hasRoleInOrg(orgId, 'nurse');
     }
 
+    // Lab Test Orders and Results
+    match /organizations/{orgId}/lab_test_orders/{orderId} {
+        allow create: if hasRoleInOrg(orgId, 'doctor');
+        allow read: if isMemberOfOrg(orgId);
+        allow update: if hasRoleInOrg(orgId, 'doctor') || hasRoleInOrg(orgId, 'lab_technician');
+        
+        match /results/{resultId} {
+            allow create: if hasRoleInOrg(orgId, 'lab_technician');
+            allow read: if isMemberOfOrg(orgId) || isOwner(get(/databases/$(database)/documents/organizations/$(orgId)/lab_test_orders/$(orderId)).data.patientId);
+            allow update: if hasRoleInOrg(orgId, 'lab_technician');
+        }
+    }
+
     // Schedules, facilities, and fees are managed by org owners/managers.
     // Any member of the org can read them.
     match /organizations/{orgId}/schedules/{docId} {

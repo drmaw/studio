@@ -234,6 +234,38 @@
             "status": { "type": "string", "enum": ["admitted", "discharged"] }
         },
         "required": ["patientId", "organizationId", "facilityId", "admissionDate", "status"]
+    },
+    "LabTestOrder": {
+      "title": "LabTestOrder",
+      "description": "An order for one or more laboratory tests for a patient.",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "tests": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["pending", "completed", "cancelled"] },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["patientId", "patientName", "doctorId", "organizationId", "tests", "status", "createdAt"]
+    },
+    "LabTestResult": {
+      "title": "LabTestResult",
+      "description": "The result of a single laboratory test, part of a larger order.",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "testName": { "type": "string" },
+        "resultValue": { "type": "string" },
+        "comments": { "type": "string" },
+        "reportedById": { "type": "string" },
+        "reportedByName": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["patientId", "organizationId", "testName", "resultValue", "reportedById", "createdAt"]
     }
   },
   "auth": {
@@ -296,6 +328,14 @@
       {
         "path": "/organizations/{organizationId}/admissions/{admissionId}",
         "definition": { "schema": { "$ref": "#/entities/Admission" }, "description": "Patient admissions specific to an organization." }
+      },
+      {
+        "path": "/organizations/{organizationId}/lab_test_orders/{orderId}",
+        "definition": { "schema": { "$ref": "#/entities/LabTestOrder" }, "description": "Laboratory test orders for patients within an organization." }
+      },
+      {
+        "path": "/organizations/{organizationId}/lab_test_orders/{orderId}/results/{resultId}",
+        "definition": { "schema": { "$ref": "#/entities/LabTestResult" }, "description": "Results for a specific laboratory test order." }
       }
     ]
   }

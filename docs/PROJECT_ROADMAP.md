@@ -1,27 +1,17 @@
 
 # Digi Health: Project Roadmap
 
-This document outlines the phased development plan to build Digi Health into a full-featured, multi-tenant Hospital Information System (HIS) and Personal Health Record (PHR) platform. This serves as our persistent guide to ensure a structured and resumable development process.
+**Note on Implementation:** While implementing the roadmap steps, the process will maintain simplicity and consistency. Any step requiring modification of a linked or existing file will be done instantly as part of the implementation of that step.
 
 ---
 
-### **Phase 0: Architectural Foundation (✓ Complete)**
+### **Phase 1: Architectural Foundation (✓ Complete)**
 
 This foundational phase established the core multi-tenant architecture required for scalability and security.
 
 *   **[✓] Redesigned the Data Model**: Shifted from a user-centric to an organization-centric model in `docs/backend.json`.
 *   **[✓] Rewrote Security Rules**: Overhauled `firestore.rules` to enforce the new organization-centric data access model.
 *   **[✓] Updated Project Documentation**: Updated `README.md` to reflect the new architecture.
-
----
-
-### **Phase 1: Adapt UI to the New Architecture (✓ Complete)**
-
-**Goal**: Make the existing application functional again by aligning the UI with the new, organization-centric data model.
-
-*   **[✓] Step 1.1: Implement Active Organization Context**: Updated the `useAuth` hook and `UserNav` to manage and switch between a user's organizational memberships.
-*   **[✓] Step 1.2: Refactor All Professional-Facing Queries**: Updated professional views to query data from within the active organization's sub-collections.
-*   **[✓] Step 1.3: Refactor Patient-Facing Views**: Updated patient-facing pages to aggregate data from across all organizations.
 
 ---
 
@@ -33,7 +23,7 @@ This foundational phase established the core multi-tenant architecture required 
     *   **[✓] Task 2.1.1**: Define `Invoice` and `InvoiceItem` entities.
     *   **[✓] Task 2.1.2**: Implement the main Invoicing Dashboard.
     *   **[✓] Task 2.1.3**: Build the Invoice Detail page.
-    *   **[✓] Task 2.1.4: Implement Discount Authority**:
+    *   **[✓] Task 2.1.4**: Implement Discount Authority:
         *   **Data Flow**: Manager (Invoice UI) → Enters discount amount & reason → `Invoice` document `discount` and `total` fields updated.
         *   **Blueprinting**: Update the `Invoice` entity in `backend.json` and `definitions.ts` to include `discountAmount` and `discountReason` fields.
         *   **UI Work**: On the `InvoiceDetailPage`, add an "Apply Discount" button visible only to `manager` and `hospital_owner` roles. This will open a dialog to enter the discount amount and a mandatory reason.
@@ -63,7 +53,7 @@ This foundational phase established the core multi-tenant architecture required 
 
 *   **Step 4.1: Develop Laboratory Information System (LIS) Module**:
     *   **Data Flow**: Doctor (EMR) → `LabTestOrder` created → Lab Tech (Dashboard) → `LabTestResult` created → Doctor notified & result attached to EMR → `Invoice` updated.
-    *   **Task 4.1.1: Blueprinting**: Define `LabTestOrder` and `LabTestResult` entities in the data model and security rules.
+    *   **[✓] Task 4.1.1: Blueprinting**: Define `LabTestOrder` and `LabTestResult` entities in the data model and security rules.
     *   **Task 4.1.2: Implement Digital Test Ordering**: Add a feature for doctors to order specific lab tests, creating a `LabTestOrder` document.
     *   **Task 4.1.3: Build Lab Technician Dashboard**: Create a functional dashboard for `lab_technician` role to view pending orders and input results.
     *   **Task 4.1.4: Integrate LIS with Billing**: Automatically add the cost of a lab test as a line item to the patient's invoice when ordered.
