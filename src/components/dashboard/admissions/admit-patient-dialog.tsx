@@ -14,10 +14,10 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle } from 'lucide-react';
-import type { User, Facility, Invoice } from '@/lib/definitions';
+import type { User, Facility, Invoice, Bed } from '@/lib/definitions';
 import { useFirestore, useCollection, useMemoFirebase, addDocument, commitBatch, writeBatch } from '@/firebase';
 import { collection, serverTimestamp, query, where, limit, getDocs, doc } from 'firebase/firestore';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createNotification } from '@/lib/notifications';
 
 interface AdmitPatientDialogProps {
@@ -25,10 +25,17 @@ interface AdmitPatientDialogProps {
   organizationId: string;
 }
 
+interface SelectedBedInfo {
+    facilityId: string;
+    facilityName: string;
+    bedId: string;
+    costPerDay: number;
+}
+
 export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAdmitting, setIsAdmitting] = useState(false);
-  const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
+  const [selectedBedInfo, setSelectedBedInfo] = useState<SelectedBedInfo | null>(null);
   const { toast } = useToast();
   const firestore = useFirestore();
 
@@ -40,8 +47,8 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
   const { data: facilities, isLoading: facilitiesLoading } = useCollection<Facility>(facilitiesQuery);
 
   const handleAdmit = async () => {
-    if (!firestore || !selectedFacility) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Please select a facility.' });
+    if (!firestore || !selectedBedInfo) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Please select an available bed.' });
       return;
     }
     setIsAdmitting(true);
@@ -55,16 +62,26 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
       patientId: patient.id,
       patientName: patient.name,
       organizationId: organizationId,
-      facilityId: selectedFacility.id,
-      facilityName: selectedFacility.name,
-      facilityCostPerDay: selectedFacility.costPerDay,
+      facilityId: selectedBedInfo.facilityId,
+      facilityName: selectedBedInfo.facilityName,
+      bedId: selectedBedInfo.bedId,
+      facilityCostPerDay: selectedBedInfo.costPerDay,
       admissionDate: serverTimestamp(),
       status: 'admitted' as const,
       createdAt: serverTimestamp(),
     };
     batch.set(newAdmissionRef, newAdmission);
+    
+    // 2. Update bed status to 'occupied'
+    const facilityRef = doc(firestore, 'organizations', organizationId, 'facilities', selectedBedInfo.facilityId);
+    batch.update(facilityRef, {
+        [`beds.${selectedBedInfo.bedId}.status`]: 'occupied',
+        [`beds.${selectedBedInfo.bedId}.patientId`]: patient.id,
+        [`beds.${selectedBedInfo.bedId}.patientName`]: patient.name,
+    });
 
-    // 2. Find an existing invoice or prepare to create a new one
+
+    // 3. Find an existing invoice or prepare to create a new one
     const invoicesRef = collection(firestore, 'organizations', organizationId, 'invoices');
     const invoiceQuery = query(
       invoicesRef,
@@ -95,27 +112,27 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
         batch.set(invoiceRef, newInvoice);
     }
     
-    // 3. Add the admission cost as a line item
+    // 4. Add the admission cost as a line item
     const newItemRef = doc(collection(invoiceRef, 'items'));
     const admissionItem = {
-      name: `Admission: ${selectedFacility.name} (${selectedFacility.type})`,
+      name: `Admission: ${selectedBedInfo.facilityName} (${selectedBedInfo.bedId.replace('bed-', 'Bed ')})`,
       quantity: 1,
-      unitCost: selectedFacility.costPerDay,
-      totalCost: selectedFacility.costPerDay,
+      unitCost: selectedBedInfo.costPerDay,
+      totalCost: selectedBedInfo.costPerDay,
       createdAt: serverTimestamp(),
     };
     batch.set(newItemRef, admissionItem);
     
-    // 4. Update the invoice total
-    batch.update(invoiceRef, { totalAmount: currentTotal + selectedFacility.costPerDay });
+    // 5. Update the invoice total
+    batch.update(invoiceRef, { totalAmount: currentTotal + selectedBedInfo.costPerDay });
 
-    // 5. Commit all batched writes
+    // 6. Commit all batched writes
     commitBatch(batch, `admit patient ${patient.id} and create invoice item`, async () => {
         await createNotification(
             firestore,
             patient.id,
             'You Have Been Admitted',
-            `You have been admitted to ${selectedFacility.name}.`,
+            `You have been admitted to ${selectedBedInfo.facilityName}.`,
             '/dashboard'
         );
         toast({
@@ -146,7 +163,7 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
         <DialogHeader>
           <DialogTitle>Admit {patient.name}</DialogTitle>
           <DialogDescription>
-            Select a facility to admit the patient to. An admission charge will be added to their invoice automatically.
+            Select an available bed to admit the patient to. An admission charge will be added to their invoice automatically.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
@@ -160,18 +177,35 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
           ) : (
             <Select
               onValueChange={(value) => {
-                const facility = facilities?.find(f => f.id === value) || null;
-                setSelectedFacility(facility);
+                const [facilityId, bedId] = value.split(';');
+                const facility = facilities?.find(f => f.id === facilityId);
+                if (facility && bedId) {
+                  setSelectedBedInfo({
+                    facilityId: facility.id,
+                    facilityName: facility.name,
+                    bedId: bedId,
+                    costPerDay: facility.costPerDay
+                  });
+                } else {
+                  setSelectedBedInfo(null);
+                }
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a ward or cabin..." />
+                <SelectValue placeholder="Select an available bed..." />
               </SelectTrigger>
               <SelectContent>
                 {facilities?.map((facility) => (
-                  <SelectItem key={facility.id} value={facility.id}>
-                    {facility.name} ({facility.type}) - BDT {facility.costPerDay.toFixed(2)}/day
-                  </SelectItem>
+                    <SelectGroup key={facility.id}>
+                        <SelectLabel>{facility.name} ({facility.type})</SelectLabel>
+                        {Object.values(facility.beds)
+                            .filter(bed => bed.status === 'available')
+                            .map(bed => (
+                                <SelectItem key={`${facility.id}-${bed.id}`} value={`${facility.id};${bed.id}`}>
+                                    {bed.id.replace('bed-', 'Bed ')} - BDT {facility.costPerDay.toFixed(2)}/day
+                                </SelectItem>
+                            ))}
+                    </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
@@ -183,7 +217,7 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
           </Button>
           <Button
             onClick={handleAdmit}
-            disabled={isAdmitting || !selectedFacility}
+            disabled={isAdmitting || !selectedBedInfo}
           >
             {isAdmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Confirm Admission

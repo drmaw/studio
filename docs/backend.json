@@ -226,14 +226,17 @@
         "type": "object",
         "properties": {
             "patientId": { "type": "string" },
+            "patientName": { "type": "string" },
             "organizationId": { "type": "string" },
             "facilityId": { "type": "string" },
+            "facilityName": { "type": "string" },
+            "bedId": { "type": "string" },
             "facilityCostPerDay": { "type": "number" },
             "admissionDate": { "type": "object" },
             "dischargeDate": { "type": "object" },
             "status": { "type": "string", "enum": ["admitted", "discharged"] }
         },
-        "required": ["patientId", "organizationId", "facilityId", "admissionDate", "status"]
+        "required": ["patientId", "patientName", "organizationId", "facilityId", "facilityName", "bedId", "admissionDate", "status"]
     },
     "LabTestOrder": {
       "title": "LabTestOrder",

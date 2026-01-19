@@ -66,7 +66,15 @@ export default function AdmissionsPage() {
                 dischargeDate: serverTimestamp(),
             });
 
-            // 2. Calculate duration and add billing for additional days if necessary
+            // 2. Free up the bed
+            const facilityRef = doc(firestore, 'organizations', currentUser.organizationId, 'facilities', admission.facilityId);
+            batch.update(facilityRef, {
+                [`beds.${admission.bedId}.status`]: 'available',
+                [`beds.${admission.bedId}.patientId`]: null,
+                [`beds.${admission.bedId}.patientName`]: null,
+            });
+
+            // 3. Calculate duration and add billing for additional days if necessary
             const admissionDate = (admission.admissionDate as any).toDate();
             const dischargeDate = new Date();
             const diffTime = dischargeDate.getTime() - admissionDate.getTime();
@@ -102,7 +110,7 @@ export default function AdmissionsPage() {
                 }
             }
 
-            // 3. Commit batch
+            // 4. Commit batch
             commitBatch(batch, `discharge patient ${admission.patientId}`, () => {
                 toast({
                     title: 'Patient Discharged',
@@ -196,13 +204,14 @@ export default function AdmissionsPage() {
                                 <TableHead>Patient</TableHead>
                                 <TableHead>Admission Date</TableHead>
                                 <TableHead>Facility</TableHead>
+                                <TableHead>Bed</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {admissionsLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center h-24">
+                                    <TableCell colSpan={5} className="text-center h-24">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
@@ -212,6 +221,7 @@ export default function AdmissionsPage() {
                                         <TableCell className="font-medium">{admission.patientName}</TableCell>
                                         <TableCell><FormattedDate date={admission.admissionDate} formatString="dd-MM-yyyy, hh:mm a" /></TableCell>
                                         <TableCell>{admission.facilityName}</TableCell>
+                                        <TableCell>{admission.bedId.replace('bed-','')}</TableCell>
                                         <TableCell className="text-right">
                                             <ConfirmationDialog
                                                 trigger={
@@ -220,7 +230,7 @@ export default function AdmissionsPage() {
                                                     </Button>
                                                 }
                                                 title={`Discharge ${admission.patientName}?`}
-                                                description="This will mark the patient as discharged and bill them for the duration of their stay. This action cannot be undone."
+                                                description="This will mark the patient as discharged, free up their bed, and bill them for the duration of their stay. This action cannot be undone."
                                                 onConfirm={() => handleDischarge(admission)}
                                                 confirmText="Confirm Discharge"
                                             />
@@ -229,7 +239,7 @@ export default function AdmissionsPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center h-24">No patients are currently admitted.</TableCell>
+                                    <TableCell colSpan={5} className="text-center h-24">No patients are currently admitted.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>

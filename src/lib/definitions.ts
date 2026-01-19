@@ -256,6 +256,7 @@ export type Admission = {
   organizationId: string;
   facilityId: string;
   facilityName: string;
+  bedId: string;
   facilityCostPerDay: number;
   admissionDate: FieldValue;
   dischargeDate?: FieldValue;
