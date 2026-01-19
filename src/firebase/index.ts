@@ -31,3 +31,4 @@ export * from './client-provider';
 export * from './firestore/use-collection';
 export * from './firestore/use-doc';
 export * from './firestore/writes';
+export * from './firestore/use-collection-group';
