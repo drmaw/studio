@@ -12,7 +12,7 @@
     },
     {
       "collectionGroup": "appointments",
-      "queryScope": "COLLECTION_GROUP",
+      "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "scheduleId", "order": "ASCENDING" },
         { "fieldPath": "appointmentDate", "order": "DESCENDING" }
@@ -39,6 +39,16 @@
       "fields": [
         { "fieldPath": "action", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "privacy_log",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "actorId", "order": "ASCENDING" },
+        { "fieldPath": "action", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
       ]
     },
     {
