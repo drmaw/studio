@@ -1,5 +1,3 @@
-
-
 'use client'
 
 import { useAuth } from "@/hooks/use-auth";
@@ -17,6 +15,7 @@ import { doc, collection, query, orderBy, serverTimestamp, collectionGroup, wher
 import type { Patient, MedicalRecord, Vitals, User } from "@/lib/definitions";
 import { AddMedicalRecordDialog } from "@/components/dashboard/add-medical-record-dialog";
 import { FormattedDate } from "@/components/shared/formatted-date";
+import { OrderTestDialog } from "@/components/dashboard/lab/order-test-dialog";
 
 
 export default function PatientDetailPage({ params }: { params: { patientId: string } }) {
@@ -187,7 +186,10 @@ export default function PatientDetailPage({ params }: { params: { patientId: str
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold">{headingText}</h2>
             {hasRole('doctor') && (
-                <AddMedicalRecordDialog patient={patientUser} doctor={currentUser} />
+                <div className="flex gap-2">
+                    <OrderTestDialog patient={patientUser} doctor={currentUser} />
+                    <AddMedicalRecordDialog patient={patientUser} doctor={currentUser} />
+                </div>
             )}
         </div>
         <div className="space-y-4">
