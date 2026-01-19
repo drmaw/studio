@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestore, useCollection, useMemoFirebase, addDocument, updateDocument, deleteDocument } from "@/firebase";
-import type { Facility } from "@/lib/definitions";
+import type { Facility, Bed } from "@/lib/definitions";
 import { collection, serverTimestamp, doc } from "firebase/firestore";
 import { useSearchParams } from "next/navigation";
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
@@ -41,7 +41,7 @@ const formSchema = z.object({
   type: z.enum(['ward', 'cabin'], { required_error: "Facility type is required." }),
   name: z.string().min(1, { message: "Facility name is required." }),
   beds: z.coerce.number().positive({ message: "Number of beds must be positive." }),
-  cost: z.coerce.number().positive({ message: "Cost must be a positive number." }),
+  costPerDay: z.coerce.number().positive({ message: "Cost must be a positive number." }),
 });
 
 export function FacilityManagementTab() {
@@ -68,7 +68,7 @@ export function FacilityManagementTab() {
     defaultValues: {
       name: "",
       beds: 1,
-      cost: 1000,
+      costPerDay: 1000,
     },
   });
 
@@ -76,10 +76,23 @@ export function FacilityManagementTab() {
     if (!orgId || !firestore) return;
     setIsSubmitting(true);
     
+    const bedsMap: { [bedId: string]: Bed } = {};
+    for (let i = 1; i <= values.beds; i++) {
+        const bedId = `bed-${i}`;
+        bedsMap[bedId] = {
+            id: bedId,
+            status: 'available',
+        };
+    }
+
     const facilitiesRef = collection(firestore, 'organizations', orgId, 'facilities');
-    const newFacility = {
+    const newFacility: Omit<Facility, 'id'> = {
         organizationId: orgId,
-        ...values,
+        type: values.type,
+        name: values.name,
+        totalBeds: values.beds,
+        beds: bedsMap,
+        costPerDay: values.costPerDay,
         createdAt: serverTimestamp()
     };
     
@@ -89,7 +102,7 @@ export function FacilityManagementTab() {
                 title: "Facility Added",
                 description: `The ${values.type} "${values.name}" has been added.`,
             });
-            form.reset({ name: "", beds: 1, cost: 1000, type: values.type });
+            form.reset({ name: "", beds: 1, costPerDay: 1000, type: values.type });
         }
         setIsSubmitting(false);
     }, () => {
@@ -126,7 +139,7 @@ export function FacilityManagementTab() {
   const handleUpdate = (updatedFacility: Facility, callbacks: { onSuccess: () => void; onError: () => void; }) => {
     if (!orgId || !firestore) return;
     const facilityRef = doc(firestore, 'organizations', orgId, 'facilities', updatedFacility.id);
-    const { id, organizationId, createdAt, ...updateData } = updatedFacility;
+    const { id, organizationId, createdAt, beds, ...updateData } = updatedFacility;
     
     updateDocument(facilityRef, updateData, () => {
      toast({
@@ -203,7 +216,7 @@ export function FacilityManagementTab() {
                 />
                  <FormField
                     control={form.control}
-                    name="cost"
+                    name="costPerDay"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Cost per Day (BDT)</FormLabel>
@@ -252,8 +265,8 @@ export function FacilityManagementTab() {
                   <TableRow key={facility.id}>
                     <TableCell className="font-medium">{facility.name}</TableCell>
                     <TableCell className="capitalize">{facility.type}</TableCell>
-                    <TableCell>{facility.beds}</TableCell>
-                    <TableCell className="font-mono">{facility.cost.toFixed(2)}</TableCell>
+                    <TableCell>{facility.totalBeds}</TableCell>
+                    <TableCell className="font-mono">{facility.costPerDay.toFixed(2)}</TableCell>
                     <TableCell className="text-right space-x-1">
                       <EditFacilityDialog item={facility} onSave={handleUpdate} />
                       <ConfirmationDialog
@@ -291,7 +304,7 @@ function EditFacilityDialog({
     onSave,
 }: { 
     item: Facility;
-    onSave: (updatedItem: Facility, callbacks: { onSuccess: () => void; onError: () => void; }) => void;
+    onSave: (updatedItem: Omit<Facility, 'beds'>, callbacks: { onSuccess: () => void; onError: () => void; }) => void;
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -301,14 +314,15 @@ function EditFacilityDialog({
         defaultValues: {
             name: item.name,
             type: item.type,
-            beds: item.beds,
-            cost: item.cost,
+            beds: item.totalBeds,
+            costPerDay: item.costPerDay,
         },
     });
 
     function handleSave(values: z.infer<typeof formSchema>) {
         setIsSaving(true);
-        onSave({ ...item, ...values }, {
+        const { beds, ...restOfValues } = values;
+        onSave({ ...item, ...restOfValues, totalBeds: item.totalBeds }, {
             onSuccess: () => {
                 setIsSaving(false);
                 setIsOpen(false);
@@ -330,7 +344,7 @@ function EditFacilityDialog({
                 <DialogHeader>
                     <DialogTitle>Edit Facility</DialogTitle>
                     <DialogDescription>
-                        Update the details for this facility.
+                        Update the details for this facility. The number of beds cannot be changed after creation.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -355,7 +369,7 @@ function EditFacilityDialog({
                                 <FormItem>
                                 <FormLabel>Number of Beds</FormLabel>
                                 <FormControl>
-                                   <Input type="number" {...field} />
+                                   <Input type="number" {...field} disabled />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
@@ -363,7 +377,7 @@ function EditFacilityDialog({
                         />
                         <FormField
                             control={form.control}
-                            name="cost"
+                            name="costPerDay"
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Cost per Day (BDT)</FormLabel>

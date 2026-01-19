@@ -59,7 +59,7 @@ This foundational phase established the core multi-tenant architecture required 
 
 ---
 
-### **Phase 5: Patient Empowerment and Engagement (In Progress)**
+### **Phase 5: Patient Empowerment and Engagement (✓ Complete)**
 
 **Goal**: Give patients more direct control and better tools to manage their healthcare journey.
 
@@ -68,21 +68,21 @@ This foundational phase established the core multi-tenant architecture required 
     *   **[✓] Task 5.1.1: Build Patient-Facing Booking UI**: Create a new page where patients can browse organizations, view doctor profiles, and see their available schedules.
     *   **[✓] Task 5.1.2: Implement Patient Booking Logic**: Allow patients to request an appointment, creating an `Appointment` document with a 'pending' status.
 
-*   **Step 5.2: Develop Secure Messaging Module**:
+*   **[✓] Step 5.2: Develop Secure Messaging Module**:
     *   **Data Flow**: User (Messaging UI) → Create `Message` document within a `Conversation` subcollection → Real-time listener updates UI for other participant.
     *   **[✓] Task 5.2.1: Blueprinting**: Define `Conversation` and `Message` entities and configure security rules.
     *   **[✓] Task 5.2.2: Build Messaging UI**: Create a new "Messages" page showing a list of conversations and the selected conversation's messages.
-    *   **Task 5.2.3: Implement Real-Time Messaging**: Use Firestore's real-time listeners to display new messages instantly.
+    *   **[✓] Task 5.2.3: Implement Real-Time Messaging**: Use Firestore's real-time listeners to display new messages instantly.
 
 ---
 
-### **Phase 6: Advanced Hospital Management & Analytics**
+### **Phase 6: Advanced Hospital Management & Analytics (In Progress)**
 
 **Goal**: Provide hospital owners with powerful tools for operational oversight, resource management, and strategic decision-making.
 
 *   **Step 6.1: Develop Bed Management Dashboard**:
     *   **Data Flow**: Staff (Admit/Discharge UI) → Update `Facility` document `status` → Bed Management Dashboard UI updates in real-time.
-    *   **Task 6.1.1: Enhance Facility Data Model**: Update the `Facility` entity to include a map of `beds`, each with its own `status` ('available', 'occupied').
+    *   **[✓] Task 6.1.1: Enhance Facility Data Model**: Update the `Facility` entity to include a map of `beds`, each with its own `status` ('available', 'occupied').
     *   **Task 6.1.2: Build Bed Management UI**: Create a visual "Bed Management" dashboard showing the real-time status of all beds.
     *   **Task 6.1.3: Integrate ADT with Bed Management**: Modify the `AdmitPatientDialog` to only show available beds and update bed status on admission/discharge.
 

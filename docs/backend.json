@@ -298,6 +298,37 @@
         "createdAt": { "type": "object" }
       },
       "required": ["conversationId", "senderId", "senderName", "text", "createdAt"]
+    },
+    "Bed": {
+      "title": "Bed",
+      "description": "Represents a single bed within a facility.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "status": { "type": "string", "enum": ["available", "occupied", "maintenance"] },
+        "patientId": { "type": "string", "description": "The ID of the patient occupying the bed." },
+        "patientName": { "type": "string", "description": "Denormalized name of the patient for UI." }
+      },
+      "required": ["id", "status"]
+    },
+    "Facility": {
+      "title": "Facility",
+      "description": "Represents an in-patient facility like a ward or a cabin in a hospital.",
+      "type": "object",
+      "properties": {
+        "organizationId": { "type": "string" },
+        "type": { "type": "string", "enum": ["ward", "cabin"] },
+        "name": { "type": "string" },
+        "totalBeds": { "type": "number" },
+        "beds": {
+          "type": "object",
+          "description": "A map of bed objects within the facility, keyed by bed number.",
+          "additionalProperties": { "$ref": "#/entities/Bed" }
+        },
+        "costPerDay": { "type": "number" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["organizationId", "type", "name", "totalBeds", "costPerDay", "createdAt"]
     }
   },
   "auth": {
@@ -376,6 +407,10 @@
       {
         "path": "/organizations/{organizationId}/conversations/{conversationId}/messages/{messageId}",
         "definition": { "schema": { "$ref": "#/entities/Message" }, "description": "Individual messages within a conversation." }
+      },
+      {
+        "path": "/organizations/{organizationId}/facilities/{facilityId}",
+        "definition": { "schema": { "$ref": "#/entities/Facility" }, "description": "In-patient facilities like wards and cabins managed by an organization." }
       }
     ]
   }

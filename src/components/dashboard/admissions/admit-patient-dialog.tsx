@@ -57,7 +57,7 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
       organizationId: organizationId,
       facilityId: selectedFacility.id,
       facilityName: selectedFacility.name,
-      facilityCostPerDay: selectedFacility.cost,
+      facilityCostPerDay: selectedFacility.costPerDay,
       admissionDate: serverTimestamp(),
       status: 'admitted' as const,
       createdAt: serverTimestamp(),
@@ -100,14 +100,14 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
     const admissionItem = {
       name: `Admission: ${selectedFacility.name} (${selectedFacility.type})`,
       quantity: 1,
-      unitCost: selectedFacility.cost,
-      totalCost: selectedFacility.cost,
+      unitCost: selectedFacility.costPerDay,
+      totalCost: selectedFacility.costPerDay,
       createdAt: serverTimestamp(),
     };
     batch.set(newItemRef, admissionItem);
     
     // 4. Update the invoice total
-    batch.update(invoiceRef, { totalAmount: currentTotal + selectedFacility.cost });
+    batch.update(invoiceRef, { totalAmount: currentTotal + selectedFacility.costPerDay });
 
     // 5. Commit all batched writes
     commitBatch(batch, `admit patient ${patient.id} and create invoice item`, async () => {
@@ -170,7 +170,7 @@ export function AdmitPatientDialog({ patient, organizationId }: AdmitPatientDial
               <SelectContent>
                 {facilities?.map((facility) => (
                   <SelectItem key={facility.id} value={facility.id}>
-                    {facility.name} ({facility.type}) - BDT {facility.cost.toFixed(2)}/day
+                    {facility.name} ({facility.type}) - BDT {facility.costPerDay.toFixed(2)}/day
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -200,13 +200,21 @@ export type FeeItem = {
   createdAt: FieldValue;
 };
 
+export type Bed = {
+  id: string;
+  status: 'available' | 'occupied' | 'maintenance';
+  patientId?: string;
+  patientName?: string;
+};
+
 export type Facility = {
   id: string;
   organizationId: string;
   type: 'ward' | 'cabin';
   name: string;
-  beds: number;
-  cost: number;
+  totalBeds: number;
+  beds: { [bedId: string]: Bed };
+  costPerDay: number;
   createdAt: FieldValue;
 };
 
