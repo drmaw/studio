@@ -3,9 +3,10 @@
 
 import { PageHeader } from '@/components/shared/page-header';
 import { FinancialReports } from '@/components/dashboard/reports/financial-reports';
-import { BarChart } from 'lucide-react';
+import { BarChart, Activity } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OperationalReports } from '@/components/dashboard/reports/operational-reports';
 
 export default function ReportsPage() {
     return (
@@ -16,9 +17,9 @@ export default function ReportsPage() {
             />
 
             <Tabs defaultValue="financial">
-                <TabsList>
+                <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="financial">Financial Reports</TabsTrigger>
-                    <TabsTrigger value="operational" disabled>Operational Reports</TabsTrigger>
+                    <TabsTrigger value="operational">Operational Reports</TabsTrigger>
                 </TabsList>
                 <TabsContent value="financial">
                     <Card>
@@ -32,7 +33,15 @@ export default function ReportsPage() {
                     </Card>
                 </TabsContent>
                 <TabsContent value="operational">
-                    {/* Placeholder for future operational reports */}
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" />Operational Overview</CardTitle>
+                            <CardDescription>Key metrics for hospital efficiency like bed occupancy and patient stay duration.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <OperationalReports />
+                        </CardContent>
+                    </Card>
                 </TabsContent>
             </Tabs>
         </div>
