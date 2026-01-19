@@ -207,16 +207,19 @@ export function DoctorSchedulesTab() {
                                     </FormItem>
                                 )}
                             />
-                             <FormField
+                            <FormField
                                 control={form.control}
                                 name="fee"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Consultation Fee</FormLabel>
-                                        <FormControl>
-                                            <CurrencyInput type="number" placeholder="e.g., 1000" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
+                                    <FormLabel>Consultation Fee</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input type="number" placeholder="e.g., 1000" {...field} className="pl-7" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
                                     </FormItem>
                                 )}
                             />
@@ -361,3 +364,4 @@ export function DoctorSchedulesTab() {
     </div>
   );
 }
+

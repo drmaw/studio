@@ -304,7 +304,7 @@ function EditFacilityDialog({
     onSave,
 }: { 
     item: Facility;
-    onSave: (updatedItem: Omit<Facility, 'beds'>, callbacks: { onSuccess: () => void; onError: () => void; }) => void;
+    onSave: (updatedItem: Facility, callbacks: { onSuccess: () => void; onError: () => void; }) => void;
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -321,8 +321,11 @@ function EditFacilityDialog({
 
     function handleSave(values: z.infer<typeof formSchema>) {
         setIsSaving(true);
+        // We ignore the 'beds' count from the form since it's disabled and shouldn't be changed.
         const { beds, ...restOfValues } = values;
-        onSave({ ...item, ...restOfValues, totalBeds: item.totalBeds }, {
+        // We pass the full original `item` and overwrite the changed values.
+        // This preserves the original `beds` map and other unchanged properties.
+        onSave({ ...item, ...restOfValues }, {
             onSuccess: () => {
                 setIsSaving(false);
                 setIsOpen(false);
@@ -401,3 +404,4 @@ function EditFacilityDialog({
         </Dialog>
     );
 }
+
