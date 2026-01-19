@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import type { Role, User, Membership, Organization, DetailedMembership } from "@/lib/definitions";
 import { doc, getDoc, collectionGroup, query, where, onSnapshot } from 'firebase/firestore';
-import { allRoleHierarchy } from '@/lib/roles';
+import { professionalRoleHierarchy } from "@/lib/roles";
 
 
 export function useAuth() {
@@ -108,33 +108,38 @@ export function useAuth() {
   const user = useMemo(() => {
     if (!firebaseUser || !userProfile) return null;
     
-    const activeRoles = activeMembership?.roles || [];
-    const roles = Array.from(new Set([...activeRoles, 'patient']));
+    // Correctly calculate AGGREGATE roles from ALL memberships
+    const allRoles = memberships.flatMap(m => m.roles);
+    const aggregateRoles = Array.from(new Set([...allRoles, 'patient'])) as Role[];
 
     return { 
       ...firebaseUser, 
       ...userProfile,
       id: firebaseUser.uid,
-      roles: roles,
+      roles: aggregateRoles, // Use the correct aggregate roles
       organizationId: activeMembership?.orgId, 
       organizationName: activeMembership?.orgName,
     } as User;
-  }, [firebaseUser, userProfile, activeMembership]);
+  }, [firebaseUser, userProfile, memberships, activeMembership]);
 
   const hasRole = useCallback((role: Role) => {
+    // This will now correctly check against the aggregate roles
     return user?.roles?.includes(role) ?? false;
   }, [user]);
   
   const activeRole = useMemo(() => {
-    if (!user?.roles) return 'patient';
+    // `activeRole` should be based on the ACTIVE membership's roles
+    const rolesInActiveOrg = activeMembership?.roles || [];
     
-    for (const role of allRoleHierarchy) {
-      if (user.roles.includes(role)) {
+    // Find the highest-ranking role in the active organization
+    for (const role of professionalRoleHierarchy) {
+      if (rolesInActiveOrg.includes(role)) {
         return role;
       }
     }
+    // Default to patient if no professional roles in the active organization
     return 'patient';
-  }, [user?.roles]);
+  }, [activeMembership]);
 
   return { 
     user,
