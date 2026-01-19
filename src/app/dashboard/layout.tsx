@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider, SidebarTrigger, SidebarFooter } from "@/components/ui/sidebar";
@@ -80,7 +81,7 @@ export default function DashboardLayout({
                 <SidebarNav />
             </SidebarContent>
             <SidebarFooter>
-              <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout}>
+              <Button variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
               </Button>
