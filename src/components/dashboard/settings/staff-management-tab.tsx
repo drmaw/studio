@@ -34,7 +34,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import type { User, Role, Membership } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, deleteDocument, setDocument, getDocs, collection, query, where, doc, limit, getDoc, collectionGroup, orderBy, startAfter, type DocumentSnapshot } from "@/firebase";
+import { useFirestore, setDocument, getDocs, collection, query, where, doc, limit, getDoc, collectionGroup, orderBy, startAfter, type DocumentSnapshot, writeBatch, commitBatch } from "@/firebase";
 import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
 import { useSearchParams } from "next/navigation";
 import { CardFooter } from "@/components/ui/card";
@@ -175,7 +175,7 @@ export function StaffManagementTab() {
     });
   }
 
-  const handleRemoveStaff = (member: Membership) => {
+  const handleRemoveStaff = async (member: Membership) => {
     if (!hospitalOwner || !orgId || !firestore) return;
 
     if (member.userId === hospitalOwner.id && !isAdminView) {
@@ -185,9 +185,28 @@ export function StaffManagementTab() {
     
     setRemovingId(member.userId);
     
-    const memberRef = doc(firestore, 'organizations', orgId, 'members', member.userId);
+    const batch = writeBatch(firestore);
     
-    deleteDocument(memberRef, () => {
+    // 1. Delete the membership document
+    const memberRef = doc(firestore, 'organizations', orgId, 'members', member.userId);
+    batch.delete(memberRef);
+    
+    // 2. Update the user's root roles array
+    const userRef = doc(firestore, 'users', member.userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+        const userData = userSnap.data() as User;
+        const currentRoles = userData.roles || [];
+        const rolesToRemove = member.roles;
+        const newRoles = currentRoles.filter(role => !rolesToRemove.includes(role));
+        // Always ensure 'patient' role remains
+        if (!newRoles.includes('patient')) {
+            newRoles.push('patient');
+        }
+        batch.update(userRef, { roles: newRoles });
+    }
+
+    commitBatch(batch, `remove staff ${member.userId} from org ${orgId}`, () => {
         toast({
             title: "Staff Removed",
             description: `${member.userName} has been removed from your organization.`,
@@ -196,6 +215,11 @@ export function StaffManagementTab() {
         setRemovingId(null);
     }, () => {
         setRemovingId(null);
+        toast({
+            variant: 'destructive',
+            title: 'Removal Failed',
+            description: 'Could not remove the staff member.'
+        });
     });
   };
 
@@ -320,7 +344,7 @@ export function StaffManagementTab() {
                 </Table>
                  {!membersLoading && members?.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No staff members found in your organization.</p>}
                  <CardFooter className="justify-center py-4">
-                    {hasMore && (
+                    {hasMore && !membersLoading && (
                         <Button onClick={() => fetchMembers(true)} disabled={isLoadingMore}>
                             {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Load More"}
                         </Button>
