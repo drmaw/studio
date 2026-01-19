@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useMemo } from 'react'
@@ -209,7 +208,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
 
     return (
         <div className='mt-6 space-y-2'>
-             <h4 className="font-medium text-center">History for {activeTab === 'bp' ? 'BP' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h4>
+             <h4 className="font-medium text-center">History for {chartConfig[activeTab].label}</h4>
              <div className="border rounded-md max-h-60 overflow-y-auto">
                  <Table>
                     <TableHeader>
@@ -291,7 +290,7 @@ export function VitalsTracker({ vitalsData, currentUserRole, patientId, organiza
         
         {currentUserRole === 'patient' && (
              <div className="space-y-4 p-4 border rounded-lg bg-background">
-                <h4 className="font-medium text-center">Log New {activeTab === 'bp' ? 'BP' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h4>
+                <h4 className="font-medium text-center">Log New {chartConfig[activeTab].label}</h4>
                 {renderInput()}
             </div>
         )}
