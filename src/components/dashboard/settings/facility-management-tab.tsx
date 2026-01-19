@@ -40,7 +40,7 @@ import { CurrencyInput } from "@/components/shared/currency-input";
 const formSchema = z.object({
   type: z.enum(['ward', 'cabin'], { required_error: "Facility type is required." }),
   name: z.string().min(1, { message: "Facility name is required." }),
-  beds: z.coerce.number().positive({ message: "Number of beds must be positive." }),
+  totalBeds: z.coerce.number().positive({ message: "Number of beds must be positive." }),
   costPerDay: z.coerce.number().positive({ message: "Cost must be a positive number." }),
 });
 
@@ -67,7 +67,7 @@ export function FacilityManagementTab() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      beds: 1,
+      totalBeds: 1,
       costPerDay: 1000,
     },
   });
@@ -77,7 +77,7 @@ export function FacilityManagementTab() {
     setIsSubmitting(true);
     
     const bedsMap: { [bedId: string]: Bed } = {};
-    for (let i = 1; i <= values.beds; i++) {
+    for (let i = 1; i <= values.totalBeds; i++) {
         const bedId = `bed-${i}`;
         bedsMap[bedId] = {
             id: bedId,
@@ -90,7 +90,7 @@ export function FacilityManagementTab() {
         organizationId: orgId,
         type: values.type,
         name: values.name,
-        totalBeds: values.beds,
+        totalBeds: values.totalBeds,
         beds: bedsMap,
         costPerDay: values.costPerDay,
         createdAt: serverTimestamp()
@@ -102,7 +102,7 @@ export function FacilityManagementTab() {
                 title: "Facility Added",
                 description: `The ${values.type} "${values.name}" has been added.`,
             });
-            form.reset({ name: "", beds: 1, costPerDay: 1000, type: values.type });
+            form.reset({ name: "", totalBeds: 1, costPerDay: 1000, type: values.type });
         }
         setIsSubmitting(false);
     }, () => {
@@ -203,7 +203,7 @@ export function FacilityManagementTab() {
                 />
                 <FormField
                     control={form.control}
-                    name="beds"
+                    name="totalBeds"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Number of Beds</FormLabel>
@@ -309,23 +309,22 @@ function EditFacilityDialog({
     const [isOpen, setIsOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+    const editFormSchema = z.object({
+        name: z.string().min(1, { message: "Facility name is required." }),
+        costPerDay: z.coerce.number().positive({ message: "Cost must be a positive number." }),
+    });
+
+    const form = useForm<z.infer<typeof editFormSchema>>({
+        resolver: zodResolver(editFormSchema),
         defaultValues: {
             name: item.name,
-            type: item.type,
-            beds: item.totalBeds,
             costPerDay: item.costPerDay,
         },
     });
 
-    function handleSave(values: z.infer<typeof formSchema>) {
+    function handleSave(values: z.infer<typeof editFormSchema>) {
         setIsSaving(true);
-        // We ignore the 'beds' count from the form since it's disabled and shouldn't be changed.
-        const { beds, ...restOfValues } = values;
-        // We pass the full original `item` and overwrite the changed values.
-        // This preserves the original `beds` map and other unchanged properties.
-        onSave({ ...item, ...restOfValues }, {
+        onSave({ ...item, ...values }, {
             onSuccess: () => {
                 setIsSaving(false);
                 setIsOpen(false);
@@ -365,19 +364,12 @@ function EditFacilityDialog({
                                 </FormItem>
                             )}
                         />
-                         <FormField
-                            control={form.control}
-                            name="beds"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Number of Beds</FormLabel>
-                                <FormControl>
-                                   <Input type="number" {...field} disabled />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                         <FormItem>
+                            <FormLabel>Number of Beds</FormLabel>
+                            <FormControl>
+                                <Input type="number" value={item.totalBeds} disabled />
+                            </FormControl>
+                        </FormItem>
                         <FormField
                             control={form.control}
                             name="costPerDay"
@@ -404,4 +396,3 @@ function EditFacilityDialog({
         </Dialog>
     );
 }
-

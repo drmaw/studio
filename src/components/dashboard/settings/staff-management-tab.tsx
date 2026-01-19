@@ -34,8 +34,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import type { User, Role, Membership } from "@/lib/definitions";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirestore, useCollection, useMemoFirebase, deleteDocument, setDocument } from "@/firebase";
-import { collection, query, where, getDocs, doc, limit, getDoc } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase, deleteDocument, setDocument, commitBatch, writeBatch } from "@/firebase";
+import { collection, query, where, getDocs, doc, limit, getDoc, collectionGroup } from "firebase/firestore";
 import { professionalRolesConfig, staffRoles as assignableStaffRoles } from "@/lib/roles";
 import { useSearchParams } from "next/navigation";
 
@@ -91,17 +91,35 @@ export function StaffManagementTab() {
     const userDoc = userSnapshot.docs[0];
     const userToAdd = userDoc.data() as User;
     
+    // Check if user is part of another org (excluding their personal one)
+    const allMembersQuery = query(collectionGroup(firestore, 'members'), where('userId', '==', userDoc.id));
+    const memberSnapshots = await getDocs(allMembersQuery);
+    const existingMemberships = memberSnapshots.docs.map(d => d.ref.parent.parent!.id);
+
+    const otherOrgMembership = existingMemberships.find(id => id !== orgId && !id.startsWith('org-ind-'));
+    if (otherOrgMembership) {
+        toast({
+            variant: "destructive",
+            title: "User Belongs to Another Organization",
+            description: `${userToAdd.name} is already a member of another hospital. They must be removed from their current organization before they can be added.`,
+            duration: 6000,
+        });
+        setIsSubmitting(false);
+        return;
+    }
+    
     const memberRef = doc(firestore, 'organizations', orgId, 'members', userDoc.id);
     const memberSnap = await getDoc(memberRef);
 
-    const newRoles = Array.from(new Set([...(memberSnap.data()?.roles || ['patient']), values.role]));
+    const newRoles = Array.from(new Set([...(memberSnap.data()?.roles || []), values.role]));
 
-    const membershipData: Omit<Membership, 'id'> = {
+    const membershipData: Partial<Membership> = {
         userId: userDoc.id,
         userName: userToAdd.name,
         userHealthId: userToAdd.healthId,
         roles: newRoles,
         status: 'active',
+        consent: memberSnap.data()?.consent || { shareRecords: false },
     };
 
     setDocument(memberRef, membershipData, { merge: true }, () => {
@@ -113,11 +131,6 @@ export function StaffManagementTab() {
         setIsSubmitting(false);
     }, () => {
          setIsSubmitting(false);
-        toast({
-            variant: 'destructive',
-            title: 'Failed to Add Staff',
-            description: 'The user could not be added to your organization.',
-        });
     });
   }
 
@@ -141,11 +154,6 @@ export function StaffManagementTab() {
         setRemovingId(null);
     }, () => {
         setRemovingId(null);
-        toast({
-            variant: 'destructive',
-            title: 'Failed to Remove',
-            description: 'The staff member could not be removed.',
-        });
     });
   };
 
@@ -274,4 +282,3 @@ export function StaffManagementTab() {
     </div>
   );
 }
-

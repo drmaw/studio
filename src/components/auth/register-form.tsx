@@ -124,6 +124,9 @@ export function RegisterForm() {
           userHealthId: healthId,
           roles: ['patient'],
           status: 'active',
+          consent: {
+            shareRecords: false,
+          },
       };
       
       batch.set(userDocRef, newUser);
