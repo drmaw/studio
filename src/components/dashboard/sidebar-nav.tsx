@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -136,7 +134,7 @@ export function SidebarNav() {
       href: "/dashboard/settings/hospital",
       label: "Hospital Settings",
       icon: Settings,
-      roles: ['hospital_owner'],
+      roles: ['hospital_owner', 'manager'],
     }
   ];
 
