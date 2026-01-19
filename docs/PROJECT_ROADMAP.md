@@ -25,21 +25,20 @@ This foundational phase established the core multi-tenant architecture required 
 
 ---
 
-### **Phase 2: Build Core HIS Modules**
+### **Phase 2: Build Core HIS Modules (✓ Complete)**
 
 **Goal**: Build the essential modules that a hospital needs to operate effectively.
 
-*   **Step 2.1: Develop Billing & Invoicing Module**:
+*   **[✓] Step 2.1: Develop Billing & Invoicing Module**:
     *   **[✓] Task 2.1.1**: Define `Invoice` and `InvoiceItem` entities in `backend.json` and `definitions.ts`.
     *   **[✓] Task 2.1.2**: Implement the main Invoicing Dashboard for creating draft invoices.
     *   **[✓] Task 2.1.3**: Build the Invoice Detail page to manage line items and invoice status.
-    *   **Task**: Integrate with other hospital modules (e.g., automatically add admission costs).
+    *   **[✓] Task**: Integrate admission and discharge events with the billing module.
 
-*   **Step 2.2: Implement In-Patient Management (ADT - Admission, Discharge, Transfer)**:
+*   **[✓] Step 2.2: Implement In-Patient Management (ADT - Admission, Discharge, Transfer)**:
     *   **[✓] Task 2.2.1**: Update `backend.json`, `definitions.ts`, and `firestore.rules` with the `Admission` entity and security.
     *   **[✓] Task 2.2.2**: Create an "Admissions Dashboard" with a workflow to admit new patients.
     *   **[✓] Task 2.2.3**: Implement the "Discharge Patient" workflow.
-    *   **Task**: Integrate admission and discharge events with the billing module.
 
 ---
 
@@ -54,6 +53,7 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Task**: Create a "Data & Privacy" settings page where patients can manage data sharing permissions on a per-organization basis, giving them granular control over who can access their records.
 
 ---
+
 
 
 
