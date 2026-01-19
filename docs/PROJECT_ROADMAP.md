@@ -139,6 +139,12 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Task 7.4.2: Enhance Log Descriptors**: Make log messages more human-readable (e.g., "Dr. X confirmed appointment for Patient Y" instead of "update_appointment_status").
     *   **Task 7.4.3: Improve Privacy Log UI**: Add filtering controls (by date, organization, and action type) to the `/dashboard/privacy-log` page to allow patients to easily search and audit their activity history.
 
+*   **Step 7.5: Enable Data Interoperability (FHIR)**
+    *   **Data Flow**: Digi Health System → FHIR Transformation Layer → FHIR-compliant API Endpoint → External System (e.g., National Health Database).
+    *   **Task 7.5.1: Map Internal Data to FHIR Resources**: Analyze the internal Firestore entities (`Patient`, `MedicalRecord`, `Appointment`) and create a mapping to standard FHIR resources (e.g., `Patient`, `Observation`, `Encounter`).
+    *   **Task 7.5.2: Develop a FHIR API Layer**: Create a set of secure API endpoints (e.g., using Firebase Functions) that expose patient data in the FHIR format. This layer will be responsible for reading from Firestore, transforming the data into FHIR resources, and serving it upon request.
+    *   **Task 7.5.3: Implement OAuth 2.0 for Secure Access**: Secure the FHIR endpoints using an OAuth 2.0-based security layer (like the SMART on FHIR profile) to ensure only authorized applications can access data, always with explicit patient consent.
+
 ---
 
 ### **Phase 8: Performance & Scalability Optimization**
@@ -159,3 +165,4 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Task 8.3.1: Paginate Invoices List**: Refactor the `BillingPage` to load invoices in batches, adding a "Load More" button to fetch subsequent pages.
     *   **Task 8.3.2: Paginate Staff List**: Refactor the `StaffManagementTab` to paginate the list of current staff members.
     *   **Task 8.3.3: Paginate All History Views**: Audit all other list views (e.g., My Appointments, Medical History, Audit Logs) and implement pagination to ensure they scale.
+
