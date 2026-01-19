@@ -68,8 +68,15 @@ export function useAuth() {
 
         setMemberships(detailedMemberships);
 
+        // Refined logic for setting active membership
         const savedOrgId = sessionStorage.getItem('activeOrgId');
-        const active = detailedMemberships.find(m => m.orgId === savedOrgId) || detailedMemberships[0];
+        const personalOrgId = `org-ind-${firebaseUser.uid}`;
+        
+        const savedActive = detailedMemberships.find(m => m.orgId === savedOrgId);
+        const personalActive = detailedMemberships.find(m => m.orgId === personalOrgId);
+        const firstInList = detailedMemberships[0];
+
+        const active = savedActive || personalActive || firstInList;
         
         if (active) {
             setActiveMembership(active);
