@@ -14,7 +14,7 @@ This foundational phase established the core multi-tenant architecture required 
 
 ---
 
-### **Phase 2: Build Core HIS Modules (In Progress)**
+### **Phase 2: Build Core HIS Modules (✓ Complete)**
 
 **Goal**: Build the essential modules that a hospital needs to operate effectively for revenue and patient management.
 
@@ -54,7 +54,7 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Data Flow**: Doctor (EMR) → `LabTestOrder` created → Lab Tech (Dashboard) → `LabTestResult` created → Doctor notified & result attached to EMR → `Invoice` updated.
     *   **[✓] Task 4.1.1: Blueprinting**: Define `LabTestOrder` and `LabTestResult` entities in the data model and security rules.
     *   **[✓] Task 4.1.2: Implement Digital Test Ordering**: Add a feature for doctors to order specific lab tests, creating a `LabTestOrder` document.
-    *   **Task 4.1.3: Build Lab Technician Dashboard**: Create a functional dashboard for `lab_technician` role to view pending orders and input results.
+    *   **[✓] Task 4.1.3: Build Lab Technician Dashboard**: Create a functional dashboard for `lab_technician` role to view pending orders and input results.
     *   **Task 4.1.4: Integrate LIS with Billing**: Automatically add the cost of a lab test as a line item to the patient's invoice when ordered.
 
 *   **Step 4.2: Implement Intelligent Appointment Slot Management**:
