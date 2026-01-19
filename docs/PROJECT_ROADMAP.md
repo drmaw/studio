@@ -36,7 +36,7 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Task**: Integrate with other hospital modules (e.g., automatically add admission costs).
 
 *   **Step 2.2: Implement In-Patient Management (ADT - Admission, Discharge, Transfer)**:
-    *   **Task**: Update `backend.json` and `definitions.ts` with an `Admission` entity.
+    *   **[✓] Task 2.2.1**: Update `backend.json`, `definitions.ts`, and `firestore.rules` with the `Admission` entity and security.
     *   **Task**: Create an "Admissions Dashboard" to manage the patient lifecycle from admission to discharge.
     *   **Task**: Implement workflows for admitting a patient to a specific facility/bed and for discharging them, linking these actions to the billing cycle.
 
@@ -53,6 +53,7 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Task**: Create a "Data & Privacy" settings page where patients can manage data sharing permissions on a per-organization basis, giving them granular control over who can access their records.
 
 ---
+
 
 
 

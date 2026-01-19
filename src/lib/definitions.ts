@@ -1,4 +1,5 @@
 
+
 import { FieldValue } from "firebase/firestore";
 
 export type Role = 'admin' | 'doctor' | 'patient' | 'marketing_rep' | 'nurse' | 'hospital_owner' | 'lab_technician' | 'pathologist' | 'pharmacist' | 'manager' | 'assistant_manager' | 'front_desk';
@@ -176,6 +177,7 @@ export type Appointment = {
   patientId: string;
   patientName: string;
   doctorId: string;
+  doctorAuthId: string;
   doctorName: string;
   organizationId: string;
   organizationName: string;
@@ -240,8 +242,10 @@ export type InvoiceItem = {
 export type Admission = {
     id: string;
     patientId: string;
+    patientName: string;
     organizationId: string;
     facilityId: string;
+    facilityName: string;
     admissionDate: FieldValue;
     dischargeDate?: FieldValue;
     status: 'admitted' | 'discharged';

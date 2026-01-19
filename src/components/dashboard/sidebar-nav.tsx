@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
-import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, CalendarCheck, DollarSign, Shield, BookOpenCheck } from "lucide-react";
+import { LayoutDashboard, User as UserIcon, FileHeart, Settings, History, CalendarCheck, DollarSign, Shield, BookOpenCheck, BedDouble } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Role } from "@/lib/definitions";
@@ -85,8 +85,14 @@ export function SidebarNav() {
         roles: ['hospital_owner', 'manager'],
     },
     {
+        href: "/dashboard/admissions",
+        label: "Admissions (ADT)",
+        icon: BedDouble,
+        roles: ['hospital_owner', 'manager', 'nurse'],
+    },
+    {
         href: "/dashboard/billing",
-        label: "Billing & Fees",
+        label: "Billing & Invoicing",
         icon: DollarSign,
         roles: ['hospital_owner', 'manager'],
     },
