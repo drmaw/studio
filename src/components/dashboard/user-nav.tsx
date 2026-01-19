@@ -11,10 +11,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 import { useAuth as useAppAuth } from "@/hooks/use-auth";
 import { useAuth as useFirebaseAuth, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { LogOut, Settings, User as UserIcon, Bell, CheckCheck } from "lucide-react";
+import { LogOut, Settings, User as UserIcon, Bell, CheckCheck, ChevronsUpDown, Building } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signOut } from "firebase/auth";
@@ -103,6 +105,38 @@ function NotificationBell() {
   )
 }
 
+function OrganizationSwitcher() {
+    const { memberships, activeMembership, switchOrganization } = useAppAuth();
+    
+    if (!memberships || memberships.length <= 1) {
+        return null;
+    }
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-48 justify-between">
+                    <span className="truncate">{activeMembership?.orgName || 'Select Org'}</span>
+                    <ChevronsUpDown className="h-4 w-4 opacity-50"/>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end">
+                <DropdownMenuLabel>Switch Organization</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup value={activeMembership?.orgId} onValueChange={switchOrganization}>
+                    {memberships.map(membership => (
+                        <DropdownMenuRadioItem key={membership.orgId} value={membership.orgId}>
+                             <Building className="mr-2 h-4 w-4" />
+                            {membership.orgName}
+                        </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+
 export function UserNav() {
   const { user, loading } = useAppAuth();
   const auth = useFirebaseAuth();
@@ -131,6 +165,7 @@ export function UserNav() {
 
   return (
     <div className="flex items-center gap-2">
+      <OrganizationSwitcher />
       <NotificationBell />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

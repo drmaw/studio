@@ -35,7 +35,8 @@ export type User = {
   name: string;
   email: string;
   roles: Role[];
-  organizationId: string;
+  organizationId: string; // The ACTIVE organization ID
+  organizationName?: string; // The ACTIVE organization name
   avatarUrl: string;
   demographics?: UserDemographics;
   isPremium?: boolean;
@@ -65,6 +66,19 @@ export type Organization = {
   status: 'active' | 'suspended' | 'deleted';
   createdAt: FieldValue;
   facilityImages?: string[];
+};
+
+export type Membership = {
+    id: string;
+    userId: string;
+    userName: string;
+    roles: Role[];
+    status: 'active' | 'pending' | 'inactive';
+};
+
+export type DetailedMembership = Membership & {
+    orgId: string;
+    orgName: string;
 };
 
 export type MedicalRecord = {
