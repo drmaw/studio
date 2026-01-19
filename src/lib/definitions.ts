@@ -215,3 +215,24 @@ export type Notification = {
   isRead: boolean;
   createdAt: FieldValue;
 };
+
+export type Invoice = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  organizationId: string;
+  status: 'draft' | 'open' | 'paid' | 'void';
+  totalAmount: number;
+  dueDate: string; // ISO 8601 string
+  createdAt: FieldValue;
+};
+
+export type InvoiceItem = {
+  id: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+  createdAt: FieldValue;
+};

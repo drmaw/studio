@@ -92,6 +92,20 @@ service cloud.firestore {
       allow create: if isMemberOfOrg(orgId);
       allow read, update: if isOwner(resource.data.patientId) || hasRoleInOrg(orgId, 'front_desk');
     }
+    
+    // Invoices are managed within an org.
+    // Patients can read their own, staff can manage all within their org.
+    match /organizations/{orgId}/invoices/{invoiceId} {
+        allow read: if isOwner(resource.data.patientId) || hasRoleInOrg(orgId, 'manager');
+        allow write: if hasRoleInOrg(orgId, 'manager');
+
+        // Rules for invoice line items
+        match /items/{itemId} {
+            allow read: if isOwner(get(parent).data.patientId) || hasRoleInOrg(orgId, 'manager');
+            allow write: if hasRoleInOrg(orgId, 'manager');
+        }
+    }
+
 
     // Schedules, facilities, and fees are managed by org owners/managers.
     // Any member of the org can read them.
