@@ -138,3 +138,24 @@ This foundational phase established the core multi-tenant architecture required 
     *   **Task 7.4.1: Expand `PrivacyLog` Triggers**: Go through key workflows (`book-appointment`, `staff-management`, `account-settings`) and add logic to create a detailed log entry for every significant user action.
     *   **Task 7.4.2: Enhance Log Descriptors**: Make log messages more human-readable (e.g., "Dr. X confirmed appointment for Patient Y" instead of "update_appointment_status").
     *   **Task 7.4.3: Improve Privacy Log UI**: Add filtering controls (by date, organization, and action type) to the `/dashboard/privacy-log` page to allow patients to easily search and audit their activity history.
+
+---
+
+### **Phase 8: Performance & Scalability Optimization**
+
+**Goal**: Refactor key parts of the application to ensure it remains fast and cost-effective at large scale by implementing advanced Firestore data patterns.
+
+*   **Step 8.1: Implement Server-Side Aggregation for Dashboards**:
+    *   **Data Flow**: When a key document is created (e.g., a new user, a new invoice), a Cloud Function will trigger and atomically increment a counter in a centralized `stats` document. Dashboards will read this single document instead of entire collections.
+    *   **Task 8.1.1: Refactor Admin Dashboard**: Modify the `AdminStats` component to fetch data from a new `/stats/platform` document instead of counting documents on the client side. This will reduce thousands of reads to a single read.
+    *   **Task 8.1.2: Implement Backend Counters**: Set up the necessary backend logic (e.g., using Cloud Functions, not implemented by the agent) to maintain the counters for total users, doctors, organizations, and invoices.
+
+*   **Step 8.2: Denormalize Data to Optimize Read-Heavy Screens**:
+    *   **Data Flow**: When linking two documents (e.g., a user to an organization's staff list), copy necessary display data (like `name` and `healthId`) into the linking document (`Membership`). This avoids the need for a second database query (a "join").
+    *   **Task 8.2.1: Denormalize Staff Management**: Update the `StaffManagementTab` logic. When adding a staff member, store their name and avatar URL directly in the `Membership` document within the organization's `members` subcollection. Modify the table to read this denormalized data directly, improving list-loading performance.
+
+*   **Step 8.3: Implement Query Pagination for All Long Lists**:
+    *   **Data Flow**: Instead of fetching all documents in a collection, queries will be modified to fetch data in pages (e.g., 20 items at a time) using `limit()` and `startAfter()`. A "Load More" button will fetch the next page.
+    *   **Task 8.3.1: Paginate Invoices List**: Refactor the `BillingPage` to load invoices in batches, adding a "Load More" button to fetch subsequent pages.
+    *   **Task 8.3.2: Paginate Staff List**: Refactor the `StaffManagementTab` to paginate the list of current staff members.
+    *   **Task 8.3.3: Paginate All History Views**: Audit all other list views (e.g., My Appointments, Medical History, Audit Logs) and implement pagination to ensure they scale.
