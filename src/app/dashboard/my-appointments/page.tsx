@@ -46,7 +46,7 @@ export default function MyAppointmentsPage() {
         updateDocument(appointmentRef, updateData, () => {
             // Notify doctor
             if (appointment.organizationId && appointment.scheduleId && appointment.doctorAuthId) {
-                const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
+                const formattedDate = format(new Date(appointment.appointmentDate), 'PPP');
                 createNotification(
                     firestore,
                     appointment.doctorAuthId,

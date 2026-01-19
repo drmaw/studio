@@ -107,7 +107,6 @@ export type RecordFile = {
   uploadedBy: string; // User ID
   uploaderName: string;
   patientId: string;
-  organizationId: string;
   createdAt: FieldValue;
 };
 

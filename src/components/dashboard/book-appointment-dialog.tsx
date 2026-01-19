@@ -89,8 +89,11 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) return;
     setIsBooking(true);
-    const appointmentRef = collection(firestore, 'appointments');
-    const formattedDate = format(values.appointmentDate, 'dd-MM-yyyy');
+    
+    const appointmentRef = collection(firestore, 'organizations', organization.id, 'appointments');
+    const formattedDateForDB = format(values.appointmentDate, 'yyyy-MM-dd');
+    const formattedDateForNotification = format(values.appointmentDate, 'PPP');
+
 
     const newAppointment = {
         patientId: patient.id,
@@ -101,7 +104,7 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
         organizationId: organization.id,
         organizationName: organization.name,
         scheduleId: schedule.id,
-        appointmentDate: format(values.appointmentDate, 'yyyy-MM-dd'),
+        appointmentDate: formattedDateForDB,
         appointmentTime: values.appointmentTime,
         reason: values.reason || '',
         status: 'pending' as const,
@@ -115,7 +118,7 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
                 firestore, 
                 schedule.doctorAuthId,
                 'New Appointment Request',
-                `${patient.name} has requested an appointment on ${formattedDate} at ${values.appointmentTime}.`,
+                `${patient.name} has requested an appointment on ${formattedDateForNotification} at ${values.appointmentTime}.`,
                 `/dashboard/appointments/${organization.id}/${schedule.id}`
             );
 
@@ -125,7 +128,7 @@ export function BookAppointmentDialog({ schedule, organization, patient }: { sch
                     firestore,
                     patient.id,
                     'New Appointment Booked',
-                    `An appointment with ${schedule.doctorName} on ${formattedDate} at ${values.appointmentTime} has been booked for you. It is pending confirmation.`,
+                    `An appointment with ${schedule.doctorName} on ${formattedDateForNotification} at ${values.appointmentTime} has been booked for you. It is pending confirmation.`,
                     '/dashboard/my-appointments'
                 );
             }

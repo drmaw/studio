@@ -164,7 +164,10 @@ export function StaffManagementTab() {
         return;
     }
 
+    const originalStaff = staff;
+    setStaff(currentStaff => currentStaff.filter(s => s.id !== staffMember.id));
     setRemovingId(staffMember.id);
+    
     const memberRef = doc(firestore, 'organizations', orgId, 'members', staffMember.id);
     
     deleteDocument(memberRef, () => {
@@ -174,6 +177,7 @@ export function StaffManagementTab() {
         });
         setRemovingId(null);
     }, () => {
+        setStaff(originalStaff);
         setRemovingId(null);
         toast({
             variant: 'destructive',

@@ -102,7 +102,6 @@ export default function MyHealthRecordsPage() {
                 uploadedBy: user.id,
                 uploaderName: user.name,
                 patientId: user.id,
-                organizationId: user.organizationId,
                 createdAt: serverTimestamp(),
             };
 

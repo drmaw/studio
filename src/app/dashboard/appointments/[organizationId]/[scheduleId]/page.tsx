@@ -52,7 +52,7 @@ export default function DoctorAppointmentsPage() {
         updateDocument(appointmentRef, updateData, () => {
             // Notify patient
             const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Cancelled';
-            const formattedDate = format(new Date(appointment.appointmentDate), 'dd-MM-yyyy');
+            const formattedDate = format(new Date(appointment.appointmentDate), 'PPP');
             const description = `Your appointment with ${appointment.doctorName} on ${formattedDate} has been ${status}.`;
             
             createNotification(firestore, appointment.patientId, title, description, '/dashboard/my-appointments');
